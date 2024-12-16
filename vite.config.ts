@@ -26,6 +26,18 @@ export default defineConfig(({ mode }) => ({
         'http-proxy-agent',
         'https-proxy-agent',
         'socks-proxy-agent',
+        'net',
+        'tls',
+        'events',
+        'assert',
+        'node:http',
+        'node:https',
+        'node:zlib',
+        'node:stream',
+        'node:buffer',
+        'node:util',
+        'node:url',
+        'node:net'
       ]
     }
   }

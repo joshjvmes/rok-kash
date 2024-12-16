@@ -17,6 +17,10 @@ export async function initializeExchange() {
     exchange = new ccxt.coinbase({
       apiKey: COINBASE_API_KEY,
       enableRateLimit: true,
+      options: {
+        defaultType: 'spot',
+        adjustForTimeDifference: true,
+      }
     });
 
     return exchange;
