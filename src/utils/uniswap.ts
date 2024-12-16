@@ -42,6 +42,7 @@ export async function getUniswapPrice(
         recipient: ethers.constants.AddressZero,
         slippageTolerance: new Percent(5, 1000), // 0.5%
         deadline: Math.floor(Date.now() / 1000 + 1800),
+        type: 0 // 0 for universal router
       }
     );
 
