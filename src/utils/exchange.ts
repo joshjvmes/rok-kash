@@ -1,7 +1,7 @@
-import ccxt from 'ccxt';
+import * as ccxt from 'ccxt';
 import { supabase } from "@/integrations/supabase/client";
 
-let exchange: ccxt.coinbase | null = null;
+let exchange: ccxt.Exchange | null = null;
 
 export async function initializeExchange() {
   try {
