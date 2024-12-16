@@ -1,37 +1,35 @@
+import { useEffect, useState } from "react";
 import { PriceCard } from "@/components/PriceCard";
 import { ArbitrageOpportunity } from "@/components/ArbitrageOpportunity";
 import { QuickTrade } from "@/components/QuickTrade";
+import { fetchPrices, findArbitrageOpportunities } from "@/utils/exchange";
+import { useQuery } from "@tanstack/react-query";
 
-// Mock data - replace with real API data later
-const prices = [
-  { symbol: "BTC/USD", price: "43,567.89", change: 2.45, exchange: "Binance" },
-  { symbol: "ETH/USD", price: "2,345.67", change: -1.23, exchange: "Coinbase" },
-  { symbol: "SOL/USD", price: "89.12", change: 5.67, exchange: "Kraken" },
-  { symbol: "AVAX/USD", price: "34.56", change: -0.89, exchange: "Bitfinex" },
-];
-
-const arbitrageOpps = [
-  {
-    buyExchange: "Binance",
-    sellExchange: "Coinbase",
-    symbol: "BTC/USD",
-    spread: 0.45,
-    potential: 234.56,
-  },
-  {
-    buyExchange: "Kraken",
-    sellExchange: "Bitfinex",
-    symbol: "ETH/USD",
-    spread: 0.32,
-    potential: 156.78,
-  },
-];
+const SYMBOLS = ['BTC/USD', 'ETH/USD', 'SOL/USD', 'AVAX/USD'];
+const REFRESH_INTERVAL = 10000; // 10 seconds
 
 const Index = () => {
+  const { data: prices = [], isLoading: pricesLoading } = useQuery({
+    queryKey: ['prices'],
+    queryFn: () => fetchPrices(SYMBOLS),
+    refetchInterval: REFRESH_INTERVAL,
+  });
+
+  const { data: arbitrageOpps = [], isLoading: arbitrageLoading } = useQuery({
+    queryKey: ['arbitrage'],
+    queryFn: findArbitrageOpportunities,
+    refetchInterval: REFRESH_INTERVAL,
+  });
+
   return (
     <div className="min-h-screen bg-trading-gray-light p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold mb-6">Crypto Trading Dashboard</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Crypto Trading Dashboard</h1>
+          {(pricesLoading || arbitrageLoading) && (
+            <span className="text-sm text-gray-500">Updating...</span>
+          )}
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {prices.map((price) => (
@@ -48,6 +46,9 @@ const Index = () => {
                 {...opp}
               />
             ))}
+            {arbitrageOpps.length === 0 && !arbitrageLoading && (
+              <p className="text-gray-500">No arbitrage opportunities found</p>
+            )}
           </div>
           <div>
             <QuickTrade />
