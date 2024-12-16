@@ -14,13 +14,20 @@ export async function initializeExchange() {
       return null;
     }
 
+    // Use the browser-compatible exchange initialization
     exchange = new ccxt.coinbase({
       apiKey: COINBASE_API_KEY,
       enableRateLimit: true,
       options: {
         defaultType: 'spot',
         adjustForTimeDifference: true,
-      }
+        createMarketBuyOrderRequiresPrice: false,
+        warnOnFetchOHLCVLimitArgument: true,
+      },
+      // Disable proxy settings for browser environment
+      proxy: false,
+      httpsProxy: false,
+      timeout: 30000,
     });
 
     return exchange;

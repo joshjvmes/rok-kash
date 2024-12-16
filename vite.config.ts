@@ -37,7 +37,10 @@ export default defineConfig(({ mode }) => ({
         'node:buffer',
         'node:util',
         'node:url',
-        'node:net'
+        'node:net',
+        'node:events',
+        'node:assert',
+        'node:tls'
       ]
     }
   }
