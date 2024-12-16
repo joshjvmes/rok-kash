@@ -1,4 +1,4 @@
-import { Token, TradeType, CurrencyAmount } from '@uniswap/sdk-core';
+import { Token, TradeType, CurrencyAmount, Percent } from '@uniswap/sdk-core';
 import { AlphaRouter } from '@uniswap/smart-order-router';
 import { ethers } from 'ethers';
 
@@ -40,7 +40,7 @@ export async function getUniswapPrice(
       TradeType.EXACT_INPUT,
       {
         recipient: ethers.constants.AddressZero,
-        slippageTolerance: 0.5,
+        slippageTolerance: new Percent(5, 1000), // 0.5%
         deadline: Math.floor(Date.now() / 1000 + 1800),
       }
     );
