@@ -12,7 +12,7 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
   const { data: trades = [], isLoading, error } = useQuery({
     queryKey: ['trades', exchange, symbol],
     queryFn: () => fetchTrades(exchange, symbol),
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: false, // Disable auto-refresh
   });
 
   if (isLoading) {

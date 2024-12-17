@@ -10,7 +10,7 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
   const { data: balance, isLoading } = useQuery({
     queryKey: ['balance', exchange],
     queryFn: () => fetchBalance(exchange),
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: false, // Disable auto-refresh
   });
 
   if (isLoading) {

@@ -12,7 +12,7 @@ export function OrderBook({ exchange, symbol }: OrderBookProps) {
   const { data: orderBook, isLoading } = useQuery({
     queryKey: ['orderBook', exchange, symbol],
     queryFn: () => fetchOrderBook(exchange, symbol),
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: false, // Disable auto-refresh
   });
 
   if (isLoading) {

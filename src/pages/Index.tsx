@@ -7,34 +7,64 @@ import { TradingHistory } from "@/components/TradingHistory";
 import { ExchangeBalance } from "@/components/ExchangeBalance";
 import { fetchPrices, findArbitrageOpportunities } from "@/utils/exchange";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 const SYMBOLS = ['BTC/USD', 'ETH/USD', 'SOL/USD', 'AVAX/USD'];
 const EXCHANGES = ['coinbase', 'kraken'];
-const REFRESH_INTERVAL = 10000; // 10 seconds
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState(SYMBOLS[0]);
 
-  const { data: prices = [], isLoading: pricesLoading } = useQuery<PriceCardProps[]>({
+  const { 
+    data: prices = [], 
+    isLoading: pricesLoading,
+    refetch: refetchPrices
+  } = useQuery<PriceCardProps[]>({
     queryKey: ['prices'],
     queryFn: fetchPrices.bind(null, SYMBOLS),
-    refetchInterval: REFRESH_INTERVAL,
+    enabled: true, // Initial load
+    refetchInterval: false, // Disable auto-refresh
   });
 
-  const { data: arbitrageOpps = [], isLoading: arbitrageLoading } = useQuery({
+  const { 
+    data: arbitrageOpps = [], 
+    isLoading: arbitrageLoading,
+    refetch: refetchArbitrage
+  } = useQuery({
     queryKey: ['arbitrage'],
     queryFn: findArbitrageOpportunities,
-    refetchInterval: REFRESH_INTERVAL,
+    enabled: true, // Initial load
+    refetchInterval: false, // Disable auto-refresh
   });
+
+  const handleRefresh = async () => {
+    await Promise.all([
+      refetchPrices(),
+      refetchArbitrage()
+    ]);
+  };
 
   return (
     <div className="min-h-screen bg-trading-gray-light p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Crypto Trading Dashboard</h1>
-          {(pricesLoading || arbitrageLoading) && (
-            <span className="text-sm text-gray-500">Updating...</span>
-          )}
+          <div className="flex items-center gap-2">
+            {(pricesLoading || arbitrageLoading) && (
+              <span className="text-sm text-gray-500">Updating...</span>
+            )}
+            <Button 
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={pricesLoading || arbitrageLoading}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh Data
+            </Button>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
