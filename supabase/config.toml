@@ -1,1 +1,3 @@
 project_id = "pojfmdxsoqfxfzkujwah"
+[functions.kraken-proxy]
+verify_jwt = false

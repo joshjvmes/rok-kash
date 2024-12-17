@@ -19,9 +19,15 @@ interface KrakenPrice {
 
 async function fetchKrakenPrice(symbol: string) {
   try {
-    const krakenSymbol = symbol.replace('/', '').replace('USD', 'ZUSD');
-    const response = await fetch(`https://api.kraken.com/0/public/Ticker?pair=${krakenSymbol}`);
-    const data: KrakenPrice = await response.json();
+    const { data, error } = await supabase.functions.invoke('kraken-proxy', {
+      body: { symbol }
+    });
+
+    if (error) {
+      console.error('Error fetching Kraken price:', error);
+      return null;
+    }
+
     const pair = Object.keys(data.result)[0];
     return parseFloat(data.result[pair].c[0]);
   } catch (error) {
