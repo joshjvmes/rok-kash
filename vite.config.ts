@@ -16,10 +16,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-    }
-  },
-  define: {
-    global: 'globalThis',
+    },
   },
   build: {
     rollupOptions: {

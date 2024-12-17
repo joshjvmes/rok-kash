@@ -1,8 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { CoinbasePrice } from "../types/exchange";
 
 export async function fetchCoinbasePrice(symbol: string) {
   try {
-    // Use Supabase Edge Function instead of direct Coinbase SDK
     const { data, error } = await supabase.functions.invoke('coinbase-proxy', {
       body: { symbol }
     });
