@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { ArrowUp, ArrowDown } from "lucide-react";
 
-interface PriceCardProps {
+export interface PriceCardProps {
   symbol: string;
   price: string;
   change: number;

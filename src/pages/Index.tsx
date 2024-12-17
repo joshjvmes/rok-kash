@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PriceCard } from "@/components/PriceCard";
+import { PriceCard, PriceCardProps } from "@/components/PriceCard";
 import { ArbitrageOpportunity } from "@/components/ArbitrageOpportunity";
 import { QuickTrade } from "@/components/QuickTrade";
 import { fetchPrices, findArbitrageOpportunities } from "@/utils/exchange";
@@ -9,7 +9,7 @@ const SYMBOLS = ['BTC/USD', 'ETH/USD', 'SOL/USD', 'AVAX/USD'];
 const REFRESH_INTERVAL = 10000; // 10 seconds
 
 const Index = () => {
-  const { data: prices = [], isLoading: pricesLoading } = useQuery({
+  const { data: prices = [], isLoading: pricesLoading } = useQuery<PriceCardProps[]>({
     queryKey: ['prices'],
     queryFn: () => fetchPrices(SYMBOLS),
     refetchInterval: REFRESH_INTERVAL,
@@ -33,7 +33,13 @@ const Index = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {prices.map((price) => (
-            <PriceCard key={`${price.symbol}-${price.exchange}`} {...price} />
+            <PriceCard 
+              key={`${price.symbol}-${price.exchange}`}
+              symbol={price.symbol}
+              price={price.price}
+              change={price.change}
+              exchange={price.exchange}
+            />
           ))}
         </div>
 
