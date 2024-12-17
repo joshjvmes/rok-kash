@@ -9,73 +9,40 @@ import { fetchPrices, findArbitrageOpportunities } from "@/utils/exchange";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 const SYMBOLS = ['BTC/USD', 'ETH/USD', 'SOL/USD', 'AVAX/USD'];
 const EXCHANGES = ['coinbase', 'kraken'];
-const REFRESH_INTERVAL = 30000; // 30 seconds
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState(SYMBOLS[0]);
-  const { toast } = useToast();
 
   const { 
     data: prices = [], 
     isLoading: pricesLoading,
-    error: pricesError,
     refetch: refetchPrices
   } = useQuery<PriceCardProps[]>({
     queryKey: ['prices'],
-    queryFn: () => fetchPrices(SYMBOLS),
-    refetchInterval: REFRESH_INTERVAL,
-    retry: 2,
-    onError: (error) => {
-      toast({
-        title: "Error fetching prices",
-        description: "Unable to fetch latest prices. Will retry automatically.",
-        variant: "destructive",
-      });
-      console.error('Price fetch error:', error);
-    }
+    queryFn: fetchPrices.bind(null, SYMBOLS),
+    enabled: true, // Initial load
+    refetchInterval: false, // Disable auto-refresh
   });
 
   const { 
     data: arbitrageOpps = [], 
     isLoading: arbitrageLoading,
-    error: arbitrageError,
     refetch: refetchArbitrage
   } = useQuery({
     queryKey: ['arbitrage'],
     queryFn: findArbitrageOpportunities,
-    refetchInterval: REFRESH_INTERVAL,
-    retry: 2,
-    onError: (error) => {
-      toast({
-        title: "Error fetching arbitrage opportunities",
-        description: "Unable to fetch arbitrage data. Will retry automatically.",
-        variant: "destructive",
-      });
-      console.error('Arbitrage fetch error:', error);
-    }
+    enabled: true, // Initial load
+    refetchInterval: false, // Disable auto-refresh
   });
 
   const handleRefresh = async () => {
-    try {
-      await Promise.all([
-        refetchPrices(),
-        refetchArbitrage()
-      ]);
-      toast({
-        title: "Data refreshed",
-        description: "Latest market data has been fetched.",
-      });
-    } catch (error) {
-      toast({
-        title: "Refresh failed",
-        description: "Unable to refresh data. Please try again.",
-        variant: "destructive",
-      });
-    }
+    await Promise.all([
+      refetchPrices(),
+      refetchArbitrage()
+    ]);
   };
 
   return (
@@ -94,7 +61,7 @@ const Index = () => {
               className="gap-2"
               disabled={pricesLoading || arbitrageLoading}
             >
-              <RefreshCw className={`h-4 w-4 ${pricesLoading || arbitrageLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className="h-4 w-4" />
               Refresh Data
             </Button>
           </div>
@@ -107,14 +74,14 @@ const Index = () => {
               onClick={() => setSelectedSymbol(price.symbol)}
               className="cursor-pointer"
             >
-              <PriceCard {...price} />
+              <PriceCard 
+                symbol={price.symbol}
+                price={price.price}
+                change={price.change}
+                exchange={price.exchange}
+              />
             </div>
           ))}
-          {prices.length === 0 && !pricesLoading && (
-            <div className="col-span-full text-center text-gray-500">
-              No price data available
-            </div>
-          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
