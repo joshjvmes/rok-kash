@@ -4,7 +4,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { Client } from '@coinbase/coinbase-sdk';
+import { CoinbaseClient } from '@coinbase/coinbase-sdk';
 import { toast } from "@/hooks/use-toast";
 
 /**
@@ -59,9 +59,9 @@ export async function fetchCoinbasePrice(symbol: string): Promise<number | null>
  * Initialize Coinbase client with proper error handling
  * @param apiKey - Coinbase API key
  * @param apiSecret - Coinbase API secret
- * @returns Client instance or null if initialization fails
+ * @returns CoinbaseClient instance or null if initialization fails
  */
-export function initializeCoinbaseClient(apiKey: string, apiSecret: string): Client | null {
+export function initializeCoinbaseClient(apiKey: string, apiSecret: string): CoinbaseClient | null {
   try {
     if (!apiKey || !apiSecret) {
       throw new CoinbaseAPIError('Missing Coinbase API credentials');
@@ -71,7 +71,7 @@ export function initializeCoinbaseClient(apiKey: string, apiSecret: string): Cli
     const sanitizedKey = apiKey.trim();
     const sanitizedSecret = apiSecret.trim();
 
-    return new Client({
+    return new CoinbaseClient({
       apiKey: sanitizedKey,
       apiSecret: sanitizedSecret,
       strictSSL: true // Enable strict SSL checking
