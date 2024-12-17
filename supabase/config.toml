@@ -3,3 +3,5 @@ project_id = "pojfmdxsoqfxfzkujwah"
 verify_jwt = false
 [functions.coinbase-proxy]
 verify_jwt = false
+[functions.ccxt-proxy]
+verify_jwt = false
