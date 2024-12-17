@@ -31,7 +31,22 @@ export async function executeExchangeMethod(
     case 'fetchMarket':
       if (!symbol) throw new Error('Symbol is required for fetchMarket')
       const markets = await exchange.fetchMarkets()
-      return markets.find(market => market.symbol === symbol)
+      const market = markets.find(m => m.symbol === symbol)
+      if (!market) throw new Error(`Market not found for symbol: ${symbol}`)
+      
+      // Return a cleaned up market structure with the most relevant information
+      return {
+        symbol: market.symbol,
+        base: market.base,
+        quote: market.quote,
+        active: market.active,
+        precision: market.precision,
+        limits: market.limits,
+        maker: market.maker || 0,
+        taker: market.taker || 0,
+        minNotional: market.limits?.cost?.min || null,
+        maxNotional: market.limits?.cost?.max || null,
+      }
 
     case 'fetchBalance':
       return await exchange.fetchBalance()
