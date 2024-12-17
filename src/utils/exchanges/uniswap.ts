@@ -21,8 +21,7 @@ export async function getUniswapQuote(
       body: { 
         tokenIn,
         tokenOut,
-        amount,
-        slippagePercentage
+        amount
       }
     });
 
