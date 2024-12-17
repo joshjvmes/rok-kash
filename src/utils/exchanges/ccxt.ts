@@ -12,9 +12,8 @@ export interface CCXTOrder {
 
 export async function fetchCCXTPrice(exchange: string, symbol: string) {
   try {
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
       body: { 
-        exchange,
         symbol,
         method: 'fetchTicker'
       }
@@ -30,9 +29,8 @@ export async function fetchCCXTPrice(exchange: string, symbol: string) {
 
 export async function fetchOrderBook(exchange: string, symbol: string) {
   try {
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
       body: { 
-        exchange,
         symbol,
         method: 'fetchOrderBook'
       }
@@ -46,30 +44,10 @@ export async function fetchOrderBook(exchange: string, symbol: string) {
   }
 }
 
-export async function fetchOHLCV(exchange: string, symbol: string, timeframe: string = '1m') {
-  try {
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
-      body: { 
-        exchange,
-        symbol,
-        method: 'fetchOHLCV',
-        params: { timeframe }
-      }
-    });
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error(`Error fetching ${exchange} OHLCV:`, error);
-    return null;
-  }
-}
-
 export async function fetchTrades(exchange: string, symbol: string) {
   try {
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
       body: { 
-        exchange,
         symbol,
         method: 'fetchTrades'
       }
@@ -83,28 +61,10 @@ export async function fetchTrades(exchange: string, symbol: string) {
   }
 }
 
-export async function fetchMarkets(exchange: string) {
-  try {
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
-      body: { 
-        exchange,
-        method: 'fetchMarkets'
-      }
-    });
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error(`Error fetching ${exchange} markets:`, error);
-    return null;
-  }
-}
-
 export async function fetchBalance(exchange: string) {
   try {
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
       body: { 
-        exchange,
         method: 'fetchBalance'
       }
     });
@@ -113,6 +73,22 @@ export async function fetchBalance(exchange: string) {
     return data;
   } catch (error) {
     console.error(`Error fetching ${exchange} balance:`, error);
+    return null;
+  }
+}
+
+export async function fetchMarkets(exchange: string) {
+  try {
+    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
+      body: { 
+        method: 'fetchMarkets'
+      }
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error(`Error fetching ${exchange} markets:`, error);
     return null;
   }
 }
@@ -126,9 +102,8 @@ export async function createOrder(
   price?: number
 ) {
   try {
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
       body: { 
-        exchange,
         symbol,
         method: 'createOrder',
         params: { type, side, amount, price }
@@ -145,7 +120,7 @@ export async function createOrder(
 
 export async function cancelOrder(exchange: string, orderId: string, symbol: string) {
   try {
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
       body: { 
         exchange,
         symbol,
@@ -164,7 +139,7 @@ export async function cancelOrder(exchange: string, orderId: string, symbol: str
 
 export async function fetchOrders(exchange: string, symbol: string) {
   try {
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
       body: { 
         exchange,
         symbol,
@@ -182,7 +157,7 @@ export async function fetchOrders(exchange: string, symbol: string) {
 
 export async function fetchOpenOrders(exchange: string, symbol: string) {
   try {
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
       body: { 
         exchange,
         symbol,

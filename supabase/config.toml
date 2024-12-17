@@ -1,15 +1,4 @@
 project_id = "pojfmdxsoqfxfzkujwah"
-[functions.kraken-proxy]
-verify_jwt = false
-[functions.coinbase-proxy]
-verify_jwt = false
-[functions.ccxt-proxy]
-verify_jwt = false
-[functions.uniswap-proxy]
-verify_jwt = false
-[functions.raydium-proxy]
-verify_jwt = false
-[functions.jupiter-proxy]
-verify_jwt = false
-[functions.solana-proxy]
+
+[functions.bybit-proxy]
 verify_jwt = false
