@@ -24,11 +24,18 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        rokcat: {
+          purple: "#9b87f5",
+          "purple-dark": "#7E69AB",
+          "purple-darker": "#1A1F2C",
+          "purple-light": "#D6BCFA",
+          gray: "#403E43",
+        },
         trading: {
           blue: "#0066FF",
           green: "#00C853",
           red: "#FF3D00",
-          gray: "#1E2026",
+          gray: "#1A1F2C",
           "gray-light": "#2B2F36",
         },
         primary: {

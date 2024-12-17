@@ -9,7 +9,6 @@ export default function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is already logged in
     supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         navigate("/");
@@ -18,9 +17,11 @@ export default function Login() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-trading-gray-light flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-6 bg-trading-gray">
-        <h1 className="text-2xl font-bold mb-6 text-center">Trading Dashboard Login</h1>
+    <div className="min-h-screen bg-rokcat-purple-darker flex items-center justify-center p-4 bg-gradient-to-br from-rokcat-purple-darker to-rokcat-gray">
+      <Card className="w-full max-w-md p-8 bg-white/5 backdrop-blur-lg border border-rokcat-purple/20 shadow-2xl">
+        <h1 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
+          Trading Dashboard
+        </h1>
         <Auth
           supabaseClient={supabase}
           appearance={{
@@ -28,11 +29,36 @@ export default function Login() {
             variables: {
               default: {
                 colors: {
-                  brand: '#0ea5e9',
-                  brandAccent: '#0284c7',
+                  brand: '#9b87f5',
+                  brandAccent: '#7E69AB',
+                  brandButtonText: 'white',
+                  defaultButtonBackground: '#403E43',
+                  defaultButtonBackgroundHover: '#4a484d',
+                  inputBackground: 'rgba(255, 255, 255, 0.05)',
+                  inputBorder: '#7E69AB',
+                  inputBorderHover: '#9b87f5',
+                  inputBorderFocus: '#9b87f5',
                 }
               }
-            }
+            },
+            style: {
+              button: {
+                borderRadius: '8px',
+                height: '42px',
+                fontSize: '16px',
+              },
+              input: {
+                borderRadius: '8px',
+                height: '42px',
+                fontSize: '16px',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                color: 'white',
+              },
+              label: {
+                color: '#D6BCFA',
+                fontSize: '14px',
+              },
+            },
           }}
           providers={[]}
         />
