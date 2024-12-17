@@ -1,4 +1,5 @@
 import { Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -19,6 +20,7 @@ interface SymbolSelectorProps {
 }
 
 export function SymbolSelector({ selectedSymbol, onSymbolChange }: SymbolSelectorProps) {
+  const navigate = useNavigate();
   const estimatedTimes = {
     "BTC/USDC": "10-60 minutes",
     "ETH/USDC": "5-10 minutes",
@@ -28,13 +30,18 @@ export function SymbolSelector({ selectedSymbol, onSymbolChange }: SymbolSelecto
     "XRP/USDC": "3-5 seconds"
   };
 
+  const handleSymbolChange = (value: string) => {
+    onSymbolChange(value);
+    navigate(`/trading/${encodeURIComponent(value)}`);
+  };
+
   return (
     <div>
       <label className="text-sm text-gray-400 mb-2 block">Symbol</label>
       <div className="flex items-center gap-2">
         <Select
           value={selectedSymbol}
-          onValueChange={onSymbolChange}
+          onValueChange={handleSymbolChange}
         >
           <SelectTrigger className="bg-trading-gray-light border-trading-gray-light flex-1">
             <SelectValue placeholder="Select symbol" />
