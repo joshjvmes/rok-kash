@@ -29,16 +29,29 @@ serve(async (req) => {
       timeout: 30000, // Increase timeout to 30 seconds
     })
 
-    // Add API keys if available
-    const apiKey = Deno.env.get(`${exchangeId.toUpperCase()}_API_KEY`)
-    const apiSecret = Deno.env.get(`${exchangeId.toUpperCase()}_API_SECRET`)
-    
-    if (apiKey && apiSecret) {
-      console.log(`Configuring ${exchangeId} with API credentials`)
-      exchange.apiKey = apiKey
-      exchange.secret = apiSecret
-    } else {
-      console.log(`No API credentials found for ${exchangeId}`)
+    // Add API keys based on the exchange
+    if (exchangeId === 'coinbase') {
+      const apiKey = Deno.env.get('COINBASE_API_KEY')
+      const apiSecret = Deno.env.get('COINBASE_SECRET')
+      
+      if (apiKey && apiSecret) {
+        console.log('Configuring Coinbase with API credentials')
+        exchange.apiKey = apiKey
+        exchange.secret = apiSecret
+      } else {
+        console.log('No Coinbase API credentials found')
+      }
+    } else if (exchangeId === 'kraken') {
+      const apiKey = Deno.env.get('KRAKEN_API_KEY')
+      const apiSecret = Deno.env.get('KRAKEN_API_SECRET')
+      
+      if (apiKey && apiSecret) {
+        console.log('Configuring Kraken with API credentials')
+        exchange.apiKey = apiKey
+        exchange.secret = apiSecret
+      } else {
+        console.log('No Kraken API credentials found')
+      }
     }
 
     let result
@@ -59,13 +72,13 @@ serve(async (req) => {
         result = await exchange.fetchMarkets()
         break
       case 'fetchBalance':
-        if (!apiKey || !apiSecret) {
+        if (!exchange.apiKey || !exchange.secret) {
           throw new Error(`API credentials not configured for ${exchangeId}`)
         }
         result = await exchange.fetchBalance()
         break
       case 'createOrder':
-        if (!apiKey || !apiSecret) {
+        if (!exchange.apiKey || !exchange.secret) {
           throw new Error(`API credentials not configured for ${exchangeId}`)
         }
         result = await exchange.createOrder(
@@ -77,19 +90,19 @@ serve(async (req) => {
         )
         break
       case 'cancelOrder':
-        if (!apiKey || !apiSecret) {
+        if (!exchange.apiKey || !exchange.secret) {
           throw new Error(`API credentials not configured for ${exchangeId}`)
         }
         result = await exchange.cancelOrder(params.orderId, symbol)
         break
       case 'fetchOrders':
-        if (!apiKey || !apiSecret) {
+        if (!exchange.apiKey || !exchange.secret) {
           throw new Error(`API credentials not configured for ${exchangeId}`)
         }
         result = await exchange.fetchOrders(symbol)
         break
       case 'fetchOpenOrders':
-        if (!apiKey || !apiSecret) {
+        if (!exchange.apiKey || !exchange.secret) {
           throw new Error(`API credentials not configured for ${exchangeId}`)
         }
         result = await exchange.fetchOpenOrders(symbol)
