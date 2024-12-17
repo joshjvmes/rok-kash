@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 
-const SYMBOLS = ['BTC/USD', 'ETH/USD', 'SOL/USD', 'AVAX/USD'];
+const SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
 const EXCHANGES = ['coinbase', 'kraken', 'bybit'];
 
 const Index = () => {
