@@ -11,7 +11,7 @@ const REFRESH_INTERVAL = 10000; // 10 seconds
 const Index = () => {
   const { data: prices = [], isLoading: pricesLoading } = useQuery<PriceCardProps[]>({
     queryKey: ['prices'],
-    queryFn: () => fetchPrices(SYMBOLS),
+    queryFn: fetchPrices.bind(null, SYMBOLS),
     refetchInterval: REFRESH_INTERVAL,
   });
 

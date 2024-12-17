@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { PriceCardProps } from "@/components/PriceCard";
 
 interface CoinbasePrice {
   data: {
@@ -41,37 +42,36 @@ async function fetchCoinbasePrice(symbol: string) {
   }
 }
 
-export async function fetchPrices(symbols: string[]) {
+export async function fetchPrices(symbols: string[]): Promise<PriceCardProps[]> {
   try {
-    const prices = await Promise.all(
-      symbols.flatMap(async (symbol) => {
-        const [coinbasePrice, krakenPrice] = await Promise.all([
-          fetchCoinbasePrice(symbol),
-          fetchKrakenPrice(symbol)
-        ]);
+    const pricesPromises = symbols.flatMap(async (symbol) => {
+      const [coinbasePrice, krakenPrice] = await Promise.all([
+        fetchCoinbasePrice(symbol),
+        fetchKrakenPrice(symbol)
+      ]);
 
-        const results = [];
-        if (coinbasePrice) {
-          results.push({
-            symbol,
-            price: coinbasePrice.toFixed(2),
-            change: (Math.random() * 4 - 2).toFixed(2), // Simulated for demo
-            exchange: 'Coinbase'
-          });
-        }
-        if (krakenPrice) {
-          results.push({
-            symbol,
-            price: krakenPrice.toFixed(2),
-            change: (Math.random() * 4 - 2).toFixed(2), // Simulated for demo
-            exchange: 'Kraken'
-          });
-        }
-        return results;
-      }).flat()
-    );
+      const results: PriceCardProps[] = [];
+      if (coinbasePrice) {
+        results.push({
+          symbol,
+          price: coinbasePrice.toFixed(2),
+          change: parseFloat((Math.random() * 4 - 2).toFixed(2)), // Simulated for demo
+          exchange: 'Coinbase'
+        });
+      }
+      if (krakenPrice) {
+        results.push({
+          symbol,
+          price: krakenPrice.toFixed(2),
+          change: parseFloat((Math.random() * 4 - 2).toFixed(2)), // Simulated for demo
+          exchange: 'Kraken'
+        });
+      }
+      return results;
+    });
 
-    return prices.filter(price => price !== null);
+    const prices = await Promise.all(pricesPromises);
+    return prices.flat();
   } catch (error) {
     console.error('Error fetching prices:', error);
     return [];
