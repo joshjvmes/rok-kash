@@ -72,7 +72,22 @@ serve(async (req) => {
       timeout: 30000,
     })
 
-    configureExchange(exchange, exchangeId)
+    try {
+      configureExchange(exchange, exchangeId)
+    } catch (error) {
+      console.error(`Error configuring exchange ${exchangeId}:`, error)
+      return new Response(
+        JSON.stringify({
+          error: true,
+          message: `Exchange configuration error: ${error.message}`,
+          details: 'API credentials may be invalid or missing'
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
 
     const result = await executeExchangeMethod(exchange, method, symbol, params)
     
