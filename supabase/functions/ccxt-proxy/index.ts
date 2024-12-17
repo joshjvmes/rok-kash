@@ -17,17 +17,38 @@ serve(async (req) => {
     // Parse and validate request body
     let requestBody
     try {
-      requestBody = await req.json()
-      console.log('Received request:', JSON.stringify(requestBody))
+      const text = await req.text()
+      console.log('Raw request body:', text)
+      requestBody = JSON.parse(text)
+      console.log('Parsed request:', JSON.stringify(requestBody))
     } catch (error) {
       console.error('Error parsing request body:', error)
-      throw new Error('Invalid JSON in request body')
+      return new Response(
+        JSON.stringify({
+          error: true,
+          message: 'Invalid JSON in request body',
+          details: error.message
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     const { exchange: exchangeId, symbol, method, params = {} } = requestBody
     
     if (!exchangeId || !method) {
-      throw new Error('Missing required parameters: exchange and method are required')
+      return new Response(
+        JSON.stringify({
+          error: true,
+          message: 'Missing required parameters: exchange and method are required'
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
     
     console.log(`Processing ${method} request for ${symbol || 'no symbol'} on ${exchangeId}`)
@@ -35,7 +56,16 @@ serve(async (req) => {
     // Initialize the exchange with proper configuration
     const exchangeClass = ccxt[exchangeId]
     if (!exchangeClass) {
-      throw new Error(`Unsupported exchange: ${exchangeId}`)
+      return new Response(
+        JSON.stringify({
+          error: true,
+          message: `Unsupported exchange: ${exchangeId}`
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     const exchange = new exchangeClass({
@@ -59,6 +89,16 @@ serve(async (req) => {
         }
       } else {
         console.warn('No Coinbase API credentials found')
+        return new Response(
+          JSON.stringify({
+            error: true,
+            message: 'Coinbase API credentials not configured'
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
       }
     } else if (exchangeId === 'kraken') {
       const apiKey = Deno.env.get('KRAKEN_API_KEY')
@@ -70,6 +110,16 @@ serve(async (req) => {
         exchange.secret = apiSecret
       } else {
         console.warn('No Kraken API credentials found')
+        return new Response(
+          JSON.stringify({
+            error: true,
+            message: 'Kraken API credentials not configured'
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
       }
     }
 
@@ -77,19 +127,27 @@ serve(async (req) => {
     try {
       switch (method) {
         case 'fetchTicker':
-          if (!symbol) throw new Error('Symbol is required for fetchTicker')
+          if (!symbol) {
+            throw new Error('Symbol is required for fetchTicker')
+          }
           result = await exchange.fetchTicker(symbol)
           break
         case 'fetchOrderBook':
-          if (!symbol) throw new Error('Symbol is required for fetchOrderBook')
+          if (!symbol) {
+            throw new Error('Symbol is required for fetchOrderBook')
+          }
           result = await exchange.fetchOrderBook(symbol, params.limit || 20)
           break
         case 'fetchOHLCV':
-          if (!symbol) throw new Error('Symbol is required for fetchOHLCV')
+          if (!symbol) {
+            throw new Error('Symbol is required for fetchOHLCV')
+          }
           result = await exchange.fetchOHLCV(symbol, params.timeframe || '1m')
           break
         case 'fetchTrades':
-          if (!symbol) throw new Error('Symbol is required for fetchTrades')
+          if (!symbol) {
+            throw new Error('Symbol is required for fetchTrades')
+          }
           result = await exchange.fetchTrades(symbol, undefined, params.limit || 50)
           console.log(`Successfully fetched ${result?.length || 0} trades for ${symbol}`)
           break
@@ -97,15 +155,9 @@ serve(async (req) => {
           result = await exchange.fetchMarkets()
           break
         case 'fetchBalance':
-          if (!exchange.apiKey || !exchange.secret) {
-            throw new Error(`API credentials not configured for ${exchangeId}`)
-          }
           result = await exchange.fetchBalance()
           break
         case 'createOrder':
-          if (!exchange.apiKey || !exchange.secret) {
-            throw new Error(`API credentials not configured for ${exchangeId}`)
-          }
           if (!symbol || !params.side || !params.amount) {
             throw new Error('Missing required order parameters')
           }
@@ -118,26 +170,21 @@ serve(async (req) => {
           )
           break
         case 'cancelOrder':
-          if (!exchange.apiKey || !exchange.secret) {
-            throw new Error(`API credentials not configured for ${exchangeId}`)
-          }
           if (!params.orderId || !symbol) {
             throw new Error('Order ID and symbol are required for cancelOrder')
           }
           result = await exchange.cancelOrder(params.orderId, symbol)
           break
         case 'fetchOrders':
-          if (!exchange.apiKey || !exchange.secret) {
-            throw new Error(`API credentials not configured for ${exchangeId}`)
+          if (!symbol) {
+            throw new Error('Symbol is required for fetchOrders')
           }
-          if (!symbol) throw new Error('Symbol is required for fetchOrders')
           result = await exchange.fetchOrders(symbol)
           break
         case 'fetchOpenOrders':
-          if (!exchange.apiKey || !exchange.secret) {
-            throw new Error(`API credentials not configured for ${exchangeId}`)
+          if (!symbol) {
+            throw new Error('Symbol is required for fetchOpenOrders')
           }
-          if (!symbol) throw new Error('Symbol is required for fetchOpenOrders')
           result = await exchange.fetchOpenOrders(symbol)
           break
         default:
@@ -146,12 +193,25 @@ serve(async (req) => {
 
       console.log(`Successfully processed ${method} request for ${symbol || 'no symbol'} on ${exchangeId}`)
       
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify(result),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     } catch (error) {
       console.error(`Error executing ${method}:`, error)
-      throw error
+      return new Response(
+        JSON.stringify({
+          error: true,
+          message: `Error executing ${method}`,
+          details: error.message
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
   } catch (error) {
     console.error('Error in ccxt-proxy:', error)
