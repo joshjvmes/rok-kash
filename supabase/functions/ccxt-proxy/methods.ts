@@ -28,6 +28,11 @@ export async function executeExchangeMethod(
     case 'fetchMarkets':
       return await exchange.fetchMarkets()
 
+    case 'fetchMarket':
+      if (!symbol) throw new Error('Symbol is required for fetchMarket')
+      const markets = await exchange.fetchMarkets()
+      return markets.find(market => market.symbol === symbol)
+
     case 'fetchBalance':
       return await exchange.fetchBalance()
 

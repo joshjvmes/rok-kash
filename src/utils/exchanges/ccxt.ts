@@ -114,3 +114,21 @@ export async function fetchBalance(exchange: string) {
     throw error;
   }
 }
+
+export async function fetchMarketStructure(exchange: string, symbol: string) {
+  try {
+    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+      body: { exchange, symbol, method: 'fetchMarket' }
+    });
+
+    if (error) {
+      console.error(`Error fetching ${exchange} market structure:`, error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error(`Error fetching ${exchange} market structure:`, error);
+    throw error;
+  }
+}
