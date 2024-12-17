@@ -17,6 +17,7 @@ export function QuickTrade() {
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedExchange, setSelectedExchange] = useState("bybit");
+  const [selectedSymbol, setSelectedSymbol] = useState("BTC/USD");
   const { toast } = useToast();
 
   const handleTrade = async (side: 'buy' | 'sell') => {
@@ -33,7 +34,7 @@ export function QuickTrade() {
     try {
       const order = await createOrder(
         selectedExchange,
-        "BTC/USD",
+        selectedSymbol,
         "market",
         side,
         parseFloat(amount)
@@ -42,7 +43,7 @@ export function QuickTrade() {
       if (order) {
         toast({
           title: "Trade Executed",
-          description: `Successfully ${side} ${amount} USD of BTC on ${selectedExchange}`,
+          description: `Successfully ${side} ${amount} USD of ${selectedSymbol.split('/')[0]} on ${selectedExchange}`,
         });
         setAmount("");
       }
@@ -75,6 +76,23 @@ export function QuickTrade() {
               <SelectItem value="bybit">Bybit</SelectItem>
               <SelectItem value="coinbase">Coinbase</SelectItem>
               <SelectItem value="kraken">Kraken</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-sm text-gray-400 mb-2 block">Symbol</label>
+          <Select
+            value={selectedSymbol}
+            onValueChange={setSelectedSymbol}
+          >
+            <SelectTrigger className="bg-trading-gray-light border-trading-gray-light">
+              <SelectValue placeholder="Select symbol" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="BTC/USD">BTC/USD</SelectItem>
+              <SelectItem value="ETH/USD">ETH/USD</SelectItem>
+              <SelectItem value="SOL/USD">SOL/USD</SelectItem>
+              <SelectItem value="AVAX/USD">AVAX/USD</SelectItem>
             </SelectContent>
           </Select>
         </div>

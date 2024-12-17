@@ -1,174 +1,116 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export interface CCXTOrder {
-  id: string;
-  symbol: string;
-  type: string;
-  side: 'buy' | 'sell';
-  price: number;
-  amount: number;
-  status: string;
-}
-
 export async function fetchCCXTPrice(exchange: string, symbol: string) {
   try {
-    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
-      body: { 
-        symbol,
-        method: 'fetchTicker'
-      }
+    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+      body: { exchange, symbol, method: 'fetchTicker' }
     });
 
-    if (error) throw error;
-    return parseFloat(data.last);
+    if (error) {
+      console.error(`Error fetching ${exchange} price:`, error);
+      throw error;
+    }
+
+    return data?.last || null;
   } catch (error) {
     console.error(`Error fetching ${exchange} price:`, error);
-    return null;
+    throw error;
   }
 }
 
 export async function fetchOrderBook(exchange: string, symbol: string) {
   try {
-    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
-      body: { 
-        symbol,
-        method: 'fetchOrderBook'
-      }
+    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+      body: { exchange, symbol, method: 'fetchOrderBook' }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error(`Error fetching ${exchange} order book:`, error);
+      throw error;
+    }
+
     return data;
   } catch (error) {
     console.error(`Error fetching ${exchange} order book:`, error);
-    return null;
+    throw error;
   }
 }
 
 export async function fetchTrades(exchange: string, symbol: string) {
   try {
-    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
-      body: { 
-        symbol,
-        method: 'fetchTrades'
-      }
+    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+      body: { exchange, symbol, method: 'fetchTrades' }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error(`Error fetching ${exchange} trades:`, error);
+      throw error;
+    }
+
     return data;
   } catch (error) {
     console.error(`Error fetching ${exchange} trades:`, error);
-    return null;
-  }
-}
-
-export async function fetchBalance(exchange: string) {
-  try {
-    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
-      body: { 
-        method: 'fetchBalance'
-      }
-    });
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error(`Error fetching ${exchange} balance:`, error);
-    return null;
-  }
-}
-
-export async function fetchMarkets(exchange: string) {
-  try {
-    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
-      body: { 
-        method: 'fetchMarkets'
-      }
-    });
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error(`Error fetching ${exchange} markets:`, error);
-    return null;
+    throw error;
   }
 }
 
 export async function createOrder(
   exchange: string,
   symbol: string,
-  type: string,
+  type: 'market' | 'limit',
   side: 'buy' | 'sell',
   amount: number,
   price?: number
 ) {
   try {
-    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
-      body: { 
+    console.log(`Creating ${side} order on ${exchange} for ${symbol}`);
+    
+    const params: any = {
+      type,
+      side,
+      amount,
+    };
+
+    if (type === 'limit' && price) {
+      params.price = price;
+    }
+
+    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+      body: {
+        exchange,
         symbol,
         method: 'createOrder',
-        params: { type, side, amount, price }
+        params
       }
     });
 
-    if (error) throw error;
-    return data as CCXTOrder;
-  } catch (error) {
-    console.error(`Error creating ${exchange} order:`, error);
-    return null;
-  }
-}
+    if (error) {
+      console.error(`Error creating order on ${exchange}:`, error);
+      throw error;
+    }
 
-export async function cancelOrder(exchange: string, orderId: string, symbol: string) {
-  try {
-    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
-      body: { 
-        exchange,
-        symbol,
-        method: 'cancelOrder',
-        params: { orderId }
-      }
-    });
-
-    if (error) throw error;
+    console.log(`Successfully created order on ${exchange}:`, data);
     return data;
   } catch (error) {
-    console.error(`Error canceling ${exchange} order:`, error);
-    return null;
+    console.error(`Error creating order on ${exchange}:`, error);
+    throw error;
   }
 }
 
-export async function fetchOrders(exchange: string, symbol: string) {
+export async function fetchBalance(exchange: string) {
   try {
-    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
-      body: { 
-        exchange,
-        symbol,
-        method: 'fetchOrders'
-      }
+    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+      body: { exchange, method: 'fetchBalance' }
     });
 
-    if (error) throw error;
-    return data as CCXTOrder[];
-  } catch (error) {
-    console.error(`Error fetching ${exchange} orders:`, error);
-    return null;
-  }
-}
+    if (error) {
+      console.error(`Error fetching ${exchange} balance:`, error);
+      throw error;
+    }
 
-export async function fetchOpenOrders(exchange: string, symbol: string) {
-  try {
-    const { data, error } = await supabase.functions.invoke(`${exchange}-proxy`, {
-      body: { 
-        exchange,
-        symbol,
-        method: 'fetchOpenOrders'
-      }
-    });
-
-    if (error) throw error;
-    return data as CCXTOrder[];
+    return data;
   } catch (error) {
-    console.error(`Error fetching ${exchange} open orders:`, error);
-    return null;
+    console.error(`Error fetching ${exchange} balance:`, error);
+    throw error;
   }
 }
