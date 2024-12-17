@@ -1,58 +1,83 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+/**
+ * Coinbase Edge Function Proxy
+ * Handles Coinbase API requests with proper error handling and rate limiting
+ */
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { Client } from 'npm:@coinbase/coinbase-sdk';
+
+const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
+const MAX_REQUESTS = 30; // Maximum requests per minute
+
+// Rate limiting state
+const requestTimestamps: number[] = [];
+
+interface RequestBody {
+  symbol: string;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
   try {
-    const { symbol } = await req.json()
-    const [base] = symbol.split('/')
-    
-    console.log(`Fetching Coinbase price for ${base}-USD`)
-    
-    const apiKey = Deno.env.get('COINBASE_API_KEY')
-    const apiSecret = Deno.env.get('COINBASE_SECRET')
-
-    if (!apiKey || !apiSecret) {
-      console.error('Missing Coinbase API credentials')
-      throw new Error('Coinbase API credentials are not configured')
+    // Rate limiting check
+    const now = Date.now();
+    requestTimestamps.push(now);
+    const windowStart = now - RATE_LIMIT_WINDOW;
+    while (requestTimestamps.length > 0 && requestTimestamps[0] < windowStart) {
+      requestTimestamps.shift();
     }
 
-    console.log('Using Coinbase API credentials to fetch price')
+    if (requestTimestamps.length > MAX_REQUESTS) {
+      throw new Error('Rate limit exceeded');
+    }
 
-    const response = await fetch(`https://api.coinbase.com/v2/prices/${base}-USD/spot`, {
+    // Parse request body
+    const { symbol } = await req.json() as RequestBody;
+
+    if (!symbol) {
+      throw new Error('Symbol is required');
+    }
+
+    // Initialize Coinbase client
+    const client = new Client({
+      apiKey: Deno.env.get('COINBASE_API_KEY') || '',
+      apiSecret: Deno.env.get('COINBASE_SECRET') || '',
+    });
+
+    if (!client) {
+      throw new Error('Failed to initialize Coinbase client');
+    }
+
+    // Normalize symbol format (e.g., "BTC/USD" to "BTC-USD")
+    const normalizedSymbol = symbol.replace('/', '-');
+
+    // Make API request
+    const response = await client.rest.exchange.listProducts();
+
+    // Validate response
+    if (!response || response.error) {
+      throw new Error(`Coinbase API error: ${response?.error || 'Unknown error'}`);
+    }
+
+    return new Response(JSON.stringify(response), {
       headers: {
-        'CB-ACCESS-KEY': apiKey,
-        'CB-ACCESS-SIGN': apiSecret,
-        'CB-VERSION': '2021-06-23',
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`Coinbase API error: ${response.status} - ${errorText}`)
-      throw new Error(`Coinbase API error: ${response.statusText}`)
-    }
-
-    const data = await response.json()
-    console.log('Successfully fetched Coinbase price:', data)
-
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
   } catch (error) {
-    console.error('Error in coinbase-proxy:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    console.error('Coinbase proxy error:', error);
+
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Internal server error',
+      }),
+      {
+        status: error instanceof Error && error.message === 'Rate limit exceeded' ? 429 : 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
   }
-})
+});
