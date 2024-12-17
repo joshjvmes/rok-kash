@@ -8,20 +8,12 @@ export interface ExchangeConfig {
 
 function sanitizeApiKey(key: string | undefined): string | undefined {
   if (!key) return undefined;
-  
-  // Remove any whitespace, newlines, and special characters
-  return key.trim()
-    .replace(/[\r\n]+/g, '') // Remove newlines
-    .replace(/[^\w\-]/g, ''); // Remove special characters except alphanumeric and dash
+  return key.trim().replace(/[\r\n]+/g, '').replace(/[^\w\-]/g, '');
 }
 
 function sanitizeSecret(secret: string | undefined): string | undefined {
   if (!secret) return undefined;
-  
-  // Remove whitespace and newlines but preserve base64/hex characters
-  return secret.trim()
-    .replace(/[\r\n]+/g, '') // Remove newlines
-    .replace(/[^A-Za-z0-9+/=\-_]/g, ''); // Keep valid base64/hex chars
+  return secret.trim().replace(/[\r\n]+/g, '').replace(/[^A-Za-z0-9+/=\-_]/g, '');
 }
 
 export function configureExchange(exchange: Exchange, exchangeId: string): void {

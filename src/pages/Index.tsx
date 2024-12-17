@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 
 const SYMBOLS = ['BTC/USD', 'ETH/USD', 'SOL/USD', 'AVAX/USD'];
-const EXCHANGES = ['coinbase', 'kraken'];
+const EXCHANGES = ['coinbase', 'kraken', 'bybit'];
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState(SYMBOLS[0]);
@@ -23,8 +23,8 @@ const Index = () => {
   } = useQuery<PriceCardProps[]>({
     queryKey: ['prices'],
     queryFn: fetchPrices.bind(null, SYMBOLS),
-    enabled: true, // Initial load
-    refetchInterval: false, // Disable auto-refresh
+    enabled: true,
+    refetchInterval: false,
   });
 
   const { 
@@ -34,8 +34,8 @@ const Index = () => {
   } = useQuery({
     queryKey: ['arbitrage'],
     queryFn: findArbitrageOpportunities,
-    enabled: true, // Initial load
-    refetchInterval: false, // Disable auto-refresh
+    enabled: true,
+    refetchInterval: false,
   });
 
   const handleRefresh = async () => {
@@ -86,14 +86,16 @@ const Index = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <OrderBook exchange="coinbase" symbol={selectedSymbol} />
               <OrderBook exchange="kraken" symbol={selectedSymbol} />
+              <OrderBook exchange="bybit" symbol={selectedSymbol} />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <TradingHistory exchange="coinbase" symbol={selectedSymbol} />
               <TradingHistory exchange="kraken" symbol={selectedSymbol} />
+              <TradingHistory exchange="bybit" symbol={selectedSymbol} />
             </div>
 
             <h2 className="text-xl font-semibold">Arbitrage Opportunities</h2>

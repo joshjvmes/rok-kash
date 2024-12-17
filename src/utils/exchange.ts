@@ -1,5 +1,6 @@
 import { fetchCoinbasePrice } from "./exchanges/coinbase";
 import { fetchKrakenPrice } from "./exchanges/kraken";
+import { fetchCCXTPrice } from "./exchanges/ccxt";
 import type { PriceCardProps } from "./types/exchange";
 
 export { findArbitrageOpportunities } from "./exchanges/arbitrage";
@@ -7,9 +8,10 @@ export { findArbitrageOpportunities } from "./exchanges/arbitrage";
 export async function fetchPrices(symbols: string[]): Promise<PriceCardProps[]> {
   try {
     const pricesPromises = symbols.flatMap(async (symbol) => {
-      const [coinbasePrice, krakenPrice] = await Promise.all([
+      const [coinbasePrice, krakenPrice, bybitPrice] = await Promise.all([
         fetchCoinbasePrice(symbol),
-        fetchKrakenPrice(symbol)
+        fetchKrakenPrice(symbol),
+        fetchCCXTPrice('bybit', symbol)
       ]);
 
       const results: PriceCardProps[] = [];
@@ -27,6 +29,14 @@ export async function fetchPrices(symbols: string[]): Promise<PriceCardProps[]> 
           price: krakenPrice.toFixed(2),
           change: parseFloat((Math.random() * 4 - 2).toFixed(2)), // Simulated for demo
           exchange: 'Kraken'
+        });
+      }
+      if (bybitPrice) {
+        results.push({
+          symbol,
+          price: bybitPrice.toFixed(2),
+          change: parseFloat((Math.random() * 4 - 2).toFixed(2)), // Simulated for demo
+          exchange: 'Bybit'
         });
       }
       return results;
