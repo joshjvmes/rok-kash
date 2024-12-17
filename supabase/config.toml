@@ -7,3 +7,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.uniswap-proxy]
 verify_jwt = false
+[functions.raydium-proxy]
+verify_jwt = false
