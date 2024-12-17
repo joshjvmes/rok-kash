@@ -3,10 +3,13 @@ import { PriceCard, PriceCardProps } from "@/components/PriceCard";
 import { ArbitrageOpportunity } from "@/components/ArbitrageOpportunity";
 import { QuickTrade } from "@/components/QuickTrade";
 import { OrderBook } from "@/components/OrderBook";
+import { TradingHistory } from "@/components/TradingHistory";
+import { ExchangeBalance } from "@/components/ExchangeBalance";
 import { fetchPrices, findArbitrageOpportunities } from "@/utils/exchange";
 import { useQuery } from "@tanstack/react-query";
 
 const SYMBOLS = ['BTC/USD', 'ETH/USD', 'SOL/USD', 'AVAX/USD'];
+const EXCHANGES = ['coinbase', 'kraken'];
 const REFRESH_INTERVAL = 10000; // 10 seconds
 
 const Index = () => {
@@ -58,6 +61,11 @@ const Index = () => {
               <OrderBook exchange="kraken" symbol={selectedSymbol} />
             </div>
             
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TradingHistory exchange="coinbase" symbol={selectedSymbol} />
+              <TradingHistory exchange="kraken" symbol={selectedSymbol} />
+            </div>
+
             <h2 className="text-xl font-semibold">Arbitrage Opportunities</h2>
             {arbitrageOpps.map((opp) => (
               <ArbitrageOpportunity
@@ -69,8 +77,11 @@ const Index = () => {
               <p className="text-gray-500">No arbitrage opportunities found</p>
             )}
           </div>
-          <div>
+          <div className="space-y-4">
             <QuickTrade />
+            {EXCHANGES.map((exchange) => (
+              <ExchangeBalance key={exchange} exchange={exchange} />
+            ))}
           </div>
         </div>
       </div>
