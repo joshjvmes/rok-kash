@@ -8,27 +8,34 @@ import { ExchangeBalance } from "@/components/ExchangeBalance";
 import { fetchPrices, findArbitrageOpportunities } from "@/utils/exchange";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, LogOut } from "lucide-react";
+import { RefreshCw, LogOut, Pause, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
 const EXCHANGES = ['bybit', 'coinbase', 'kraken'];
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState(SYMBOLS[0]);
+  const [isPaused, setIsPaused] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: prices = [], isLoading, refetch } = useQuery({
     queryKey: ['prices'],
     queryFn: fetchPrices,
+    enabled: !isPaused,
+    refetchInterval: isPaused ? false : 5000,
   });
 
   const { data: arbitrageOpportunities = [] } = useQuery({
     queryKey: ['arbitrageOpportunities', selectedSymbol],
     queryFn: () => findArbitrageOpportunities(selectedSymbol),
+    enabled: !isPaused,
+    refetchInterval: isPaused ? false : 5000,
   });
 
   const handleLogout = async () => {
@@ -44,6 +51,23 @@ const Index = () => {
     await refetch();
   };
 
+  const togglePause = () => {
+    setIsPaused(!isPaused);
+    if (!isPaused) {
+      toast({
+        title: "API Requests Paused",
+        description: "All automatic data updates have been paused",
+      });
+    } else {
+      toast({
+        title: "API Requests Resumed",
+        description: "Data updates have been resumed",
+      });
+      // Force a refresh of all queries when resuming
+      queryClient.invalidateQueries();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-rokcat-purple-darker">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -52,6 +76,26 @@ const Index = () => {
             Trading Dashboard
           </h1>
           <div className="flex gap-4">
+            <Button
+              onClick={togglePause}
+              variant="outline"
+              size="sm"
+              className={`gap-2 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10 ${
+                isPaused ? 'bg-rokcat-purple/10' : ''
+              }`}
+            >
+              {isPaused ? (
+                <>
+                  <Play className="h-4 w-4" />
+                  Resume Updates
+                </>
+              ) : (
+                <>
+                  <Pause className="h-4 w-4" />
+                  Pause Updates
+                </>
+              )}
+            </Button>
             <Button
               onClick={handleRefresh}
               variant="outline"
