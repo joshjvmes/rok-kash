@@ -12,7 +12,7 @@ export function PriceCard({ symbol, price, change, exchange }: PriceCardProps) {
   const isPositive = change >= 0;
 
   return (
-    <Card className="p-4 bg-trading-gray hover:bg-trading-gray-light transition-colors">
+    <Card className="p-4 bg-trading-gray hover:bg-trading-gray-light transition-colors cursor-pointer">
       <div className="flex justify-between items-start">
         <div>
           <h3 className="text-sm text-gray-400">{exchange}</h3>

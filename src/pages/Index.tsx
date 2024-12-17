@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { PriceCard, PriceCardProps } from "@/components/PriceCard";
 import { ArbitrageOpportunity } from "@/components/ArbitrageOpportunity";
 import { QuickTrade } from "@/components/QuickTrade";
+import { OrderBook } from "@/components/OrderBook";
 import { fetchPrices, findArbitrageOpportunities } from "@/utils/exchange";
 import { useQuery } from "@tanstack/react-query";
 
@@ -9,6 +10,8 @@ const SYMBOLS = ['BTC/USD', 'ETH/USD', 'SOL/USD', 'AVAX/USD'];
 const REFRESH_INTERVAL = 10000; // 10 seconds
 
 const Index = () => {
+  const [selectedSymbol, setSelectedSymbol] = useState(SYMBOLS[0]);
+
   const { data: prices = [], isLoading: pricesLoading } = useQuery<PriceCardProps[]>({
     queryKey: ['prices'],
     queryFn: fetchPrices.bind(null, SYMBOLS),
@@ -33,18 +36,28 @@ const Index = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {prices.map((price) => (
-            <PriceCard 
+            <div 
               key={`${price.symbol}-${price.exchange}`}
-              symbol={price.symbol}
-              price={price.price}
-              change={price.change}
-              exchange={price.exchange}
-            />
+              onClick={() => setSelectedSymbol(price.symbol)}
+              className="cursor-pointer"
+            >
+              <PriceCard 
+                symbol={price.symbol}
+                price={price.price}
+                change={price.change}
+                exchange={price.exchange}
+              />
+            </div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <OrderBook exchange="coinbase" symbol={selectedSymbol} />
+              <OrderBook exchange="kraken" symbol={selectedSymbol} />
+            </div>
+            
             <h2 className="text-xl font-semibold">Arbitrage Opportunities</h2>
             {arbitrageOpps.map((opp) => (
               <ArbitrageOpportunity
