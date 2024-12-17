@@ -5,7 +5,7 @@ import type { PriceCardProps } from "./types/exchange";
 
 export { findArbitrageOpportunities } from "./exchanges/arbitrage";
 
-const DEFAULT_SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
+const DEFAULT_SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC', 'ADA/USDC', 'XRP/USDC'];
 
 export async function fetchPrices(): Promise<PriceCardProps[]> {
   try {
