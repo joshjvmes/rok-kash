@@ -18,23 +18,32 @@ serve(async (req) => {
     console.log(`Fetching Coinbase price for ${base}-USD`)
     
     const apiKey = Deno.env.get('COINBASE_API_KEY')
-    if (!apiKey) {
-      throw new Error('COINBASE_API_KEY is not set')
+    const apiSecret = Deno.env.get('COINBASE_SECRET')
+
+    if (!apiKey || !apiSecret) {
+      console.error('Missing Coinbase API credentials')
+      throw new Error('Coinbase API credentials are not configured')
     }
+
+    console.log('Using Coinbase API credentials to fetch price')
 
     const response = await fetch(`https://api.coinbase.com/v2/prices/${base}-USD/spot`, {
       headers: {
         'CB-ACCESS-KEY': apiKey,
+        'CB-ACCESS-SIGN': apiSecret,
+        'CB-VERSION': '2021-06-23',
         'Content-Type': 'application/json'
       }
     })
 
     if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`Coinbase API error: ${response.status} - ${errorText}`)
       throw new Error(`Coinbase API error: ${response.statusText}`)
     }
 
     const data = await response.json()
-    console.log('Successfully fetched Coinbase price')
+    console.log('Successfully fetched Coinbase price:', data)
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
