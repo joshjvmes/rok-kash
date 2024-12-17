@@ -9,7 +9,7 @@ interface TradingHistoryProps {
 }
 
 export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
-  const { data: trades = [], isLoading } = useQuery({
+  const { data: trades = [], isLoading, error } = useQuery({
     queryKey: ['trades', exchange, symbol],
     queryFn: () => fetchTrades(exchange, symbol),
     refetchInterval: 10000, // Refresh every 10 seconds
@@ -23,12 +23,22 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
     );
   }
 
+  if (error) {
+    return (
+      <Card className="p-4 bg-trading-gray">
+        <p className="text-sm text-red-400">Error loading trades</p>
+      </Card>
+    );
+  }
+
+  const validTrades = Array.isArray(trades) ? trades : [];
+
   return (
     <Card className="p-4 bg-trading-gray">
       <h3 className="text-lg font-semibold mb-4">Recent Trades - {symbol}</h3>
       <ScrollArea className="h-[300px]">
         <div className="space-y-2">
-          {trades.slice(0, 20).map((trade: any) => (
+          {validTrades.slice(0, 20).map((trade: any) => (
             <div
               key={trade.id || `${trade.timestamp}-${trade.price}`}
               className="flex justify-between text-sm border-b border-gray-700 pb-2"
@@ -43,6 +53,9 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
               </span>
             </div>
           ))}
+          {validTrades.length === 0 && (
+            <p className="text-sm text-gray-400">No trades available</p>
+          )}
         </div>
       </ScrollArea>
     </Card>

@@ -38,8 +38,14 @@ serve(async (req) => {
         console.log('Configuring Coinbase with API credentials')
         exchange.apiKey = apiKey
         exchange.secret = apiSecret
+        // Additional Coinbase-specific settings
+        exchange.options = {
+          ...exchange.options,
+          createMarketBuyOrderRequiresPrice: false,
+          version: 'v2',  // Use v2 API
+        }
       } else {
-        console.log('No Coinbase API credentials found')
+        console.warn('No Coinbase API credentials found')
       }
     } else if (exchangeId === 'kraken') {
       const apiKey = Deno.env.get('KRAKEN_API_KEY')
@@ -50,7 +56,7 @@ serve(async (req) => {
         exchange.apiKey = apiKey
         exchange.secret = apiSecret
       } else {
-        console.log('No Kraken API credentials found')
+        console.warn('No Kraken API credentials found')
       }
     }
 
@@ -66,7 +72,13 @@ serve(async (req) => {
         result = await exchange.fetchOHLCV(symbol, params.timeframe || '1m')
         break
       case 'fetchTrades':
-        result = await exchange.fetchTrades(symbol, undefined, params.limit || 50)
+        try {
+          result = await exchange.fetchTrades(symbol, undefined, params.limit || 50)
+          console.log(`Successfully fetched ${result?.length || 0} trades for ${symbol}`)
+        } catch (error) {
+          console.error(`Error fetching trades: ${error.message}`)
+          result = []
+        }
         break
       case 'fetchMarkets':
         result = await exchange.fetchMarkets()
