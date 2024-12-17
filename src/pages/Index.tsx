@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 const SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
+const EXCHANGES = ['bybit', 'coinbase', 'kraken'];
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState(SYMBOLS[0]);
@@ -82,7 +83,11 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-6">
             <QuickTrade />
-            <ExchangeBalance exchange="coinbase" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {EXCHANGES.map((exchange) => (
+                <ExchangeBalance key={exchange} exchange={exchange} />
+              ))}
+            </div>
           </div>
           <div className="space-y-6">
             <OrderBook exchange="coinbase" symbol={selectedSymbol} />
