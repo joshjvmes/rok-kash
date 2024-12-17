@@ -38,9 +38,15 @@ async function fetchKrakenPrice(symbol: string) {
 
 async function fetchCoinbasePrice(symbol: string) {
   try {
-    const [base] = symbol.split('/');
-    const response = await fetch(`https://api.coinbase.com/v2/prices/${base}-USD/spot`);
-    const data: CoinbasePrice = await response.json();
+    const { data, error } = await supabase.functions.invoke('coinbase-proxy', {
+      body: { symbol }
+    });
+
+    if (error) {
+      console.error('Error fetching Coinbase price:', error);
+      return null;
+    }
+
     return parseFloat(data.data.amount);
   } catch (error) {
     console.error('Error fetching Coinbase price:', error);
