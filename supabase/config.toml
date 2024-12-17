@@ -9,3 +9,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.raydium-proxy]
 verify_jwt = false
+[functions.jupiter-proxy]
+verify_jwt = false
