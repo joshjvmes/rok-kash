@@ -13,9 +13,9 @@ serve(async (req) => {
   }
 
   try {
-    const { exchange: exchangeId, symbol, method } = await req.json()
+    const { exchange: exchangeId, symbol, method, params = {} } = await req.json()
     
-    console.log(`Fetching ${method} for ${symbol} from ${exchangeId}`)
+    console.log(`Processing ${method} request for ${symbol} on ${exchangeId}`, params)
     
     // Initialize the exchange
     const exchangeClass = ccxt[exchangeId]
@@ -30,6 +30,36 @@ serve(async (req) => {
         break
       case 'fetchOrderBook':
         result = await exchange.fetchOrderBook(symbol)
+        break
+      case 'fetchOHLCV':
+        result = await exchange.fetchOHLCV(symbol, params.timeframe || '1m')
+        break
+      case 'fetchTrades':
+        result = await exchange.fetchTrades(symbol)
+        break
+      case 'fetchMarkets':
+        result = await exchange.fetchMarkets()
+        break
+      case 'fetchBalance':
+        result = await exchange.fetchBalance()
+        break
+      case 'createOrder':
+        result = await exchange.createOrder(
+          symbol,
+          params.type || 'limit',
+          params.side,
+          params.amount,
+          params.price
+        )
+        break
+      case 'cancelOrder':
+        result = await exchange.cancelOrder(params.orderId, symbol)
+        break
+      case 'fetchOrders':
+        result = await exchange.fetchOrders(symbol)
+        break
+      case 'fetchOpenOrders':
+        result = await exchange.fetchOpenOrders(symbol)
         break
       default:
         throw new Error(`Unsupported method: ${method}`)
