@@ -32,9 +32,13 @@ serve(async (req) => {
     // Add API keys if available
     const apiKey = Deno.env.get(`${exchangeId.toUpperCase()}_API_KEY`)
     const apiSecret = Deno.env.get(`${exchangeId.toUpperCase()}_API_SECRET`)
+    
     if (apiKey && apiSecret) {
+      console.log(`Configuring ${exchangeId} with API credentials`)
       exchange.apiKey = apiKey
       exchange.secret = apiSecret
+    } else {
+      console.log(`No API credentials found for ${exchangeId}`)
     }
 
     let result
