@@ -8,13 +8,18 @@ import { ExchangeBalance } from "@/components/ExchangeBalance";
 import { fetchPrices, findArbitrageOpportunities } from "@/utils/exchange";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
 const EXCHANGES = ['coinbase', 'kraken', 'bybit'];
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState(SYMBOLS[0]);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const { 
     data: prices = [], 
@@ -45,6 +50,15 @@ const Index = () => {
     ]);
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Logged out successfully",
+      description: "You have been logged out of your account",
+    });
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen bg-trading-gray-light p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -63,6 +77,15 @@ const Index = () => {
             >
               <RefreshCw className="h-4 w-4" />
               Refresh Data
+            </Button>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
             </Button>
           </div>
         </div>
