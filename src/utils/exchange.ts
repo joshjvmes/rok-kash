@@ -5,9 +5,11 @@ import type { PriceCardProps } from "./types/exchange";
 
 export { findArbitrageOpportunities } from "./exchanges/arbitrage";
 
-export async function fetchPrices(symbols: string[]): Promise<PriceCardProps[]> {
+const DEFAULT_SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
+
+export async function fetchPrices(): Promise<PriceCardProps[]> {
   try {
-    const pricesPromises = symbols.flatMap(async (symbol) => {
+    const pricesPromises = DEFAULT_SYMBOLS.flatMap(async (symbol) => {
       const [coinbasePrice, krakenPrice, bybitPrice] = await Promise.all([
         fetchCoinbasePrice(symbol),
         fetchKrakenPrice(symbol),

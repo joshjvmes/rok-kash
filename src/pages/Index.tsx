@@ -14,14 +14,13 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 const SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
-const EXCHANGES = ['coinbase', 'kraken', 'bybit'];
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState(SYMBOLS[0]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: prices = [], isLoading, refetch: refetchData } = useQuery({
+  const { data: prices = [], isLoading, refetch } = useQuery({
     queryKey: ['prices'],
     queryFn: fetchPrices,
   });
@@ -40,6 +39,10 @@ const Index = () => {
     navigate('/login');
   };
 
+  const handleRefresh = async () => {
+    await refetch();
+  };
+
   return (
     <div className="min-h-screen bg-rokcat-purple-darker">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -49,7 +52,7 @@ const Index = () => {
           </h1>
           <div className="flex gap-4">
             <Button
-              onClick={refetchData}
+              onClick={handleRefresh}
               variant="outline"
               size="sm"
               className="gap-2 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10"
