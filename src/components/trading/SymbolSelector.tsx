@@ -27,18 +27,18 @@ export function SymbolSelector({
 }: SymbolSelectorProps) {
   const navigate = useNavigate();
   const estimatedTimes = {
-    "BTC/USDC": "10-60 minutes",
-    "ETH/USDC": "5-10 minutes",
-    "SOL/USDC": "< 1 minute",
-    "AVAX/USDC": "< 1 minute",
-    "ADA/USDC": "5-10 minutes",
-    "XRP/USDC": "3-5 seconds",
-    "PEPE/USDC": "< 1 minute",
-    "SHI/USDC": "< 1 minute",
-    "BONK/USDC": "< 1 minute",
-    "FLOG/USDC": "< 1 minute",
-    "BTTC/USDC": "< 1 minute",
-    "MOG/USDC": "< 1 minute"
+    "BTC/USD": "10-60 minutes",
+    "ETH/USD": "5-10 minutes",
+    "SOL/USD": "< 1 minute",
+    "AVAX/USD": "< 1 minute",
+    "ADA/USD": "5-10 minutes",
+    "XRP/USD": "3-5 seconds",
+    "PEPE/USD": "< 1 minute",
+    "SHI/USD": "< 1 minute",
+    "BONK/USD": "< 1 minute",
+    "FLOG/USD": "< 1 minute",
+    "BTTC/USD": "< 1 minute",
+    "MOG/USD": "< 1 minute"
   };
 
   const handleSymbolChange = (value: string) => {
@@ -60,18 +60,18 @@ export function SymbolSelector({
             <SelectValue placeholder="Select symbol" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="BTC/USDC">BTC/USDC</SelectItem>
-            <SelectItem value="ETH/USDC">ETH/USDC</SelectItem>
-            <SelectItem value="SOL/USDC">SOL/USDC</SelectItem>
-            <SelectItem value="AVAX/USDC">AVAX/USDC</SelectItem>
-            <SelectItem value="ADA/USDC">ADA/USDC</SelectItem>
-            <SelectItem value="XRP/USDC">XRP/USDC</SelectItem>
-            <SelectItem value="PEPE/USDC">PEPE/USDC</SelectItem>
-            <SelectItem value="SHI/USDC">SHI/USDC</SelectItem>
-            <SelectItem value="BONK/USDC">BONK/USDC</SelectItem>
-            <SelectItem value="FLOG/USDC">FLOG/USDC</SelectItem>
-            <SelectItem value="BTTC/USDC">BTTC/USDC</SelectItem>
-            <SelectItem value="MOG/USDC">MOG/USDC</SelectItem>
+            <SelectItem value="BTC/USD">BTC/USD</SelectItem>
+            <SelectItem value="ETH/USD">ETH/USD</SelectItem>
+            <SelectItem value="SOL/USD">SOL/USD</SelectItem>
+            <SelectItem value="AVAX/USD">AVAX/USD</SelectItem>
+            <SelectItem value="ADA/USD">ADA/USD</SelectItem>
+            <SelectItem value="XRP/USD">XRP/USD</SelectItem>
+            <SelectItem value="PEPE/USD">PEPE/USD</SelectItem>
+            <SelectItem value="SHI/USD">SHI/USD</SelectItem>
+            <SelectItem value="BONK/USD">BONK/USD</SelectItem>
+            <SelectItem value="FLOG/USD">FLOG/USD</SelectItem>
+            <SelectItem value="BTTC/USD">BTTC/USD</SelectItem>
+            <SelectItem value="MOG/USD">MOG/USD</SelectItem>
           </SelectContent>
         </Select>
         <TooltipProvider>
