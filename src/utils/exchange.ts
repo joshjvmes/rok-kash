@@ -10,6 +10,7 @@ const DEFAULT_SYMBOLS = [
   'PEPE/USD', 'BONK/USD', 'MOG/USD',
   'AVAX/USD', 'ADA/USD', 'XRP/USD'
 ];
+
 const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit'];
 
 export async function fetchPrices(): Promise<PriceCardProps[]> {
@@ -43,8 +44,10 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
         });
       }
       if (bybitPrice) {
+        // For Bybit, display USDT in the symbol
+        const bybitSymbol = symbol.replace('/USD', '/USDT');
         results.push({
-          symbol,
+          symbol: bybitSymbol,
           price: bybitPrice.toFixed(2),
           change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Bybit'
@@ -57,7 +60,11 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
     // Sort the flattened array to group by symbol and maintain exchange order
     return prices.flat().sort((a, b) => {
       if (a.symbol !== b.symbol) {
-        return DEFAULT_SYMBOLS.indexOf(a.symbol) - DEFAULT_SYMBOLS.indexOf(b.symbol);
+        const aBase = a.symbol.split('/')[0];
+        const bBase = b.symbol.split('/')[0];
+        const aIndex = DEFAULT_SYMBOLS.findIndex(s => s.startsWith(aBase + '/'));
+        const bIndex = DEFAULT_SYMBOLS.findIndex(s => s.startsWith(bBase + '/'));
+        return aIndex - bIndex;
       }
       return EXCHANGE_ORDER.indexOf(a.exchange) - EXCHANGE_ORDER.indexOf(b.exchange);
     });
