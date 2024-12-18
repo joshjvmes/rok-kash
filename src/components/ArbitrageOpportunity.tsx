@@ -1,10 +1,12 @@
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Loader2, ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { createOrder } from "@/utils/exchanges/ccxt";
 import { useToast } from "@/hooks/use-toast";
 import { MarketStructure } from "./MarketStructure";
+import { ArbitrageHeader } from "./arbitrage/ArbitrageHeader";
+import { ArbitrageMetrics } from "./arbitrage/ArbitrageMetrics";
+import { ArbitrageExecuteButton } from "./arbitrage/ArbitrageExecuteButton";
+import { ArbitrageExpandButton } from "./arbitrage/ArbitrageExpandButton";
 
 interface ArbitrageOpportunityProps {
   buyExchange: string;
@@ -75,46 +77,21 @@ export function ArbitrageOpportunity({
     <div className="space-y-2">
       <Card className="p-4 bg-trading-gray hover:bg-trading-gray-light transition-colors">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">{buyExchange}</span>
-              <ArrowRight size={16} className="text-trading-blue" />
-              <span className="text-sm text-gray-400">{sellExchange}</span>
-            </div>
-            <span className="text-sm font-semibold">{symbol}</span>
-          </div>
+          <ArbitrageHeader
+            buyExchange={buyExchange}
+            sellExchange={sellExchange}
+            symbol={symbol}
+          />
           <div className="flex items-center gap-4">
-            <div>
-              <p className="text-sm text-gray-400">Spread</p>
-              <p className="text-trading-green font-semibold">{spread}%</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400">Potential</p>
-              <p className="text-trading-green font-semibold">${potential}</p>
-            </div>
-            <Button
-              variant="outline"
-              className="ml-2"
-              onClick={handleExecute}
-              disabled={isExecuting}
-            >
-              {isExecuting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                'Execute'
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
+            <ArbitrageMetrics spread={spread} potential={potential} />
+            <ArbitrageExecuteButton
+              isExecuting={isExecuting}
+              onExecute={handleExecute}
+            />
+            <ArbitrageExpandButton
+              isExpanded={isExpanded}
+              onToggle={() => setIsExpanded(!isExpanded)}
+            />
           </div>
         </div>
       </Card>
