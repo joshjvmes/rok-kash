@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
+import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,16 +7,16 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { symbol } = await req.json()
-    const [base] = symbol.split('/')
+    const { symbol, endpoint } = await req.json()
+    const [base, quote] = symbol.split('/')
+    const productId = `${base}-${quote}`
     
-    console.log(`Fetching Coinbase price for ${base}-USD`)
+    console.log(`Fetching Coinbase ${endpoint} for ${productId}`)
     
     const apiKey = Deno.env.get('COINBASE_API_KEY')
     const apiSecret = Deno.env.get('COINBASE_SECRET')
@@ -26,36 +26,43 @@ serve(async (req) => {
       throw new Error('Coinbase API credentials are not configured')
     }
 
-    // Parse the API secret which might contain special characters
-    const decodedSecret = decodeURIComponent(apiSecret)
-    
-    // Get current timestamp for the request
     const timestamp = Math.floor(Date.now() / 1000).toString()
+    let requestPath = ''
     
-    // Create the signature
-    const requestPath = `/v2/prices/${base}-USD/spot`
+    switch (endpoint) {
+      case 'spot':
+        requestPath = `/v2/prices/${productId}/spot`
+        break
+      case 'orderbook':
+        requestPath = `/v2/products/${productId}/book?level=2`
+        break
+      case 'trades':
+        requestPath = `/v2/products/${productId}/trades`
+        break
+      default:
+        throw new Error('Invalid endpoint')
+    }
+
     const message = timestamp + 'GET' + requestPath
-    
-    // Create HMAC signature using crypto.subtle
     const key = await crypto.subtle.importKey(
       "raw",
-      new TextEncoder().encode(decodedSecret),
+      new TextEncoder().encode(apiSecret),
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["sign"]
-    );
+    )
     
     const signatureBuffer = await crypto.subtle.sign(
       "HMAC",
       key,
       new TextEncoder().encode(message)
-    );
+    )
     
     const signature = Array.from(new Uint8Array(signatureBuffer))
       .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .join('')
 
-    console.log('Making authenticated request to Coinbase API')
+    console.log(`Making authenticated request to Coinbase API: ${requestPath}`)
 
     const response = await fetch(`https://api.coinbase.com${requestPath}`, {
       headers: {
@@ -74,7 +81,7 @@ serve(async (req) => {
     }
 
     const data = await response.json()
-    console.log('Successfully fetched Coinbase price:', data)
+    console.log('Successfully fetched Coinbase data:', endpoint)
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
