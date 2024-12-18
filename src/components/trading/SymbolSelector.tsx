@@ -32,7 +32,13 @@ export function SymbolSelector({
     "SOL/USDC": "< 1 minute",
     "AVAX/USDC": "< 1 minute",
     "ADA/USDC": "5-10 minutes",
-    "XRP/USDC": "3-5 seconds"
+    "XRP/USDC": "3-5 seconds",
+    "PEPE/USDC": "< 1 minute",
+    "SHI/USDC": "< 1 minute",
+    "BONK/USDC": "< 1 minute",
+    "FLOG/USDC": "< 1 minute",
+    "BTTC/USDC": "< 1 minute",
+    "MOG/USDC": "< 1 minute"
   };
 
   const handleSymbolChange = (value: string) => {
@@ -60,6 +66,12 @@ export function SymbolSelector({
             <SelectItem value="AVAX/USDC">AVAX/USDC</SelectItem>
             <SelectItem value="ADA/USDC">ADA/USDC</SelectItem>
             <SelectItem value="XRP/USDC">XRP/USDC</SelectItem>
+            <SelectItem value="PEPE/USDC">PEPE/USDC</SelectItem>
+            <SelectItem value="SHI/USDC">SHI/USDC</SelectItem>
+            <SelectItem value="BONK/USDC">BONK/USDC</SelectItem>
+            <SelectItem value="FLOG/USDC">FLOG/USDC</SelectItem>
+            <SelectItem value="BTTC/USDC">BTTC/USDC</SelectItem>
+            <SelectItem value="MOG/USDC">MOG/USDC</SelectItem>
           </SelectContent>
         </Select>
         <TooltipProvider>

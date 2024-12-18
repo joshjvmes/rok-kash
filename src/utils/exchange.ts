@@ -5,7 +5,10 @@ import type { PriceCardProps } from "./types/exchange";
 
 export { findArbitrageOpportunities } from "./exchanges/arbitrage";
 
-const DEFAULT_SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC', 'ADA/USDC', 'XRP/USDC'];
+const DEFAULT_SYMBOLS = [
+  'BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC', 'ADA/USDC', 'XRP/USDC',
+  'PEPE/USDC', 'SHI/USDC', 'BONK/USDC', 'FLOG/USDC', 'BTTC/USDC', 'MOG/USDC'
+];
 const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit'];
 
 export async function fetchPrices(): Promise<PriceCardProps[]> {
