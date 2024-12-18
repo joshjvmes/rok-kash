@@ -8,21 +8,15 @@ export interface ExchangeConfig {
 
 function sanitizeApiKey(key: string | undefined): string | undefined {
   if (!key) return undefined;
-  return key.trim();
+  return key.trim().replace(/[\r\n]+/g, '').replace(/[^\w\-]/g, '');
 }
 
 function sanitizeSecret(secret: string | undefined): string | undefined {
   if (!secret) return undefined;
-  // Decode URI components and trim whitespace
-  try {
-    return decodeURIComponent(secret.trim());
-  } catch (e) {
-    // If decoding fails, return the trimmed original
-    return secret.trim();
-  }
+  return secret.trim().replace(/[\r\n]+/g, '').replace(/[^A-Za-z0-9+/=\-_]/g, '');
 }
 
-export async function configureExchange(exchange: Exchange, exchangeId: string): Promise<void> {
+export function configureExchange(exchange: Exchange, exchangeId: string): void {
   try {
     switch (exchangeId) {
       case 'coinbase':
@@ -81,6 +75,6 @@ export async function configureExchange(exchange: Exchange, exchangeId: string):
     }
   } catch (error) {
     console.error(`Error configuring ${exchangeId} exchange:`, error)
-    throw error
+    throw new Error(`Failed to configure ${exchangeId} exchange: ${error.message}`)
   }
 }

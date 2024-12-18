@@ -27,14 +27,7 @@ serve(async (req) => {
     }
 
     // Parse the API secret which might contain special characters
-    let decodedSecret
-    try {
-      decodedSecret = decodeURIComponent(apiSecret)
-      console.log('Successfully decoded API secret')
-    } catch (error) {
-      console.error('Error decoding API secret:', error)
-      throw new Error('Invalid API secret format')
-    }
+    const decodedSecret = decodeURIComponent(apiSecret)
     
     // Get current timestamp for the request
     const timestamp = Math.floor(Date.now() / 1000).toString()
@@ -42,22 +35,13 @@ serve(async (req) => {
     // Create the signature
     const requestPath = `/v2/prices/${base}-USD/spot`
     const message = timestamp + 'GET' + requestPath
-
-    let signature
-    try {
-      signature = createHmac('sha256', decodedSecret)
-        .update(message)
-        .toString('hex')
-      console.log('Successfully created signature')
-    } catch (error) {
-      console.error('Error creating signature:', error)
-      throw new Error('Failed to create request signature')
-    }
+    const signature = createHmac('sha256', decodedSecret)
+      .update(message)
+      .toString('hex')
 
     console.log('Making authenticated request to Coinbase API')
 
     const response = await fetch(`https://api.coinbase.com${requestPath}`, {
-      method: 'GET',
       headers: {
         'CB-ACCESS-KEY': apiKey,
         'CB-ACCESS-SIGN': signature,
@@ -81,15 +65,9 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error('Error in coinbase-proxy:', error)
-    return new Response(
-      JSON.stringify({ 
-        error: true, 
-        message: error.message,
-        details: error.stack 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })
