@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createHmac } from "https://deno.land/std@0.168.0/crypto/mod.ts"
+import { HmacSha256 } from "https://deno.land/std@0.168.0/hash/hmac/sha256.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,9 +35,12 @@ serve(async (req) => {
     // Create the signature
     const requestPath = `/v2/prices/${base}-USD/spot`
     const message = timestamp + 'GET' + requestPath
-    const signature = createHmac('sha256', decodedSecret)
-      .update(message)
-      .toString('hex')
+    
+    const key = new TextEncoder().encode(decodedSecret);
+    const data = new TextEncoder().encode(message);
+    const hmac = new HmacSha256(key);
+    hmac.update(data);
+    const signature = hmac.hex();
 
     console.log('Making authenticated request to Coinbase API')
 
