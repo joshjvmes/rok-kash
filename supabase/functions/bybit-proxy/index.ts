@@ -8,11 +8,20 @@ const corsHeaders = {
 }
 
 function formatBybitPair(symbol: string): string {
-  // Special handling for MOG/USD
-  if (symbol === 'MOG/USD') {
-    return 'MOG/USDT'; // Bybit uses USDT for MOG
-  }
-  return symbol;
+  // Special handling for meme tokens and standard pairs
+  const symbolMap: Record<string, string> = {
+    'MOG/USD': 'MOG/USDT',
+    'PEPE/USD': 'PEPE/USDT',
+    'BONK/USD': 'BONK/USDT',
+    'BTC/USD': 'BTC/USDT',
+    'ETH/USD': 'ETH/USDT',
+    'SOL/USD': 'SOL/USDT',
+    'AVAX/USD': 'AVAX/USDT',
+    'ADA/USD': 'ADA/USDT',
+    'XRP/USD': 'XRP/USDT'
+  };
+
+  return symbolMap[symbol] || symbol;
 }
 
 serve(async (req) => {
@@ -44,17 +53,34 @@ serve(async (req) => {
     let result
     switch (method) {
       case 'fetchTicker':
-        result = await bybit.fetchTicker(formattedSymbol)
+        try {
+          result = await bybit.fetchTicker(formattedSymbol)
+          // Convert USDT price to USD (approximately 1:1)
+          if (result && result.last) {
+            result = {
+              ...result,
+              symbol: symbol, // Return the original USD symbol
+              last: result.last
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching ticker for ${formattedSymbol}:`, error)
+          throw new Error(`Failed to fetch ticker: ${error.message}`)
+        }
         break
+
       case 'fetchOrderBook':
         result = await bybit.fetchOrderBook(formattedSymbol, params.limit || 20)
         break
+
       case 'fetchTrades':
         result = await bybit.fetchTrades(formattedSymbol, undefined, params.limit || 50)
         break
+
       case 'fetchBalance':
         result = await bybit.fetchBalance()
         break
+
       default:
         throw new Error(`Unsupported method: ${method}`)
     }
@@ -65,6 +91,7 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error('Error in bybit-proxy:', error)
+    
     return new Response(
       JSON.stringify({
         error: true,
