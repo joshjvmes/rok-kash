@@ -7,25 +7,6 @@ const corsHeaders = {
   'Content-Type': 'application/json; charset=utf-8'
 }
 
-function formatKrakenPair(symbol: string): string {
-  // Remove the '/' and handle special cases for Kraken's pair format
-  const [base, quote] = symbol.split('/')
-  
-  // Kraken prefixes USD with 'Z' and most crypto with 'X'
-  // Special cases where 'X' prefix isn't used
-  const specialCases = ['DOT', 'ADA', 'SOL', 'AVAX']
-  
-  let baseAsset = specialCases.includes(base) ? base : `X${base}`
-  const quoteAsset = quote === 'USD' ? 'ZUSD' : quote === 'USDC' ? 'USDC' : `X${quote}`
-  
-  // Remove 'X' prefix for certain assets
-  if (base === 'BTC') baseAsset = 'XXBT'
-  if (base === 'XRP') baseAsset = 'XXRP'
-  if (base === 'ETH') baseAsset = 'XETH'
-  
-  return baseAsset + quoteAsset
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -33,7 +14,7 @@ serve(async (req) => {
 
   try {
     const { symbol } = await req.json()
-    const krakenSymbol = formatKrakenPair(symbol)
+    const krakenSymbol = symbol.replace('/', '').replace('USD', 'ZUSD')
     
     console.log(`Fetching Kraken price for symbol: ${krakenSymbol}`)
     
