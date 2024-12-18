@@ -16,9 +16,15 @@ function formatKrakenPair(symbol: string): string {
     return 'XBT' + pair.slice(3);
   }
   
-  // For SOL, ADA, AVAX - directly concatenate with USDC
-  if (pair.includes('SOL') || pair.includes('ADA') || pair.includes('AVAX')) {
-    return pair.replace('USDC', '');
+  // Special cases for SOL, ADA, AVAX
+  const specialPairs: Record<string, string> = {
+    'SOLUSDC': 'SOLUSDT', // Kraken uses USDT pair for SOL
+    'ADAUSDC': 'ADAUSD',  // Kraken uses USD pair for ADA
+    'AVAXUSDC': 'AVAXUSD' // Kraken uses USD pair for AVAX
+  };
+
+  if (specialPairs[pair]) {
+    return specialPairs[pair];
   }
   
   return pair;
