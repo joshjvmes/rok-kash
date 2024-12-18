@@ -3,36 +3,54 @@ import { supabase } from "@/integrations/supabase/client";
 export async function fetchCCXTPrice(exchange: string, symbol: string) {
   try {
     const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
-      body: { exchange, symbol }
+      body: { exchange, symbol, method: 'fetchTicker' }
     });
 
     if (error) {
-      console.error('Error fetching CCXT price:', error);
-      return null;
+      console.error(`Error fetching ${exchange} price:`, error);
+      throw error;
     }
 
-    return data.price;
+    return data?.last || null;
   } catch (error) {
-    console.error('Error fetching CCXT price:', error);
-    return null;
+    console.error(`Error fetching ${exchange} price:`, error);
+    throw error;
   }
 }
 
-export async function fetchBalance(exchange: string) {
+export async function fetchOrderBook(exchange: string, symbol: string) {
   try {
     const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
-      body: { exchange, method: 'fetchBalance' }
+      body: { exchange, symbol, method: 'fetchOrderBook' }
     });
 
     if (error) {
-      console.error('Error fetching balance:', error);
-      return null;
+      console.error(`Error fetching ${exchange} order book:`, error);
+      throw error;
     }
 
     return data;
   } catch (error) {
-    console.error('Error fetching balance:', error);
-    return null;
+    console.error(`Error fetching ${exchange} order book:`, error);
+    throw error;
+  }
+}
+
+export async function fetchTrades(exchange: string, symbol: string) {
+  try {
+    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+      body: { exchange, symbol, method: 'fetchTrades' }
+    });
+
+    if (error) {
+      console.error(`Error fetching ${exchange} trades:`, error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error(`Error fetching ${exchange} trades:`, error);
+    throw error;
   }
 }
 
@@ -45,102 +63,55 @@ export async function createOrder(
   price?: number
 ) {
   try {
+    console.log(`Creating ${side} order on ${exchange} for ${symbol}`);
+    
+    const params: any = {
+      type,
+      side,
+      amount,
+    };
+
+    if (type === 'limit' && price) {
+      params.price = price;
+    }
+
     const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
       body: {
         exchange,
         symbol,
         method: 'createOrder',
-        params: {
-          type,
-          side,
-          amount,
-          price
-        }
+        params
       }
     });
 
     if (error) {
-      console.error('Error creating order:', error);
-      throw new Error(error.message);
+      console.error(`Error creating order on ${exchange}:`, error);
+      throw error;
     }
 
+    console.log(`Successfully created order on ${exchange}:`, data);
     return data;
   } catch (error) {
-    console.error('Error creating order:', error);
+    console.error(`Error creating order on ${exchange}:`, error);
     throw error;
   }
 }
 
-export async function fetchOrderBook(exchange: string, symbol: string) {
+export async function fetchBalance(exchange: string) {
   try {
-    if (exchange === 'coinbase') {
-      const { data, error } = await supabase.functions.invoke('coinbase-proxy', {
-        body: { symbol, endpoint: 'orderbook' }
-      });
-
-      if (error) {
-        console.error('Error fetching Coinbase order book:', error);
-        return null;
-      }
-
-      // Transform Coinbase format to match our expected format
-      return {
-        bids: data.bids.map(([price, size]: string[]) => [parseFloat(price), parseFloat(size)]),
-        asks: data.asks.map(([price, size]: string[]) => [parseFloat(price), parseFloat(size)])
-      };
-    }
-
     const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
-      body: { exchange, symbol, method: 'fetchOrderBook' }
+      body: { exchange, method: 'fetchBalance' }
     });
 
     if (error) {
-      console.error('Error fetching order book:', error);
-      return null;
+      console.error(`Error fetching ${exchange} balance:`, error);
+      throw error;
     }
 
     return data;
   } catch (error) {
-    console.error('Error fetching order book:', error);
-    return null;
-  }
-}
-
-export async function fetchTrades(exchange: string, symbol: string) {
-  try {
-    if (exchange === 'coinbase') {
-      const { data, error } = await supabase.functions.invoke('coinbase-proxy', {
-        body: { symbol, endpoint: 'trades' }
-      });
-
-      if (error) {
-        console.error('Error fetching Coinbase trades:', error);
-        return null;
-      }
-
-      // Transform Coinbase trades to match our expected format
-      return data.map((trade: any) => ({
-        id: trade.trade_id,
-        timestamp: new Date(trade.time).getTime(),
-        side: trade.side,
-        price: parseFloat(trade.price),
-        amount: parseFloat(trade.size)
-      }));
-    }
-
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
-      body: { exchange, symbol, method: 'fetchTrades' }
-    });
-
-    if (error) {
-      console.error('Error fetching trades:', error);
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error fetching trades:', error);
-    return null;
+    console.error(`Error fetching ${exchange} balance:`, error);
+    throw error;
   }
 }
 
@@ -151,13 +122,13 @@ export async function fetchMarketStructure(exchange: string, symbol: string) {
     });
 
     if (error) {
-      console.error('Error fetching market structure:', error);
-      return null;
+      console.error(`Error fetching ${exchange} market structure:`, error);
+      throw error;
     }
 
     return data;
   } catch (error) {
-    console.error('Error fetching market structure:', error);
-    return null;
+    console.error(`Error fetching ${exchange} market structure:`, error);
+    throw error;
   }
 }
