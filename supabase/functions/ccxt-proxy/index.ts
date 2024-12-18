@@ -70,7 +70,26 @@ serve(async (req) => {
     const exchange = new exchangeClass({
       enableRateLimit: true,
       timeout: 30000,
+      // Add proper request handling configuration
+      options: {
+        defaultType: 'spot',
+        adjustForTimeDifference: true,
+        recvWindow: 60000,
+      },
+      headers: {
+        'User-Agent': 'ccxt/1.0'
+      }
     })
+
+    // Initialize the markets cache before making any requests
+    if (!exchange.markets) {
+      console.log('Loading markets for', exchangeId)
+      try {
+        await exchange.loadMarkets()
+      } catch (error) {
+        console.error(`Error loading markets for ${exchangeId}:`, error)
+      }
+    }
 
     try {
       await configureExchange(exchange, exchangeId)
