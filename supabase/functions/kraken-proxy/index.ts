@@ -13,21 +13,21 @@ function formatKrakenPair(symbol: string): string {
   
   // Special case for BTC (XBT in Kraken)
   if (pair.startsWith('BTC')) {
-    return pair.replace('BTC', 'XBT');
+    return 'XBT' + pair.slice(3);
   }
   
   // For SOL, ADA, AVAX - directly concatenate with USDC
   if (pair.includes('SOL') || pair.includes('ADA') || pair.includes('AVAX')) {
-    return pair.replace('USDC', 'USD');
+    return pair.replace('USDC', '');
   }
   
-  // For other pairs, use default formatting
   return pair;
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
