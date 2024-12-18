@@ -17,9 +17,14 @@ import {
 interface SymbolSelectorProps {
   selectedSymbol: string;
   onSymbolChange: (value: string) => void;
+  navigateOnChange?: boolean;
 }
 
-export function SymbolSelector({ selectedSymbol, onSymbolChange }: SymbolSelectorProps) {
+export function SymbolSelector({ 
+  selectedSymbol, 
+  onSymbolChange,
+  navigateOnChange = false 
+}: SymbolSelectorProps) {
   const navigate = useNavigate();
   const estimatedTimes = {
     "BTC/USDC": "10-60 minutes",
@@ -32,7 +37,9 @@ export function SymbolSelector({ selectedSymbol, onSymbolChange }: SymbolSelecto
 
   const handleSymbolChange = (value: string) => {
     onSymbolChange(value);
-    navigate(`/trading/${encodeURIComponent(value)}`);
+    if (navigateOnChange) {
+      navigate(`/trading/${encodeURIComponent(value)}`);
+    }
   };
 
   return (
