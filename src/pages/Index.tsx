@@ -31,6 +31,15 @@ const Index = () => {
     refetchInterval: isPaused ? false : 5000,
   });
 
+  // Group prices by symbol
+  const groupedPrices = prices.reduce((acc, price) => {
+    if (!acc[price.symbol]) {
+      acc[price.symbol] = [];
+    }
+    acc[price.symbol].push(price);
+    return acc;
+  }, {} as Record<string, typeof prices>);
+
   const { data: arbitrageOpportunities = [] } = useQuery({
     queryKey: ['arbitrageOpportunities', selectedSymbol],
     queryFn: () => findArbitrageOpportunities(selectedSymbol),
@@ -118,9 +127,13 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {prices.map((price) => (
-            <PriceCard key={`${price.exchange}-${price.symbol}`} {...price} />
+        <div className="space-y-4">
+          {Object.entries(groupedPrices).map(([symbol, symbolPrices]) => (
+            <div key={symbol} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {symbolPrices.map((price) => (
+                <PriceCard key={`${price.exchange}-${price.symbol}`} {...price} />
+              ))}
+            </div>
           ))}
         </div>
 

@@ -6,6 +6,7 @@ import type { PriceCardProps } from "./types/exchange";
 export { findArbitrageOpportunities } from "./exchanges/arbitrage";
 
 const DEFAULT_SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC', 'ADA/USDC', 'XRP/USDC'];
+const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit'];
 
 export async function fetchPrices(): Promise<PriceCardProps[]> {
   try {
@@ -17,11 +18,13 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
       ]);
 
       const results: PriceCardProps[] = [];
+      
+      // Add exchanges in specific order for each symbol
       if (coinbasePrice) {
         results.push({
           symbol,
           price: coinbasePrice.toFixed(2),
-          change: parseFloat((Math.random() * 4 - 2).toFixed(2)), // Simulated for demo
+          change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Coinbase'
         });
       }
@@ -29,7 +32,7 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
         results.push({
           symbol,
           price: krakenPrice.toFixed(2),
-          change: parseFloat((Math.random() * 4 - 2).toFixed(2)), // Simulated for demo
+          change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Kraken'
         });
       }
@@ -37,7 +40,7 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
         results.push({
           symbol,
           price: bybitPrice.toFixed(2),
-          change: parseFloat((Math.random() * 4 - 2).toFixed(2)), // Simulated for demo
+          change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Bybit'
         });
       }
@@ -45,7 +48,13 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
     });
 
     const prices = await Promise.all(pricesPromises);
-    return prices.flat();
+    // Sort the flattened array to group by symbol and maintain exchange order
+    return prices.flat().sort((a, b) => {
+      if (a.symbol !== b.symbol) {
+        return DEFAULT_SYMBOLS.indexOf(a.symbol) - DEFAULT_SYMBOLS.indexOf(b.symbol);
+      }
+      return EXCHANGE_ORDER.indexOf(a.exchange) - EXCHANGE_ORDER.indexOf(b.exchange);
+    });
   } catch (error) {
     console.error('Error fetching prices:', error);
     return [];
