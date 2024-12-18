@@ -6,14 +6,42 @@ import type { ArbitrageOpportunity } from "../types/exchange";
 
 const EXCHANGES = ['coinbase', 'kraken', 'bybit'];
 
+// Fixed fee rates based on official documentation
+const FIXED_FEES = {
+  coinbase: 0.6, // 0.6% maker/taker fee for regular users
+  kraken: 0.26,  // 0.26% maker/taker fee for regular users
+  bybit: 0.1     // 0.1% maker/taker fee for regular users
+};
+
 async function getExchangeFee(exchangeName: string): Promise<number> {
-  const { data: metadata } = await supabase
-    .from('exchange_metadata')
-    .select('trading_fee_percentage')
-    .eq('exchange_name', exchangeName)
-    .single();
-  
-  return metadata?.trading_fee_percentage || 0.1; // Default to 0.1% if not found
+  try {
+    // First try to get custom fee from database
+    const { data: metadata } = await supabase
+      .from('exchange_metadata')
+      .select('trading_fee_percentage')
+      .eq('exchange_name', exchangeName)
+      .single();
+    
+    if (metadata?.trading_fee_percentage) {
+      console.log(`Using custom fee for ${exchangeName}: ${metadata.trading_fee_percentage}%`);
+      return metadata.trading_fee_percentage;
+    }
+    
+    // Fallback to fixed fees if no custom fee is set
+    const fixedFee = FIXED_FEES[exchangeName as keyof typeof FIXED_FEES];
+    if (fixedFee) {
+      console.log(`Using fixed fee for ${exchangeName}: ${fixedFee}%`);
+      return fixedFee;
+    }
+
+    // Default fallback
+    console.log(`Using default fee for ${exchangeName}: 0.1%`);
+    return 0.1;
+  } catch (error) {
+    console.error(`Error fetching fee for ${exchangeName}:`, error);
+    // Fallback to fixed fees in case of error
+    return FIXED_FEES[exchangeName as keyof typeof FIXED_FEES] || 0.1;
+  }
 }
 
 async function getPriceForExchange(exchange: string, symbol: string): Promise<number | null> {
