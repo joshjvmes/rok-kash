@@ -16,11 +16,14 @@ function formatKrakenPair(symbol: string): string {
     return 'XBT' + pair.slice(3);
   }
   
-  // Special cases for SOL, ADA, AVAX
+  // Special cases for meme tokens and other pairs
   const specialPairs: Record<string, string> = {
-    'SOLUSDC': 'SOLUSDT', // Kraken uses USDT pair for SOL
-    'ADAUSDC': 'ADAUSD',  // Kraken uses USD pair for ADA
-    'AVAXUSDC': 'AVAXUSD' // Kraken uses USD pair for AVAX
+    'PEPEUSD': 'PEPEUSD',  // Direct mapping for PEPE
+    'BONKUSD': 'BONKUSD',  // Direct mapping for BONK
+    'MOGUSD': 'MOGUSD',    // Direct mapping for MOG
+    'SOLUSD': 'SOLUSDT',   // Kraken uses USDT pair for SOL
+    'ADAUSD': 'ADAUSD',    // Direct USD pair for ADA
+    'AVAXUSD': 'AVAXUSD'   // Direct USD pair for AVAX
   };
 
   if (specialPairs[pair]) {

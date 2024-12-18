@@ -7,6 +7,14 @@ const corsHeaders = {
   'Content-Type': 'application/json; charset=utf-8'
 }
 
+function formatBybitPair(symbol: string): string {
+  // Special handling for MOG/USD
+  if (symbol === 'MOG/USD') {
+    return 'MOG/USDT'; // Bybit uses USDT for MOG
+  }
+  return symbol;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -15,7 +23,8 @@ serve(async (req) => {
 
   try {
     const { method, symbol, params = {} } = await req.json()
-    console.log(`Processing ${method} request for ${symbol || 'no symbol'}`)
+    const formattedSymbol = formatBybitPair(symbol)
+    console.log(`Processing ${method} request for ${formattedSymbol || 'no symbol'}`)
 
     const bybit = new ccxt.bybit({
       apiKey: Deno.env.get('BYBIT_API_KEY'),
@@ -35,13 +44,13 @@ serve(async (req) => {
     let result
     switch (method) {
       case 'fetchTicker':
-        result = await bybit.fetchTicker(symbol)
+        result = await bybit.fetchTicker(formattedSymbol)
         break
       case 'fetchOrderBook':
-        result = await bybit.fetchOrderBook(symbol, params.limit || 20)
+        result = await bybit.fetchOrderBook(formattedSymbol, params.limit || 20)
         break
       case 'fetchTrades':
-        result = await bybit.fetchTrades(symbol, undefined, params.limit || 50)
+        result = await bybit.fetchTrades(formattedSymbol, undefined, params.limit || 50)
         break
       case 'fetchBalance':
         result = await bybit.fetchBalance()
