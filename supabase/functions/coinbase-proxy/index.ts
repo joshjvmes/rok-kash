@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createHmac } from "https://deno.land/std@0.168.0/crypto/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,12 +26,26 @@ serve(async (req) => {
       throw new Error('Coinbase API credentials are not configured')
     }
 
-    console.log('Using Coinbase API credentials to fetch price')
+    // Parse the API secret which might contain special characters
+    const decodedSecret = decodeURIComponent(apiSecret)
+    
+    // Get current timestamp for the request
+    const timestamp = Math.floor(Date.now() / 1000).toString()
+    
+    // Create the signature
+    const requestPath = `/v2/prices/${base}-USD/spot`
+    const message = timestamp + 'GET' + requestPath
+    const signature = createHmac('sha256', decodedSecret)
+      .update(message)
+      .toString('hex')
 
-    const response = await fetch(`https://api.coinbase.com/v2/prices/${base}-USD/spot`, {
+    console.log('Making authenticated request to Coinbase API')
+
+    const response = await fetch(`https://api.coinbase.com${requestPath}`, {
       headers: {
         'CB-ACCESS-KEY': apiKey,
-        'CB-ACCESS-SIGN': apiSecret,
+        'CB-ACCESS-SIGN': signature,
+        'CB-ACCESS-TIMESTAMP': timestamp,
         'CB-VERSION': '2021-06-23',
         'Content-Type': 'application/json'
       }
