@@ -6,7 +6,8 @@ import type { PriceCardProps } from "./types/exchange";
 export { findArbitrageOpportunities } from "./exchanges/arbitrage";
 
 const DEFAULT_SYMBOLS = [
-  'BTC/USD', 'ETH/USD', 'SOL/USD', 'PEPE/USD', 'BONK/USD', 'MOG/USD',
+  'BTC/USD', 'ETH/USD', 'SOL/USD', 
+  'PEPE/USD', 'BONK/USD', 'MOG/USD',
   'AVAX/USD', 'ADA/USD', 'XRP/USD'
 ];
 const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit'];
