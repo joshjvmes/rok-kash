@@ -4,10 +4,10 @@ import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Content-Type': 'application/json; charset=utf-8'
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -26,17 +26,11 @@ serve(async (req) => {
       throw new Error('Coinbase API credentials are not configured')
     }
 
-    // Parse the API secret which might contain special characters
     const decodedSecret = decodeURIComponent(apiSecret)
-    
-    // Get current timestamp for the request
     const timestamp = Math.floor(Date.now() / 1000).toString()
-    
-    // Create the signature
     const requestPath = `/v2/prices/${base}-USD/spot`
     const message = timestamp + 'GET' + requestPath
     
-    // Create HMAC signature using crypto.subtle
     const key = await crypto.subtle.importKey(
       "raw",
       new TextEncoder().encode(decodedSecret),
@@ -63,6 +57,7 @@ serve(async (req) => {
         'CB-ACCESS-SIGN': signature,
         'CB-ACCESS-TIMESTAMP': timestamp,
         'CB-VERSION': '2021-06-23',
+        'Accept': 'application/json',
         'Content-Type': 'application/json'
       }
     })
@@ -77,13 +72,20 @@ serve(async (req) => {
     console.log('Successfully fetched Coinbase price:', data)
 
     return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: corsHeaders,
+      status: 200
     })
   } catch (error) {
     console.error('Error in coinbase-proxy:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ 
+        error: true, 
+        message: error.message 
+      }), 
+      {
+        status: 500,
+        headers: corsHeaders
+      }
+    )
   }
 })

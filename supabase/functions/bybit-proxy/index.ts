@@ -4,6 +4,7 @@ import ccxt from 'npm:ccxt'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Content-Type': 'application/json; charset=utf-8'
 }
 
 serve(async (req) => {
@@ -19,6 +20,15 @@ serve(async (req) => {
       apiKey: Deno.env.get('BYBIT_API_KEY'),
       secret: Deno.env.get('BYBIT_SECRET'),
       enableRateLimit: true,
+      options: {
+        defaultType: 'spot',
+        adjustForTimeDifference: true,
+        recvWindow: 60000,
+      },
+      headers: {
+        'User-Agent': 'ccxt/1.0',
+        'Accept': 'application/json'
+      }
     })
 
     let result
@@ -40,7 +50,8 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: corsHeaders,
+      status: 200
     })
   } catch (error) {
     console.error('Error in bybit-proxy:', error)
@@ -52,7 +63,7 @@ serve(async (req) => {
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: corsHeaders
       }
     )
   }
