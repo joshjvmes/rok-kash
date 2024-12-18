@@ -7,6 +7,24 @@ const corsHeaders = {
   'Content-Type': 'application/json; charset=utf-8'
 }
 
+function formatKrakenPair(symbol: string): string {
+  // Remove the '/' from the pair
+  const pair = symbol.replace('/', '');
+  
+  // Special case for BTC (XBT in Kraken)
+  if (pair.startsWith('BTC')) {
+    return pair.replace('BTC', 'XBT');
+  }
+  
+  // For SOL, ADA, AVAX - directly concatenate with USDC
+  if (pair.includes('SOL') || pair.includes('ADA') || pair.includes('AVAX')) {
+    return pair.replace('USDC', 'USD');
+  }
+  
+  // For other pairs, use default formatting
+  return pair;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -14,7 +32,7 @@ serve(async (req) => {
 
   try {
     const { symbol } = await req.json()
-    const krakenSymbol = symbol.replace('/', '').replace('USD', 'ZUSD')
+    const krakenSymbol = formatKrakenPair(symbol)
     
     console.log(`Fetching Kraken price for symbol: ${krakenSymbol}`)
     
