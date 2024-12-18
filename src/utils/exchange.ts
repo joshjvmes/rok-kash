@@ -14,10 +14,12 @@ const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit'];
 export async function fetchPrices(): Promise<PriceCardProps[]> {
   try {
     const pricesPromises = DEFAULT_SYMBOLS.flatMap(async (symbol) => {
+      // For new tokens that might not be available on all exchanges,
+      // we'll handle potential null prices gracefully
       const [coinbasePrice, krakenPrice, bybitPrice] = await Promise.all([
-        fetchCoinbasePrice(symbol),
-        fetchKrakenPrice(symbol),
-        fetchCCXTPrice('bybit', symbol)
+        fetchCoinbasePrice(symbol).catch(() => null),
+        fetchKrakenPrice(symbol).catch(() => null),
+        fetchCCXTPrice('bybit', symbol).catch(() => null)
       ]);
 
       const results: PriceCardProps[] = [];
