@@ -17,10 +17,6 @@ serve(async (req) => {
     const { method, symbol, params = {} } = await req.json()
     console.log(`Processing ${method} request for ${symbol || 'no symbol'}`)
 
-    // Convert USD to USDT for Bybit as it uses USDT pairs
-    const modifiedSymbol = symbol?.replace('/USD', '/USDT')
-    console.log(`Modified symbol for Bybit: ${modifiedSymbol}`)
-
     const bybit = new ccxt.bybit({
       apiKey: Deno.env.get('BYBIT_API_KEY'),
       secret: Deno.env.get('BYBIT_SECRET'),
@@ -39,13 +35,13 @@ serve(async (req) => {
     let result
     switch (method) {
       case 'fetchTicker':
-        result = await bybit.fetchTicker(modifiedSymbol)
+        result = await bybit.fetchTicker(symbol)
         break
       case 'fetchOrderBook':
-        result = await bybit.fetchOrderBook(modifiedSymbol, params.limit || 20)
+        result = await bybit.fetchOrderBook(symbol, params.limit || 20)
         break
       case 'fetchTrades':
-        result = await bybit.fetchTrades(modifiedSymbol, undefined, params.limit || 50)
+        result = await bybit.fetchTrades(symbol, undefined, params.limit || 50)
         break
       case 'fetchBalance':
         result = await bybit.fetchBalance()

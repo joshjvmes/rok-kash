@@ -8,7 +8,7 @@ const corsHeaders = {
 }
 
 function formatKrakenPair(symbol: string): string {
-  // Remove the '/' from the pair and handle USD pairs
+  // Remove the '/' from the pair
   const pair = symbol.replace('/', '');
   
   // Special case for BTC (XBT in Kraken)
@@ -16,17 +16,11 @@ function formatKrakenPair(symbol: string): string {
     return 'XBT' + pair.slice(3);
   }
   
-  // Special cases for new tokens
+  // Special cases for SOL, ADA, AVAX
   const specialPairs: Record<string, string> = {
-    'SOLUSDT': 'SOLUSD',  // Kraken uses USD pair for SOL
-    'ADAUSDT': 'ADAUSD',  // Kraken uses USD pair for ADA
-    'AVAXUSDT': 'AVAXUSD', // Kraken uses USD pair for AVAX
-    'PEPEUSD': 'PEPEUSD',
-    'SHIUSD': 'SHIUSD',
-    'BONKUSD': 'BONKUSD',
-    'FLOGUSD': 'FLOGUSD',
-    'BTTCUSD': 'BTTCUSD',
-    'MOGUSD': 'MOGUSD'
+    'SOLUSDC': 'SOLUSDT', // Kraken uses USDT pair for SOL
+    'ADAUSDC': 'ADAUSD',  // Kraken uses USD pair for ADA
+    'AVAXUSDC': 'AVAXUSD' // Kraken uses USD pair for AVAX
   };
 
   if (specialPairs[pair]) {
