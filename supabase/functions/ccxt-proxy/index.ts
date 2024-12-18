@@ -73,14 +73,14 @@ serve(async (req) => {
     })
 
     try {
-      configureExchange(exchange, exchangeId)
+      await configureExchange(exchange, exchangeId)
     } catch (error) {
       console.error(`Error configuring exchange ${exchangeId}:`, error)
       return new Response(
         JSON.stringify({
           error: true,
           message: `Exchange configuration error: ${error.message}`,
-          details: 'API credentials may be invalid or missing'
+          details: error.stack
         }),
         {
           status: 500,
@@ -89,16 +89,30 @@ serve(async (req) => {
       )
     }
 
-    const result = await executeExchangeMethod(exchange, method, symbol, params)
-    
-    console.log(`Successfully processed ${method} request for ${symbol || 'no symbol'} on ${exchangeId}`)
-    
-    return new Response(
-      JSON.stringify(result),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    try {
+      const result = await executeExchangeMethod(exchange, method, symbol, params)
+      console.log(`Successfully processed ${method} request for ${symbol || 'no symbol'} on ${exchangeId}`)
+      
+      return new Response(
+        JSON.stringify(result),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    } catch (error) {
+      console.error(`Error executing method ${method} on ${exchangeId}:`, error)
+      return new Response(
+        JSON.stringify({
+          error: true,
+          message: `Method execution error: ${error.message}`,
+          details: error.stack
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
   } catch (error) {
     console.error('Error in ccxt-proxy:', error)
     
@@ -106,7 +120,7 @@ serve(async (req) => {
       JSON.stringify({
         error: true,
         message: error.message,
-        details: error.toString()
+        details: error.stack
       }), 
       {
         status: 500,
