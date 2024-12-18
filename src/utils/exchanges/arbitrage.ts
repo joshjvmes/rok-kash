@@ -46,24 +46,37 @@ async function getExchangeFee(exchangeName: string): Promise<number> {
 
 async function getPriceForExchange(exchange: string, symbol: string): Promise<number | null> {
   try {
+    console.log(`Fetching price for ${exchange} - ${symbol}`);
+    let price: number | null = null;
+    
     switch (exchange) {
       case 'coinbase':
-        return await fetchCoinbasePrice(symbol);
+        price = await fetchCoinbasePrice(symbol);
+        break;
       case 'kraken':
-        return await fetchKrakenPrice(symbol);
+        price = await fetchKrakenPrice(symbol);
+        break;
       case 'bybit':
-        return await fetchCCXTPrice('bybit', symbol);
-      default:
-        return null;
+        price = await fetchCCXTPrice('bybit', symbol);
+        break;
     }
+
+    if (price === null) {
+      console.log(`No price returned for ${exchange} - ${symbol}`);
+    } else {
+      console.log(`Price for ${exchange} - ${symbol}: ${price}`);
+    }
+
+    return price;
   } catch (error) {
-    console.error(`Error fetching price for ${exchange}:`, error);
+    console.error(`Error fetching price for ${exchange} - ${symbol}:`, error);
     return null;
   }
 }
 
 export async function findArbitrageOpportunities(symbol: string): Promise<ArbitrageOpportunity[]> {
   const opportunities: ArbitrageOpportunity[] = [];
+  console.log(`Finding arbitrage opportunities for ${symbol}`);
   
   // Get all exchange prices and fees in parallel
   const pricesPromises = EXCHANGES.map(exchange => getPriceForExchange(exchange, symbol));
@@ -85,6 +98,9 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
     return acc;
   }, {} as Record<string, { price: number | null; fee: number }>);
 
+  // Log the collected data
+  console.log('Exchange data collected:', exchangeData);
+
   // Compare each pair of exchanges
   for (let i = 0; i < EXCHANGES.length; i++) {
     for (let j = i + 1; j < EXCHANGES.length; j++) {
@@ -94,16 +110,23 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
       const buyData = exchangeData[buyExchange];
       const sellData = exchangeData[sellExchange];
 
-      if (!buyData?.price || !sellData?.price) continue;
+      if (!buyData?.price || !sellData?.price) {
+        console.log(`Skipping comparison for ${buyExchange}-${sellExchange} due to missing price data`);
+        continue;
+      }
 
       // Calculate spread considering fees
       const buyPrice = buyData.price * (1 + buyData.fee / 100);
       const sellPrice = sellData.price * (1 - sellData.fee / 100);
       
+      console.log(`Comparing ${buyExchange} (${buyPrice}) -> ${sellExchange} (${sellPrice})`);
+
       // Check both directions
       if (sellPrice > buyPrice) {
         const spread = ((sellPrice - buyPrice) / buyPrice) * 100;
         const potential = (sellPrice - buyPrice) * 1000; // Assuming 1000 units traded
+
+        console.log(`Found opportunity: ${buyExchange} -> ${sellExchange}, spread: ${spread}%, potential: $${potential}`);
 
         if (spread >= 0.1) { // Only show opportunities with at least 0.1% spread
           opportunities.push({
@@ -120,9 +143,13 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
       const reverseBuyPrice = sellData.price * (1 + sellData.fee / 100);
       const reverseSellPrice = buyData.price * (1 - buyData.fee / 100);
 
+      console.log(`Comparing reverse ${sellExchange} (${reverseBuyPrice}) -> ${buyExchange} (${reverseSellPrice})`);
+
       if (reverseSellPrice > reverseBuyPrice) {
         const spread = ((reverseSellPrice - reverseBuyPrice) / reverseBuyPrice) * 100;
         const potential = (reverseSellPrice - reverseBuyPrice) * 1000; // Assuming 1000 units traded
+
+        console.log(`Found reverse opportunity: ${sellExchange} -> ${buyExchange}, spread: ${spread}%, potential: $${potential}`);
 
         if (spread >= 0.1) {
           opportunities.push({
@@ -151,5 +178,6 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
     }
   }
 
+  console.log(`Found ${opportunities.length} arbitrage opportunities`);
   return opportunities.sort((a, b) => b.spread - a.spread);
 }
