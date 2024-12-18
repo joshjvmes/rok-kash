@@ -1,16 +1,14 @@
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
 import { createOrder, fetchBalance } from "@/utils/exchanges/ccxt";
 import { useToast } from "@/hooks/use-toast";
 import { ExchangeSelector } from "./trading/ExchangeSelector";
 import { SymbolSelector } from "./trading/SymbolSelector";
 import { TradeAmount } from "./trading/TradeAmount";
-import { TradeButtons } from "./trading/TradeButtons";
 import { TradeType } from "./trading/TradeType";
 import { TradePercentage } from "./trading/TradePercentage";
-import { Input } from "./ui/input";
+import { LimitPriceInput } from "./trading/LimitPriceInput";
+import { TradeActions } from "./trading/TradeActions";
 import { useQuery } from "@tanstack/react-query";
 
 export function QuickTrade() {
@@ -22,7 +20,6 @@ export function QuickTrade() {
   const [orderType, setOrderType] = useState("market");
   const { toast } = useToast();
 
-  // Fetch balance for the selected token
   const { data: balance } = useQuery({
     queryKey: ['balance', selectedExchange],
     queryFn: () => fetchBalance(selectedExchange),
@@ -123,17 +120,11 @@ export function QuickTrade() {
           isLoading={isLoading}
         />
         {orderType === 'limit' && (
-          <div>
-            <label className="text-sm text-gray-400 mb-2 block">Limit Price (USDC)</label>
-            <Input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="bg-trading-gray-light border-trading-gray-light"
-              placeholder="Enter limit price..."
-              disabled={isLoading}
-            />
-          </div>
+          <LimitPriceInput
+            price={price}
+            onPriceChange={setPrice}
+            isLoading={isLoading}
+          />
         )}
         <TradeAmount
           amount={amount}
@@ -144,38 +135,12 @@ export function QuickTrade() {
           onPercentageClick={handlePercentageClick}
           isLoading={isLoading}
         />
-        <div className="grid grid-cols-3 gap-2">
-          <Button
-            className="w-full bg-trading-green hover:bg-trading-green/90"
-            onClick={() => handleTrade('buy')}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Buy'
-            )}
-          </Button>
-          <Button
-            className="w-full bg-trading-red hover:bg-trading-red/90"
-            onClick={() => handleTrade('sell')}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Sell'
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full border-trading-red text-trading-red hover:bg-trading-red/10"
-            onClick={handleSellAll}
-            disabled={isLoading}
-          >
-            Sell All
-          </Button>
-        </div>
+        <TradeActions
+          onBuy={() => handleTrade('buy')}
+          onSell={() => handleTrade('sell')}
+          onSellAll={handleSellAll}
+          isLoading={isLoading}
+        />
       </div>
     </Card>
   );
