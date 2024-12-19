@@ -21,7 +21,8 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
       const [coinbasePrice, krakenPrice, bybitPrice] = await Promise.all([
         fetchCoinbasePrice(symbol).catch(() => null),
         fetchKrakenPrice(symbol).catch(() => null),
-        fetchCCXTPrice('bybit', symbol).catch(() => null)
+        // For Bybit, we need to use USDT pairs
+        fetchCCXTPrice('bybit', symbol.replace('/USD', '/USDT')).catch(() => null)
       ]);
 
       const results: PriceCardProps[] = [];
@@ -44,10 +45,8 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
         });
       }
       if (bybitPrice) {
-        // For Bybit, display USDT in the symbol
-        const bybitSymbol = symbol.replace('/USD', '/USDT');
         results.push({
-          symbol: bybitSymbol,
+          symbol: symbol, // Keep USD in display while using USDT for API calls
           price: bybitPrice.toFixed(2),
           change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Bybit'

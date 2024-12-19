@@ -1,40 +1,48 @@
 import { Exchange } from 'npm:ccxt'
 
+function formatBybitSymbol(symbol: string): string {
+  // Convert USD pairs to USDT for Bybit
+  return symbol.replace('/USD', '/USDT');
+}
+
 export async function executeExchangeMethod(
   exchange: Exchange,
   method: string,
   symbol?: string,
   params: Record<string, any> = {}
 ) {
-  console.log(`Executing ${method} for ${symbol || 'no symbol'}`)
+  console.log(`Executing ${method} for ${symbol || 'no symbol'} on ${exchange.id}`)
   
+  // Convert symbol for Bybit
+  const formattedSymbol = exchange.id === 'bybit' && symbol ? formatBybitSymbol(symbol) : symbol;
+  console.log(`Using formatted symbol: ${formattedSymbol}`)
+
   switch (method) {
     case 'fetchTicker':
-      if (!symbol) throw new Error('Symbol is required for fetchTicker')
-      return await exchange.fetchTicker(symbol)
+      if (!formattedSymbol) throw new Error('Symbol is required for fetchTicker')
+      return await exchange.fetchTicker(formattedSymbol)
 
     case 'fetchOrderBook':
-      if (!symbol) throw new Error('Symbol is required for fetchOrderBook')
-      return await exchange.fetchOrderBook(symbol, params.limit || 20)
+      if (!formattedSymbol) throw new Error('Symbol is required for fetchOrderBook')
+      return await exchange.fetchOrderBook(formattedSymbol, params.limit || 20)
 
     case 'fetchOHLCV':
-      if (!symbol) throw new Error('Symbol is required for fetchOHLCV')
-      return await exchange.fetchOHLCV(symbol, params.timeframe || '1m')
+      if (!formattedSymbol) throw new Error('Symbol is required for fetchOHLCV')
+      return await exchange.fetchOHLCV(formattedSymbol, params.timeframe || '1m')
 
     case 'fetchTrades':
-      if (!symbol) throw new Error('Symbol is required for fetchTrades')
-      return await exchange.fetchTrades(symbol, undefined, params.limit || 50)
+      if (!formattedSymbol) throw new Error('Symbol is required for fetchTrades')
+      return await exchange.fetchTrades(formattedSymbol, undefined, params.limit || 50)
 
     case 'fetchMarkets':
       return await exchange.fetchMarkets()
 
     case 'fetchMarket':
-      if (!symbol) throw new Error('Symbol is required for fetchMarket')
+      if (!formattedSymbol) throw new Error('Symbol is required for fetchMarket')
       const markets = await exchange.fetchMarkets()
-      const market = markets.find(m => m.symbol === symbol)
-      if (!market) throw new Error(`Market not found for symbol: ${symbol}`)
+      const market = markets.find(m => m.symbol === formattedSymbol)
+      if (!market) throw new Error(`Market not found for symbol: ${formattedSymbol}`)
       
-      // Return a cleaned up market structure with the most relevant information
       return {
         symbol: market.symbol,
         base: market.base,
@@ -52,11 +60,11 @@ export async function executeExchangeMethod(
       return await exchange.fetchBalance()
 
     case 'createOrder':
-      if (!symbol || !params.side || !params.amount) {
+      if (!formattedSymbol || !params.side || !params.amount) {
         throw new Error('Missing required order parameters')
       }
       return await exchange.createOrder(
-        symbol,
+        formattedSymbol,
         params.type || 'limit',
         params.side,
         params.amount,
@@ -64,18 +72,18 @@ export async function executeExchangeMethod(
       )
 
     case 'cancelOrder':
-      if (!params.orderId || !symbol) {
+      if (!params.orderId || !formattedSymbol) {
         throw new Error('Order ID and symbol are required for cancelOrder')
       }
-      return await exchange.cancelOrder(params.orderId, symbol)
+      return await exchange.cancelOrder(params.orderId, formattedSymbol)
 
     case 'fetchOrders':
-      if (!symbol) throw new Error('Symbol is required for fetchOrders')
-      return await exchange.fetchOrders(symbol)
+      if (!formattedSymbol) throw new Error('Symbol is required for fetchOrders')
+      return await exchange.fetchOrders(formattedSymbol)
 
     case 'fetchOpenOrders':
-      if (!symbol) throw new Error('Symbol is required for fetchOpenOrders')
-      return await exchange.fetchOpenOrders(symbol)
+      if (!formattedSymbol) throw new Error('Symbol is required for fetchOpenOrders')
+      return await exchange.fetchOpenOrders(formattedSymbol)
 
     default:
       throw new Error(`Unsupported method: ${method}`)
