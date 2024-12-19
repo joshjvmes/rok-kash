@@ -18,40 +18,52 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
     const pricesPromises = DEFAULT_SYMBOLS.flatMap(async (symbol) => {
       // For new tokens that might not be available on all exchanges,
       // we'll handle potential null prices gracefully
-      const [coinbasePrice, krakenPrice, bybitPrice] = await Promise.all([
-        fetchCoinbasePrice(symbol).catch(() => null),
-        fetchKrakenPrice(symbol).catch(() => null),
-        // For Bybit, we need to use USDT pairs
-        fetchCCXTPrice('bybit', symbol.replace('/USD', '/USDT')).catch(() => null)
+      const [coinbasePrice, krakenPrice, bybitPrice] = await Promise.allSettled([
+        fetchCoinbasePrice(symbol).catch((error) => {
+          console.error(`Error fetching Coinbase price for ${symbol}:`, error);
+          return null;
+        }),
+        fetchKrakenPrice(symbol).catch((error) => {
+          console.error(`Error fetching Kraken price for ${symbol}:`, error);
+          return null;
+        }),
+        // For Bybit, we need to use USDT pairs but display as USD
+        fetchCCXTPrice('bybit', symbol.replace('/USD', '/USDT')).catch((error) => {
+          console.error(`Error fetching Bybit price for ${symbol}:`, error);
+          return null;
+        })
       ]);
 
       const results: PriceCardProps[] = [];
       
-      // Add exchanges in specific order for each symbol
-      if (coinbasePrice) {
+      // Add exchanges in specific order for each symbol, only if the price fetch was successful
+      if (coinbasePrice.status === 'fulfilled' && coinbasePrice.value) {
         results.push({
           symbol,
-          price: coinbasePrice.toFixed(2),
+          price: coinbasePrice.value.toFixed(2),
           change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Coinbase'
         });
       }
-      if (krakenPrice) {
+
+      if (krakenPrice.status === 'fulfilled' && krakenPrice.value) {
         results.push({
           symbol,
-          price: krakenPrice.toFixed(2),
+          price: krakenPrice.value.toFixed(2),
           change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Kraken'
         });
       }
-      if (bybitPrice) {
+
+      if (bybitPrice.status === 'fulfilled' && bybitPrice.value) {
         results.push({
           symbol: symbol, // Keep USD in display while using USDT for API calls
-          price: bybitPrice.toFixed(2),
+          price: bybitPrice.value.toFixed(2),
           change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Bybit'
         });
       }
+
       return results;
     });
 
