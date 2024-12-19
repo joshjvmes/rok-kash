@@ -17,6 +17,22 @@ export function PriceCard({ symbol, price, change, exchange }: PriceCardProps) {
     navigate(`/trading/${encodeURIComponent(symbol)}`);
   };
 
+  // Format price based on the asset and price value
+  const formatPrice = (price: string, symbol: string) => {
+    const numericPrice = parseFloat(price);
+    
+    // For lower value assets (like PEPE, BONK) or when price < 1, show more decimals
+    if (numericPrice < 1 || symbol.startsWith('PEPE') || symbol.startsWith('BONK')) {
+      return numericPrice.toFixed(8);
+    }
+    // For mid-range assets (like SOL, AVAX) show 4 decimals
+    else if (numericPrice < 1000 || symbol.startsWith('SOL') || symbol.startsWith('AVAX')) {
+      return numericPrice.toFixed(4);
+    }
+    // For high-value assets (like BTC, ETH) show 2 decimals
+    return numericPrice.toFixed(2);
+  };
+
   return (
     <Card 
       className="p-4 bg-trading-gray hover:bg-trading-gray-light transition-colors cursor-pointer"
@@ -28,7 +44,7 @@ export function PriceCard({ symbol, price, change, exchange }: PriceCardProps) {
           <p className="text-lg font-semibold">{symbol}</p>
         </div>
         <div className="text-right">
-          <p className="text-xl font-bold">${price}</p>
+          <p className="text-xl font-bold">${formatPrice(price, symbol)}</p>
           <p className={`flex items-center gap-1 text-sm ${isPositive ? 'text-trading-green' : 'text-trading-red'}`}>
             {isPositive ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
             {Math.abs(change)}%
