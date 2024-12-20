@@ -99,6 +99,24 @@ export async function createOrder(
 
 export async function fetchBalance(exchange: string) {
   try {
+    // Special handling for Coinbase with pagination
+    if (exchange === 'coinbase') {
+      const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+        body: { 
+          exchange, 
+          method: 'fetchBalancePaginated',
+        }
+      });
+
+      if (error) {
+        console.error(`Error fetching ${exchange} balance:`, error);
+        throw error;
+      }
+
+      return data;
+    }
+
+    // Regular balance fetching for other exchanges
     const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
       body: { exchange, method: 'fetchBalance' }
     });

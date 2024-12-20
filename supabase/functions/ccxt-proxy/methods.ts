@@ -21,6 +21,40 @@ function formatBybitSymbol(symbol: string): string {
   return formattedSymbol;
 }
 
+async function fetchCoinbaseBalancePaginated(exchange: Exchange) {
+  console.log('Fetching paginated Coinbase balance');
+  let result: any = {};
+  let params: any = {};
+  let loop = true;
+
+  do {
+    try {
+      const balance = await exchange.fetchBalance(params);
+      console.log('Fetched balance page');
+      
+      const pagination = exchange.safeValue(balance.info, 'pagination');
+      if (!pagination) {
+        loop = false;
+      } else {
+        const nextStartingAfter = exchange.safeString(pagination, 'next_starting_after');
+        if (nextStartingAfter) {
+          params.starting_after = nextStartingAfter;
+          console.log('Found next page, continuing...');
+        } else {
+          loop = false;
+        }
+      }
+      
+      result = exchange.deepExtend(result, balance);
+    } catch (error) {
+      console.error('Error fetching balance page:', error);
+      throw error;
+    }
+  } while (loop);
+
+  return result;
+}
+
 export async function executeExchangeMethod(
   exchange: Exchange,
   method: string,
@@ -74,6 +108,12 @@ export async function executeExchangeMethod(
 
     case 'fetchBalance':
       return await exchange.fetchBalance();
+
+    case 'fetchBalancePaginated':
+      if (exchange.id === 'coinbase') {
+        return await fetchCoinbaseBalancePaginated(exchange);
+      }
+      throw new Error('Paginated balance fetching is only supported for Coinbase');
 
     case 'createOrder':
       if (!formattedSymbol || !params.side || !params.amount) {
