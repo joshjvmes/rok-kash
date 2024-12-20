@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import * as ccxt from 'npm:ccxt'
+import ccxt from 'npm:ccxt'
 import { configureExchange } from './exchanges.ts'
 import { executeExchangeMethod } from './methods.ts'
 
@@ -7,63 +7,62 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json',
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: corsHeaders
-    })
-  }
-
-  // Only accept POST requests
-  if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({
-        error: true,
-        message: 'Method not allowed'
-      }),
-      {
-        status: 405,
-        headers: corsHeaders
-      }
-    )
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { exchange: exchangeId, symbol, method, params = {} } = await req.json()
-
-    if (!exchangeId || !method) {
+    let requestBody
+    try {
+      const text = await req.text()
+      console.log('Raw request body:', text)
+      requestBody = JSON.parse(text)
+      console.log('Parsed request:', JSON.stringify(requestBody))
+    } catch (error) {
+      console.error('Error parsing request body:', error)
       return new Response(
         JSON.stringify({
           error: true,
-          message: 'Missing required parameters'
+          message: 'Invalid JSON in request body',
+          details: error.message
         }),
         {
           status: 400,
-          headers: corsHeaders
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
+    const { exchange: exchangeId, symbol, method, params = {} } = requestBody
+    
+    if (!exchangeId || !method) {
+      return new Response(
+        JSON.stringify({
+          error: true,
+          message: 'Missing required parameters: exchange and method are required'
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+    
     console.log(`Processing ${method} request for ${symbol || 'no symbol'} on ${exchangeId}`)
     
-    // Use coinbasepro for coinbase
-    const actualExchangeId = exchangeId === 'coinbase' ? 'coinbasepro' : exchangeId
-    console.log(`Using exchange ID: ${actualExchangeId}`)
-    
-    const exchangeClass = ccxt[actualExchangeId]
+    const exchangeClass = ccxt[exchangeId]
     if (!exchangeClass) {
       return new Response(
         JSON.stringify({
           error: true,
-          message: `Unsupported exchange: ${actualExchangeId}`
+          message: `Unsupported exchange: ${exchangeId}`
         }),
         {
           status: 400,
-          headers: corsHeaders
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
@@ -71,74 +70,80 @@ serve(async (req) => {
     const exchange = new exchangeClass({
       enableRateLimit: true,
       timeout: 30000,
+      // Add proper request handling configuration
       options: {
         defaultType: 'spot',
         adjustForTimeDifference: true,
+        recvWindow: 60000,
+      },
+      headers: {
+        'User-Agent': 'ccxt/1.0'
       }
     })
 
     // Initialize the markets cache before making any requests
     if (!exchange.markets) {
-      console.log('Loading markets for', actualExchangeId)
+      console.log('Loading markets for', exchangeId)
       try {
         await exchange.loadMarkets()
       } catch (error) {
-        console.error(`Error loading markets for ${actualExchangeId}:`, error)
-        throw error
+        console.error(`Error loading markets for ${exchangeId}:`, error)
       }
     }
 
     try {
       await configureExchange(exchange, exchangeId)
     } catch (error) {
-      console.error(`Error configuring exchange ${actualExchangeId}:`, error)
+      console.error(`Error configuring exchange ${exchangeId}:`, error)
       return new Response(
         JSON.stringify({
           error: true,
-          message: `Failed to configure exchange: ${error.message}`
+          message: `Exchange configuration error: ${error.message}`,
+          details: error.stack
         }),
         {
           status: 500,
-          headers: corsHeaders
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
     try {
       const result = await executeExchangeMethod(exchange, method, symbol, params)
-      console.log(`Successfully processed ${method} request for ${symbol || 'no symbol'} on ${actualExchangeId}`)
+      console.log(`Successfully processed ${method} request for ${symbol || 'no symbol'} on ${exchangeId}`)
       
       return new Response(
         JSON.stringify(result),
         {
-          headers: corsHeaders
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
     } catch (error) {
-      console.error(`Error executing method ${method} on ${actualExchangeId}:`, error)
+      console.error(`Error executing method ${method} on ${exchangeId}:`, error)
       return new Response(
         JSON.stringify({
           error: true,
           message: `Method execution error: ${error.message}`,
-          details: error.toString()
+          details: error.stack
         }),
         {
           status: 500,
-          headers: corsHeaders
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
   } catch (error) {
-    console.error('Unexpected error:', error)
+    console.error('Error in ccxt-proxy:', error)
+    
     return new Response(
       JSON.stringify({
         error: true,
-        message: 'Internal server error',
-        details: error.toString()
-      }),
+        message: error.message,
+        details: error.stack
+      }), 
       {
         status: 500,
-        headers: corsHeaders
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
   }
