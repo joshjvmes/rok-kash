@@ -1,4 +1,4 @@
-import { Exchange } from 'ccxt'
+import { Exchange } from 'npm:ccxt'
 
 function sanitizeSecret(secret: string | undefined): string {
   if (!secret) return ''

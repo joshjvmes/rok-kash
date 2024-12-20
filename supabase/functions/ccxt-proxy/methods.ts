@@ -1,4 +1,4 @@
-import { Exchange } from 'ccxt'
+import { Exchange } from 'npm:ccxt'
 
 export async function executeExchangeMethod(
   exchange: Exchange,
