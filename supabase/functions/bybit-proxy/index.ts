@@ -21,6 +21,11 @@ function formatBybitPair(symbol: string): string {
     'XRP/USD': 'XRP/USDT'
   };
 
+  // If the symbol is already in USDT format, return it as is
+  if (symbol.endsWith('/USDT')) {
+    return symbol;
+  }
+
   return symbolMap[symbol] || symbol;
 }
 

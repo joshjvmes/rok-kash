@@ -27,7 +27,7 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
           console.error(`Error fetching Kraken price for ${symbol}:`, error);
           return null;
         }),
-        // For Bybit, we need to use USDT pairs but display as USD
+        // For Bybit, we use USDT pairs but display as USD
         fetchCCXTPrice('bybit', symbol.replace('/USD', '/USDT')).catch((error) => {
           console.error(`Error fetching Bybit price for ${symbol}:`, error);
           return null;
