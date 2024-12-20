@@ -26,6 +26,7 @@ function formatBybitPair(symbol: string): string {
     return symbol;
   }
 
+  // Use the mapping or return the original symbol
   return symbolMap[symbol] || symbol;
 }
 
