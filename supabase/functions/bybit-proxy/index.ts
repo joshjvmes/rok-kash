@@ -8,35 +8,15 @@ const corsHeaders = {
 }
 
 function formatBybitPair(symbol: string): string {
-  // Special handling for meme tokens and standard pairs
-  const symbolMap: Record<string, string> = {
-    'MOG/USD': 'MOG/USDT',
-    'PEPE/USD': 'PEPE/USDT',
-    'BONK/USD': 'BONK/USDT',
-    'BTC/USD': 'BTC/USDT',
-    'ETH/USD': 'ETH/USDT',
-    'SOL/USD': 'SOL/USDT',
-    'AVAX/USD': 'AVAX/USDT',
-    'ADA/USD': 'ADA/USDT',
-    'XRP/USD': 'XRP/USDT',
-    'BTC/USDC': 'BTC/USDT',
-    'ETH/USDC': 'ETH/USDT',
-    'SOL/USDC': 'SOL/USDT',
-    'AVAX/USDC': 'AVAX/USDT',
-    'ADA/USDC': 'ADA/USDT',
-    'XRP/USDC': 'XRP/USDT',
-    'PEPE/USDC': 'PEPE/USDT',
-    'BONK/USDC': 'BONK/USDT',
-    'MOG/USDC': 'MOG/USDT'
-  };
-
-  // If the symbol is already in USDT format, return it as is
-  if (symbol.endsWith('/USDT')) {
-    return symbol;
+  // Remove the slash and convert to uppercase
+  const formattedSymbol = symbol.replace('/', '').toUpperCase();
+  
+  // Special handling for USDC pairs - convert to USD
+  if (formattedSymbol.endsWith('USDC')) {
+    return formattedSymbol.replace('USDC', 'USD');
   }
-
-  // Use the mapping or replace USD/USDC with USDT
-  return symbolMap[symbol] || symbol.replace(/USD$|USDC$/, 'USDT');
+  
+  return formattedSymbol;
 }
 
 serve(async (req) => {
@@ -70,11 +50,11 @@ serve(async (req) => {
       case 'fetchTicker':
         try {
           result = await bybit.fetchTicker(formattedSymbol)
-          // Convert USDT price to USD/USDC (approximately 1:1)
+          // Convert back to standard format for consistency with other exchanges
           if (result && result.last) {
             result = {
               ...result,
-              symbol: symbol, // Return the original USD/USDC symbol
+              symbol: symbol, // Return the original symbol format
               last: result.last
             }
           }
