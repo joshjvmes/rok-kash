@@ -35,7 +35,7 @@ function formatBybitPair(symbol: string): string {
     return symbol;
   }
 
-  // Use the mapping or return the original symbol with USDT
+  // Use the mapping or replace USD/USDC with USDT
   return symbolMap[symbol] || symbol.replace(/USD$|USDC$/, 'USDT');
 }
 
