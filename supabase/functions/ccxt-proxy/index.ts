@@ -53,12 +53,15 @@ serve(async (req) => {
     
     console.log(`Processing ${method} request for ${symbol || 'no symbol'} on ${exchangeId}`)
     
-    const exchangeClass = ccxt[exchangeId]
+    // Use coinbasepro instead of coinbase
+    const actualExchangeId = exchangeId === 'coinbase' ? 'coinbasepro' : exchangeId
+    
+    const exchangeClass = ccxt[actualExchangeId]
     if (!exchangeClass) {
       return new Response(
         JSON.stringify({
           error: true,
-          message: `Unsupported exchange: ${exchangeId}`
+          message: `Unsupported exchange: ${actualExchangeId}`
         }),
         {
           status: 400,
@@ -70,7 +73,6 @@ serve(async (req) => {
     const exchange = new exchangeClass({
       enableRateLimit: true,
       timeout: 30000,
-      // Add proper request handling configuration
       options: {
         defaultType: 'spot',
         adjustForTimeDifference: true,
@@ -83,18 +85,18 @@ serve(async (req) => {
 
     // Initialize the markets cache before making any requests
     if (!exchange.markets) {
-      console.log('Loading markets for', exchangeId)
+      console.log('Loading markets for', actualExchangeId)
       try {
         await exchange.loadMarkets()
       } catch (error) {
-        console.error(`Error loading markets for ${exchangeId}:`, error)
+        console.error(`Error loading markets for ${actualExchangeId}:`, error)
       }
     }
 
     try {
       await configureExchange(exchange, exchangeId)
     } catch (error) {
-      console.error(`Error configuring exchange ${exchangeId}:`, error)
+      console.error(`Error configuring exchange ${actualExchangeId}:`, error)
       return new Response(
         JSON.stringify({
           error: true,
@@ -110,7 +112,7 @@ serve(async (req) => {
 
     try {
       const result = await executeExchangeMethod(exchange, method, symbol, params)
-      console.log(`Successfully processed ${method} request for ${symbol || 'no symbol'} on ${exchangeId}`)
+      console.log(`Successfully processed ${method} request for ${symbol || 'no symbol'} on ${actualExchangeId}`)
       
       return new Response(
         JSON.stringify(result),
@@ -119,7 +121,7 @@ serve(async (req) => {
         }
       )
     } catch (error) {
-      console.error(`Error executing method ${method} on ${exchangeId}:`, error)
+      console.error(`Error executing method ${method} on ${actualExchangeId}:`, error)
       return new Response(
         JSON.stringify({
           error: true,

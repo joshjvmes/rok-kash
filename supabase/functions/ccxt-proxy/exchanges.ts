@@ -30,13 +30,16 @@ export async function configureExchange(exchange: Exchange, exchangeId: string):
         const coinbaseSecret = sanitizeSecret(Deno.env.get('COINBASE_SECRET'))
         
         if (coinbaseKey && coinbaseSecret) {
-          console.log('Configuring Coinbase with sanitized API credentials')
+          console.log('Configuring Coinbase Pro with sanitized API credentials')
           exchange.apiKey = coinbaseKey
           exchange.secret = coinbaseSecret
           exchange.options = {
             ...exchange.options,
             createMarketBuyOrderRequiresPrice: false,
-            version: 'v2',
+            version: 'v3',
+            enableRateLimit: true,
+            // Use Advanced Trading API (formerly Coinbase Pro)
+            name: 'coinbasepro',
           }
         } else {
           console.warn('No valid Coinbase API credentials found')
