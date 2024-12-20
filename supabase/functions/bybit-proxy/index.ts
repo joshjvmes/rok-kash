@@ -18,7 +18,16 @@ function formatBybitPair(symbol: string): string {
     'SOL/USD': 'SOL/USDT',
     'AVAX/USD': 'AVAX/USDT',
     'ADA/USD': 'ADA/USDT',
-    'XRP/USD': 'XRP/USDT'
+    'XRP/USD': 'XRP/USDT',
+    'BTC/USDC': 'BTC/USDT',
+    'ETH/USDC': 'ETH/USDT',
+    'SOL/USDC': 'SOL/USDT',
+    'AVAX/USDC': 'AVAX/USDT',
+    'ADA/USDC': 'ADA/USDT',
+    'XRP/USDC': 'XRP/USDT',
+    'PEPE/USDC': 'PEPE/USDT',
+    'BONK/USDC': 'BONK/USDT',
+    'MOG/USDC': 'MOG/USDT'
   };
 
   // If the symbol is already in USDT format, return it as is
@@ -26,8 +35,8 @@ function formatBybitPair(symbol: string): string {
     return symbol;
   }
 
-  // Use the mapping or return the original symbol
-  return symbolMap[symbol] || symbol;
+  // Use the mapping or return the original symbol with USDT
+  return symbolMap[symbol] || symbol.replace(/USD$|USDC$/, 'USDT');
 }
 
 serve(async (req) => {
@@ -61,11 +70,11 @@ serve(async (req) => {
       case 'fetchTicker':
         try {
           result = await bybit.fetchTicker(formattedSymbol)
-          // Convert USDT price to USD (approximately 1:1)
+          // Convert USDT price to USD/USDC (approximately 1:1)
           if (result && result.last) {
             result = {
               ...result,
-              symbol: symbol, // Return the original USD symbol
+              symbol: symbol, // Return the original USD/USDC symbol
               last: result.last
             }
           }
