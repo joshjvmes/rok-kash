@@ -81,48 +81,48 @@ const Index = () => {
     <div className="min-h-screen bg-rokcat-purple-darker">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
             Trading Dashboard
           </h1>
-          <div className="flex gap-4">
+          <div className="flex gap-2 md:gap-4">
             <Button
               onClick={togglePause}
               variant="outline"
-              size="sm"
-              className={`gap-2 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10 ${
+              size="icon"
+              className={`md:h-10 md:w-auto md:px-4 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10 ${
                 isPaused ? 'bg-rokcat-purple/10' : ''
               }`}
             >
               {isPaused ? (
                 <>
-                  <Play className="h-4 w-4" />
-                  Resume Updates
+                  <Play className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Resume Updates</span>
                 </>
               ) : (
                 <>
-                  <Pause className="h-4 w-4" />
-                  Pause Updates
+                  <Pause className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Pause Updates</span>
                 </>
               )}
             </Button>
             <Button
               onClick={handleRefresh}
               variant="outline"
-              size="sm"
-              className="gap-2 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10"
+              size="icon"
+              className="md:h-10 md:w-auto md:px-4 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10"
               disabled={isLoading}
             >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh Data
+              <RefreshCw className={`h-4 w-4 md:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden md:inline">Refresh Data</span>
             </Button>
             <Button
               onClick={handleLogout}
               variant="outline"
-              size="sm"
-              className="gap-2 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10"
+              size="icon"
+              className="md:h-10 md:w-auto md:px-4 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10"
             >
-              <LogOut className="h-4 w-4" />
-              Logout
+              <LogOut className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Logout</span>
             </Button>
           </div>
         </div>
