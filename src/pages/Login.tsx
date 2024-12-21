@@ -45,33 +45,21 @@ export default function Login() {
               button: {
                 borderRadius: '8px',
                 height: '42px',
-                fontSize: '14px',
-                '@media (min-width: 375px)': {
-                  fontSize: '16px',
-                },
+                fontSize: 'clamp(14px, 4vw, 16px)',
               },
               input: {
                 borderRadius: '8px',
                 height: '42px',
-                fontSize: '14px',
-                '@media (min-width: 375px)': {
-                  fontSize: '16px',
-                },
+                fontSize: 'clamp(14px, 4vw, 16px)',
                 backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 color: 'white',
               },
               label: {
                 color: '#D6BCFA',
-                fontSize: '12px',
-                '@media (min-width: 375px)': {
-                  fontSize: '14px',
-                },
+                fontSize: 'clamp(12px, 3.5vw, 14px)',
               },
               anchor: {
-                fontSize: '12px',
-                '@media (min-width: 375px)': {
-                  fontSize: '14px',
-                },
+                fontSize: 'clamp(12px, 3.5vw, 14px)',
               },
             },
           }}
