@@ -82,7 +82,7 @@ const Index = () => {
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
-            Trading Dashboard
+            KASH
           </h1>
           <div className="flex gap-2 md:gap-4">
             <Button
