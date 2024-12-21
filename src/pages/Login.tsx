@@ -17,9 +17,9 @@ export default function Login() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-rokcat-purple-darker flex items-center justify-center p-4 bg-gradient-to-br from-rokcat-purple-darker to-rokcat-gray">
-      <Card className="w-full max-w-md p-8 bg-white/5 backdrop-blur-lg border border-rokcat-purple/20 shadow-2xl">
-        <h1 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
+    <div className="min-h-screen bg-rokcat-purple-darker flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-rokcat-purple-darker to-rokcat-gray">
+      <Card className="w-full max-w-[90%] xs:max-w-[380px] sm:max-w-md p-4 xs:p-6 sm:p-8 bg-white/5 backdrop-blur-lg border border-rokcat-purple/20 shadow-2xl">
+        <h1 className="text-2xl xs:text-3xl font-bold mb-6 sm:mb-8 text-center bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
           Trading Dashboard
         </h1>
         <Auth
@@ -45,18 +45,33 @@ export default function Login() {
               button: {
                 borderRadius: '8px',
                 height: '42px',
-                fontSize: '16px',
+                fontSize: '14px',
+                '@media (min-width: 375px)': {
+                  fontSize: '16px',
+                },
               },
               input: {
                 borderRadius: '8px',
                 height: '42px',
-                fontSize: '16px',
+                fontSize: '14px',
+                '@media (min-width: 375px)': {
+                  fontSize: '16px',
+                },
                 backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 color: 'white',
               },
               label: {
                 color: '#D6BCFA',
-                fontSize: '14px',
+                fontSize: '12px',
+                '@media (min-width: 375px)': {
+                  fontSize: '14px',
+                },
+              },
+              anchor: {
+                fontSize: '12px',
+                '@media (min-width: 375px)': {
+                  fontSize: '14px',
+                },
               },
             },
           }}
