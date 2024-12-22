@@ -13,8 +13,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
+const MEME_SYMBOLS = ['PEPE/USDC', 'BONK/USDC', 'MOG/USDC'];
 const EXCHANGES = ['bybit', 'coinbase', 'kraken', 'binance'];
 
 const Index = () => {
@@ -28,7 +30,7 @@ const Index = () => {
     queryKey: ['prices'],
     queryFn: fetchPrices,
     enabled: !isPaused,
-    refetchInterval: isPaused ? false : 300000, // Changed to 5 minutes (300,000 ms)
+    refetchInterval: isPaused ? false : 300000, // 5 minutes (300,000 ms)
   });
 
   // Group prices by symbol
@@ -39,6 +41,15 @@ const Index = () => {
     acc[price.symbol].push(price);
     return acc;
   }, {} as Record<string, typeof prices>);
+
+  // Filter prices for main tokens and meme tokens
+  const mainTokenPrices = Object.entries(groupedPrices).filter(([symbol]) => 
+    SYMBOLS.includes(symbol)
+  );
+
+  const memeTokenPrices = Object.entries(groupedPrices).filter(([symbol]) => 
+    MEME_SYMBOLS.includes(symbol)
+  );
 
   const { data: arbitrageOpportunities = [] } = useQuery({
     queryKey: ['arbitrageOpportunities', selectedSymbol],
@@ -115,15 +126,34 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="space-y-2">
-          {Object.entries(groupedPrices).map(([symbol, symbolPrices]) => (
-            <div key={symbol} className="grid grid-cols-4 gap-2">
-              {symbolPrices.map((price) => (
-                <PriceCard key={`${price.exchange}-${price.symbol}`} {...price} />
+        <Tabs defaultValue="main" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="main">Main Tokens</TabsTrigger>
+            <TabsTrigger value="meme">Meme Tokens</TabsTrigger>
+          </TabsList>
+          <TabsContent value="main">
+            <div className="space-y-2">
+              {mainTokenPrices.map(([symbol, symbolPrices]) => (
+                <div key={symbol} className="grid grid-cols-4 gap-2">
+                  {symbolPrices.map((price) => (
+                    <PriceCard key={`${price.exchange}-${price.symbol}`} {...price} />
+                  ))}
+                </div>
               ))}
             </div>
-          ))}
-        </div>
+          </TabsContent>
+          <TabsContent value="meme">
+            <div className="space-y-2">
+              {memeTokenPrices.map(([symbol, symbolPrices]) => (
+                <div key={symbol} className="grid grid-cols-4 gap-2">
+                  {symbolPrices.map((price) => (
+                    <PriceCard key={`${price.exchange}-${price.symbol}`} {...price} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="space-y-4">
