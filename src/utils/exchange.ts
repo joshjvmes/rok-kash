@@ -16,8 +16,8 @@ const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit', 'Binance'];
 export async function fetchPrices(): Promise<PriceCardProps[]> {
   try {
     const pricesPromises = DEFAULT_SYMBOLS.flatMap(async (symbol) => {
-      // Special handling for MOG on Binance
-      const binanceSymbol = symbol === 'MOG/USD' ? 'MOG/USDT' : symbol.replace('/USD', '/USDT');
+      // Convert to USDT pair for most tokens except MOG
+      const binanceSymbol = symbol.replace('/USD', '/USDT');
 
       const [coinbasePrice, krakenPrice, bybitPrice, binancePrice] = await Promise.allSettled([
         fetchCoinbasePrice(symbol).catch((error) => {
@@ -69,7 +69,7 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
 
       if (binancePrice.status === 'fulfilled' && binancePrice.value) {
         results.push({
-          symbol: symbol, // Display as MOG/USD even though we fetch MOG/USDT
+          symbol,
           price: binancePrice.value.toFixed(2),
           change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Binance'
