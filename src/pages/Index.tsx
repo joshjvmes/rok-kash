@@ -30,8 +30,10 @@ const Index = () => {
     queryKey: ['prices'],
     queryFn: fetchPrices,
     enabled: !isPaused,
-    refetchInterval: isPaused ? false : 300000, // 5 minutes (300,000 ms)
+    refetchInterval: isPaused ? false : 300000, // 5 minutes
   });
+
+  console.log('Raw prices data:', prices); // Debug log
 
   // Group prices by symbol
   const groupedPrices = prices.reduce((acc, price) => {
@@ -42,6 +44,8 @@ const Index = () => {
     return acc;
   }, {} as Record<string, typeof prices>);
 
+  console.log('Grouped prices:', groupedPrices); // Debug log
+
   // Filter prices for main tokens and meme tokens
   const mainTokenPrices = Object.entries(groupedPrices).filter(([symbol]) => 
     SYMBOLS.includes(symbol)
@@ -51,11 +55,14 @@ const Index = () => {
     MEME_SYMBOLS.includes(symbol)
   );
 
+  console.log('Main token prices:', mainTokenPrices); // Debug log
+  console.log('Meme token prices:', memeTokenPrices); // Debug log
+
   const { data: arbitrageOpportunities = [] } = useQuery({
     queryKey: ['arbitrageOpportunities', selectedSymbol],
     queryFn: () => findArbitrageOpportunities(selectedSymbol),
     enabled: !isPaused,
-    refetchInterval: isPaused ? false : 5000, // Keeping arbitrage opportunities at 5 seconds
+    refetchInterval: isPaused ? false : 5000,
   });
 
   const handleLogout = async () => {
@@ -83,7 +90,6 @@ const Index = () => {
         title: "API Requests Resumed",
         description: "Data updates have been resumed",
       });
-      // Force a refresh of all queries when resuming
       queryClient.invalidateQueries();
     }
   };
