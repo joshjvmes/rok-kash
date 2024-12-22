@@ -1,24 +1,36 @@
 import { Exchange } from 'npm:ccxt'
 
-function formatBybitSymbol(symbol: string): string {
+function formatExchangeSymbol(exchange: string, symbol: string): string {
   console.log(`Original symbol: ${symbol}`);
   
-  // Remove the slash and handle special cases for Bybit
-  let formattedSymbol = symbol.replace('/', '');
-  
-  // Convert USDC pairs to USD for Bybit
-  if (formattedSymbol.endsWith('USDC')) {
-    formattedSymbol = formattedSymbol.replace('USDC', 'USD');
+  switch (exchange) {
+    case 'bybit':
+      // Remove the slash and handle special cases for Bybit
+      let bybitSymbol = symbol.replace('/', '');
+      
+      // Convert USDC pairs to USD for Bybit
+      if (bybitSymbol.endsWith('USDC')) {
+        bybitSymbol = bybitSymbol.replace('USDC', 'USD');
+      }
+      
+      // For USD pairs, just keep the base currency and add USD
+      if (bybitSymbol.endsWith('USD')) {
+        const baseCurrency = bybitSymbol.replace('USD', '');
+        bybitSymbol = `${baseCurrency}USD`;
+      }
+      
+      console.log(`Formatted symbol for Bybit: ${bybitSymbol}`);
+      return bybitSymbol;
+
+    case 'binance':
+      // Remove the slash for Binance
+      const binanceSymbol = symbol.replace('/', '');
+      console.log(`Formatted symbol for Binance: ${binanceSymbol}`);
+      return binanceSymbol;
+
+    default:
+      return symbol;
   }
-  
-  // For USD pairs, just keep the base currency and add USD
-  if (formattedSymbol.endsWith('USD')) {
-    const baseCurrency = formattedSymbol.replace('USD', '');
-    formattedSymbol = `${baseCurrency}USD`;
-  }
-  
-  console.log(`Formatted symbol for Bybit: ${formattedSymbol}`);
-  return formattedSymbol;
 }
 
 export async function executeExchangeMethod(
@@ -29,8 +41,8 @@ export async function executeExchangeMethod(
 ) {
   console.log(`Executing ${method} for ${symbol || 'no symbol'} on ${exchange.id}`);
   
-  // Format symbol specifically for Bybit
-  const formattedSymbol = exchange.id === 'bybit' && symbol ? formatBybitSymbol(symbol) : symbol;
+  // Format symbol for specific exchanges
+  const formattedSymbol = symbol ? formatExchangeSymbol(exchange.id, symbol) : symbol;
   console.log(`Using formatted symbol: ${formattedSymbol}`);
 
   switch (method) {
