@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
 const SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
-const EXCHANGES = ['bybit', 'coinbase', 'kraken'];
+const EXCHANGES = ['bybit', 'coinbase', 'kraken', 'binance'];
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState(SYMBOLS[0]);

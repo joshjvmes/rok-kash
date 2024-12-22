@@ -11,14 +11,12 @@ const DEFAULT_SYMBOLS = [
   'AVAX/USD', 'ADA/USD', 'XRP/USD'
 ];
 
-const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit'];
+const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit', 'Binance'];
 
 export async function fetchPrices(): Promise<PriceCardProps[]> {
   try {
     const pricesPromises = DEFAULT_SYMBOLS.flatMap(async (symbol) => {
-      // For new tokens that might not be available on all exchanges,
-      // we'll handle potential null prices gracefully
-      const [coinbasePrice, krakenPrice, bybitPrice] = await Promise.allSettled([
+      const [coinbasePrice, krakenPrice, bybitPrice, binancePrice] = await Promise.allSettled([
         fetchCoinbasePrice(symbol).catch((error) => {
           console.error(`Error fetching Coinbase price for ${symbol}:`, error);
           return null;
@@ -27,16 +25,18 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
           console.error(`Error fetching Kraken price for ${symbol}:`, error);
           return null;
         }),
-        // For Bybit, we use USDT pairs but display as USD
         fetchCCXTPrice('bybit', symbol.replace('/USD', '/USDT')).catch((error) => {
           console.error(`Error fetching Bybit price for ${symbol}:`, error);
+          return null;
+        }),
+        fetchCCXTPrice('binance', symbol.replace('/USD', '/USDT')).catch((error) => {
+          console.error(`Error fetching Binance price for ${symbol}:`, error);
           return null;
         })
       ]);
 
       const results: PriceCardProps[] = [];
       
-      // Add exchanges in specific order for each symbol, only if the price fetch was successful
       if (coinbasePrice.status === 'fulfilled' && coinbasePrice.value) {
         results.push({
           symbol,
@@ -57,10 +57,19 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
 
       if (bybitPrice.status === 'fulfilled' && bybitPrice.value) {
         results.push({
-          symbol: symbol, // Keep USD in display while using USDT for API calls
+          symbol: symbol,
           price: bybitPrice.value.toFixed(2),
           change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Bybit'
+        });
+      }
+
+      if (binancePrice.status === 'fulfilled' && binancePrice.value) {
+        results.push({
+          symbol: symbol,
+          price: binancePrice.value.toFixed(2),
+          change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
+          exchange: 'Binance'
         });
       }
 
@@ -68,7 +77,6 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
     });
 
     const prices = await Promise.all(pricesPromises);
-    // Sort the flattened array to group by symbol and maintain exchange order
     return prices.flat().sort((a, b) => {
       if (a.symbol !== b.symbol) {
         const aBase = a.symbol.split('/')[0];
