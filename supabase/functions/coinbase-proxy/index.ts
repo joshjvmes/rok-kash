@@ -26,14 +26,13 @@ serve(async (req) => {
       throw new Error('Coinbase API credentials are not configured')
     }
 
-    const decodedSecret = decodeURIComponent(apiSecret)
     const timestamp = Math.floor(Date.now() / 1000).toString()
     const requestPath = `/v2/prices/${base}-USD/spot`
     const message = timestamp + 'GET' + requestPath
     
     const key = await crypto.subtle.importKey(
       "raw",
-      new TextEncoder().encode(decodedSecret),
+      new TextEncoder().encode(apiSecret),
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["sign"]
