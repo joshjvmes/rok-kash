@@ -35,18 +35,18 @@ export function PriceCard({ symbol, price, change, exchange }: PriceCardProps) {
 
   return (
     <Card 
-      className="p-4 bg-trading-gray hover:bg-trading-gray-light transition-colors cursor-pointer"
+      className="p-2 bg-trading-gray hover:bg-trading-gray-light transition-colors cursor-pointer"
       onClick={handleClick}
     >
       <div className="flex justify-between items-start">
         <div>
-          <h3 className="text-sm text-gray-400">{exchange}</h3>
-          <p className="text-lg font-semibold">{symbol}</p>
+          <h3 className="text-xs text-gray-400">{exchange}</h3>
+          <p className="text-sm font-semibold">{symbol}</p>
         </div>
         <div className="text-right">
-          <p className="text-xl font-bold">${formatPrice(price, symbol)}</p>
-          <p className={`flex items-center gap-1 text-sm ${isPositive ? 'text-trading-green' : 'text-trading-red'}`}>
-            {isPositive ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+          <p className="text-base font-bold">${formatPrice(price, symbol)}</p>
+          <p className={`flex items-center gap-0.5 text-xs ${isPositive ? 'text-trading-green' : 'text-trading-red'}`}>
+            {isPositive ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
             {Math.abs(change)}%
           </p>
         </div>

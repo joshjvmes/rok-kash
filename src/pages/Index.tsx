@@ -79,57 +79,45 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-rokcat-purple-darker">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="max-w-7xl mx-auto p-4 space-y-4">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
             KASH
           </h1>
-          <div className="flex gap-2 md:gap-4">
+          <div className="flex gap-2">
             <Button
               onClick={togglePause}
               variant="outline"
               size="icon"
-              className={`md:h-10 md:w-auto md:px-4 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10 ${
+              className={`h-8 w-8 md:h-9 md:w-9 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10 ${
                 isPaused ? 'bg-rokcat-purple/10' : ''
               }`}
             >
-              {isPaused ? (
-                <>
-                  <Play className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Resume Updates</span>
-                </>
-              ) : (
-                <>
-                  <Pause className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Pause Updates</span>
-                </>
-              )}
+              {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
             </Button>
             <Button
               onClick={handleRefresh}
               variant="outline"
               size="icon"
-              className="md:h-10 md:w-auto md:px-4 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10"
+              className="h-8 w-8 md:h-9 md:w-9 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10"
               disabled={isLoading}
             >
-              <RefreshCw className={`h-4 w-4 md:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              <span className="hidden md:inline">Refresh Data</span>
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
             <Button
               onClick={handleLogout}
               variant="outline"
               size="icon"
-              className="md:h-10 md:w-auto md:px-4 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10"
+              className="h-8 w-8 md:h-9 md:w-9 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10"
             >
-              <LogOut className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Logout</span>
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {Object.entries(groupedPrices).map(([symbol, symbolPrices]) => (
-            <div key={symbol} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div key={symbol} className="grid grid-cols-4 gap-2">
               {symbolPrices.map((price) => (
                 <PriceCard key={`${price.exchange}-${price.symbol}`} {...price} />
               ))}
@@ -137,22 +125,22 @@ const Index = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <QuickTrade />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {EXCHANGES.map((exchange) => (
                 <ExchangeBalance key={exchange} exchange={exchange} />
               ))}
             </div>
           </div>
-          <div className="space-y-6">
+          <div className="space-y-4">
             <OrderBook exchange="coinbase" symbol={selectedSymbol} />
             <TradingHistory exchange="coinbase" symbol={selectedSymbol} />
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           <h2 className="text-xl font-semibold text-rokcat-purple-light">Arbitrage Opportunities</h2>
           {arbitrageOpportunities.map((opportunity, index) => (
             <ArbitrageOpportunity key={index} {...opportunity} />
