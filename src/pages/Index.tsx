@@ -28,7 +28,7 @@ const Index = () => {
     queryKey: ['prices'],
     queryFn: fetchPrices,
     enabled: !isPaused,
-    refetchInterval: isPaused ? false : 5000,
+    refetchInterval: isPaused ? false : 300000, // Changed to 5 minutes (300,000 ms)
   });
 
   // Group prices by symbol
@@ -44,7 +44,7 @@ const Index = () => {
     queryKey: ['arbitrageOpportunities', selectedSymbol],
     queryFn: () => findArbitrageOpportunities(selectedSymbol),
     enabled: !isPaused,
-    refetchInterval: isPaused ? false : 5000,
+    refetchInterval: isPaused ? false : 5000, // Keeping arbitrage opportunities at 5 seconds
   });
 
   const handleLogout = async () => {
