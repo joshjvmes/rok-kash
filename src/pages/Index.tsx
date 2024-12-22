@@ -133,6 +133,13 @@ const Index = () => {
           </TabsList>
           <TabsContent value="main">
             <div className="space-y-2">
+              <div className="grid grid-cols-4 gap-2 mb-2">
+                {SYMBOLS.map((symbol) => (
+                  <div key={symbol} className="text-sm font-semibold text-rokcat-purple-light px-2">
+                    {symbol}
+                  </div>
+                ))}
+              </div>
               {mainTokenPrices.map(([symbol, symbolPrices]) => (
                 <div key={symbol} className="grid grid-cols-4 gap-2">
                   {symbolPrices.map((price) => (
@@ -144,6 +151,13 @@ const Index = () => {
           </TabsContent>
           <TabsContent value="meme">
             <div className="space-y-2">
+              <div className="grid grid-cols-4 gap-2 mb-2">
+                {MEME_SYMBOLS.map((symbol) => (
+                  <div key={symbol} className="text-sm font-semibold text-rokcat-purple-light px-2">
+                    {symbol}
+                  </div>
+                ))}
+              </div>
               {memeTokenPrices.map(([symbol, symbolPrices]) => (
                 <div key={symbol} className="grid grid-cols-4 gap-2">
                   {symbolPrices.map((price) => (
