@@ -8,8 +8,8 @@ export { findArbitrageOpportunities } from "./exchanges/arbitrage";
 // Match the symbols used in the UI
 const DEFAULT_SYMBOLS = [
   'BTC/USDC', 'ETH/USDC', 'SOL/USDC', 
-  'PEPE/USDC', 'SHI/USDC', 'BTTC/USDC',
-  'ADA/USDC', 'XRP/USDC'
+  'PEPE/USDC', 'BONK/USDC', 'MOG/USDC',
+  'AVAX/USDC'
 ];
 
 const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit', 'Binance'];
