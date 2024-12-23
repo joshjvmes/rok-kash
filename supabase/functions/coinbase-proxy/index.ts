@@ -27,8 +27,12 @@ serve(async (req) => {
     }
 
     const timestamp = Math.floor(Date.now() / 1000).toString()
-    const requestPath = `/v2/prices/${base}-USD/spot`
+    // Ensure the path is properly encoded
+    const requestPath = encodeURI(`/v2/prices/${base}-USD/spot`)
     const message = timestamp + 'GET' + requestPath
+    
+    console.log('Request path:', requestPath)
+    console.log('Signing message:', message)
     
     const key = await crypto.subtle.importKey(
       "raw",
