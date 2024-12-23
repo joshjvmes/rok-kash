@@ -85,7 +85,14 @@ export async function executeExchangeMethod(
       };
 
     case 'fetchBalance':
-      return await exchange.fetchBalance();
+      const balance = await exchange.fetchBalance();
+      // Filter to only return USDC balance
+      return {
+        ...balance,
+        total: { USDC: balance.total?.USDC || 0 },
+        free: { USDC: balance.free?.USDC || 0 },
+        used: { USDC: balance.used?.USDC || 0 }
+      };
 
     case 'createOrder':
       if (!formattedSymbol || !params.side || !params.amount) {

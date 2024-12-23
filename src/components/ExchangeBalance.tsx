@@ -33,22 +33,19 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
     );
   }
 
-  const nonZeroBalances = Object.entries(balance?.total || {}).filter(
-    ([_, amount]) => Number(amount) > 0
-  );
+  // Only show USDC balance
+  const usdcBalance = balance?.total?.USDC || 0;
 
   return (
     <Card className="p-4 bg-trading-gray">
       <h3 className="text-lg font-semibold mb-4 capitalize">{exchange}</h3>
-      <div className="space-y-2 max-h-48 overflow-y-auto">
-        {nonZeroBalances.map(([currency, amount]) => (
-          <div key={currency} className="flex justify-between text-sm">
-            <span className="text-gray-400">{currency}</span>
-            <span>{Number(amount).toFixed(8)}</span>
-          </div>
-        ))}
-        {nonZeroBalances.length === 0 && (
-          <p className="text-sm text-gray-400">No balance available</p>
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-400">USDC</span>
+          <span>{Number(usdcBalance).toFixed(2)}</span>
+        </div>
+        {usdcBalance === 0 && (
+          <p className="text-sm text-gray-400">No USDC balance</p>
         )}
       </div>
     </Card>
