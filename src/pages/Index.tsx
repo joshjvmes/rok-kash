@@ -2,9 +2,9 @@ import { useState } from "react";
 import { QuickTrade } from "@/components/QuickTrade";
 import { TradingHistory } from "@/components/TradingHistory";
 import { OrderBook } from "@/components/OrderBook";
-import { PriceCard } from "@/components/PriceCard";
 import { ArbitrageOpportunity } from "@/components/ArbitrageOpportunity";
 import { ExchangeBalance } from "@/components/ExchangeBalance";
+import { TokenPricesTab } from "@/components/trading/TokenPricesTab";
 import { fetchPrices, findArbitrageOpportunities } from "@/utils/exchange";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ const Index = () => {
     refetchInterval: isPaused ? false : 300000, // 5 minutes
   });
 
-  console.log('Raw prices data:', prices); // Debug log
+  console.log('Raw prices data:', prices);
 
   // Group prices by symbol
   const groupedPrices = prices.reduce((acc, price) => {
@@ -44,19 +44,7 @@ const Index = () => {
     return acc;
   }, {} as Record<string, typeof prices>);
 
-  console.log('Grouped prices:', groupedPrices); // Debug log
-
-  // Filter prices for main tokens and meme tokens
-  const mainTokenPrices = Object.entries(groupedPrices).filter(([symbol]) => 
-    SYMBOLS.includes(symbol)
-  );
-
-  const memeTokenPrices = Object.entries(groupedPrices).filter(([symbol]) => 
-    MEME_SYMBOLS.includes(symbol)
-  );
-
-  console.log('Main token prices:', mainTokenPrices); // Debug log
-  console.log('Meme token prices:', memeTokenPrices); // Debug log
+  console.log('Grouped prices:', groupedPrices);
 
   const { data: arbitrageOpportunities = [] } = useQuery({
     queryKey: ['arbitrageOpportunities', selectedSymbol],
@@ -138,40 +126,10 @@ const Index = () => {
             <TabsTrigger value="meme">Meme Tokens</TabsTrigger>
           </TabsList>
           <TabsContent value="main">
-            <div className="space-y-2">
-              <div className="grid grid-cols-4 gap-2 mb-2">
-                {SYMBOLS.map((symbol) => (
-                  <div key={symbol} className="text-sm font-semibold text-rokcat-purple-light px-2">
-                    {symbol}
-                  </div>
-                ))}
-              </div>
-              {mainTokenPrices.map(([symbol, symbolPrices]) => (
-                <div key={symbol} className="grid grid-cols-4 gap-2">
-                  {symbolPrices.map((price) => (
-                    <PriceCard key={`${price.exchange}-${price.symbol}`} {...price} />
-                  ))}
-                </div>
-              ))}
-            </div>
+            <TokenPricesTab groupedPrices={groupedPrices} symbols={SYMBOLS} />
           </TabsContent>
           <TabsContent value="meme">
-            <div className="space-y-2">
-              <div className="grid grid-cols-4 gap-2 mb-2">
-                {MEME_SYMBOLS.map((symbol) => (
-                  <div key={symbol} className="text-sm font-semibold text-rokcat-purple-light px-2">
-                    {symbol}
-                  </div>
-                ))}
-              </div>
-              {memeTokenPrices.map(([symbol, symbolPrices]) => (
-                <div key={symbol} className="grid grid-cols-4 gap-2">
-                  {symbolPrices.map((price) => (
-                    <PriceCard key={`${price.exchange}-${price.symbol}`} {...price} />
-                  ))}
-                </div>
-              ))}
-            </div>
+            <TokenPricesTab groupedPrices={groupedPrices} symbols={MEME_SYMBOLS} />
           </TabsContent>
         </Tabs>
 
@@ -191,7 +149,9 @@ const Index = () => {
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-rokcat-purple-light">Arbitrage Opportunities</h2>
+          <h2 className="text-xl font-semibold text-rokcat-purple-light">
+            Arbitrage Opportunities
+          </h2>
           {arbitrageOpportunities.map((opportunity, index) => (
             <ArbitrageOpportunity key={index} {...opportunity} />
           ))}

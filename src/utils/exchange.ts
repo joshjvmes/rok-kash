@@ -5,10 +5,11 @@ import type { PriceCardProps } from "./types/exchange";
 
 export { findArbitrageOpportunities } from "./exchanges/arbitrage";
 
+// Match the symbols used in the UI
 const DEFAULT_SYMBOLS = [
-  'BTC/USD', 'ETH/USD', 'SOL/USD', 
-  'PEPE/USD', 'BONK/USD', 'MOG/USD',
-  'AVAX/USD', 'ADA/USD', 'XRP/USD'
+  'BTC/USDC', 'ETH/USDC', 'SOL/USDC', 
+  'PEPE/USDC', 'BONK/USDC', 'MOG/USDC',
+  'AVAX/USDC'
 ];
 
 const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit', 'Binance'];
@@ -16,30 +17,37 @@ const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit', 'Binance'];
 export async function fetchPrices(): Promise<PriceCardProps[]> {
   try {
     const pricesPromises = DEFAULT_SYMBOLS.flatMap(async (symbol) => {
-      // Convert to USDT pair for most tokens except MOG
-      const binanceSymbol = symbol.replace('/USD', '/USDT');
+      // Convert to USD pair for exchanges that require it
+      const usdSymbol = symbol.replace('/USDC', '/USD');
+      // Convert to USDT pair for Binance
+      const binanceSymbol = symbol.replace('/USDC', '/USDT');
+
+      console.log(`Fetching prices for ${symbol}`);
+      console.log(`Using USD symbol: ${usdSymbol} for some exchanges`);
+      console.log(`Using USDT symbol: ${binanceSymbol} for Binance`);
 
       const [coinbasePrice, krakenPrice, bybitPrice, binancePrice] = await Promise.allSettled([
-        fetchCoinbasePrice(symbol).catch((error) => {
-          console.error(`Error fetching Coinbase price for ${symbol}:`, error);
+        fetchCoinbasePrice(usdSymbol).catch((error) => {
+          console.error(`Error fetching Coinbase price for ${usdSymbol}:`, error);
           return null;
         }),
-        fetchKrakenPrice(symbol).catch((error) => {
-          console.error(`Error fetching Kraken price for ${symbol}:`, error);
+        fetchKrakenPrice(usdSymbol).catch((error) => {
+          console.error(`Error fetching Kraken price for ${usdSymbol}:`, error);
           return null;
         }),
-        fetchCCXTPrice('bybit', symbol.replace('/USD', '/USDT')).catch((error) => {
-          console.error(`Error fetching Bybit price for ${symbol}:`, error);
+        fetchCCXTPrice('bybit', usdSymbol).catch((error) => {
+          console.error(`Error fetching Bybit price for ${usdSymbol}:`, error);
           return null;
         }),
         fetchCCXTPrice('binance', binanceSymbol).catch((error) => {
-          console.error(`Error fetching Binance price for ${symbol}:`, error);
+          console.error(`Error fetching Binance price for ${binanceSymbol}:`, error);
           return null;
         })
       ]);
 
       const results: PriceCardProps[] = [];
       
+      // Always use the original USDC symbol for consistency in the UI
       if (coinbasePrice.status === 'fulfilled' && coinbasePrice.value) {
         results.push({
           symbol,
