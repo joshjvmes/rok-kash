@@ -99,6 +99,8 @@ export async function createOrder(
 
 export async function fetchBalance(exchange: string) {
   try {
+    console.log(`Fetching balance for ${exchange}...`);
+    
     const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
       body: { exchange, method: 'fetchBalance' }
     });
@@ -108,6 +110,7 @@ export async function fetchBalance(exchange: string) {
       throw error;
     }
 
+    console.log(`Successfully fetched ${exchange} balance:`, data);
     return data;
   } catch (error) {
     console.error(`Error fetching ${exchange} balance:`, error);
