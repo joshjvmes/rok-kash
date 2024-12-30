@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
 const MEME_SYMBOLS = ['PEPE/USDC', 'BONK/USDC', 'MOG/USDC'];
-const EXCHANGES = ['bybit', 'coinbase', 'kraken', 'binance', 'kucoin'];
+const EXCHANGES = ['bybit', 'coinbase', 'kraken', 'binance', 'kucoin', 'okx'];
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState(SYMBOLS[0]);

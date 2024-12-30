@@ -114,7 +114,6 @@ export async function configureExchange(exchange: Exchange, exchangeId: string):
               private: { get: ['2'] },
             },
           }
-          // Add debug logging
           console.log('Kucoin configuration complete:', {
             hasApiKey: !!exchange.apiKey,
             hasSecret: !!exchange.secret,
@@ -128,6 +127,36 @@ export async function configureExchange(exchange: Exchange, exchangeId: string):
             hasPassphrase: !!kucoinPassphrase
           })
           throw new Error('Kucoin API credentials not configured or invalid')
+        }
+        break
+
+      case 'okx':
+        const okxKey = sanitizeApiKey(Deno.env.get('OKX_API_KEY'))
+        const okxSecret = sanitizeSecret(Deno.env.get('OKX_SECRET'))
+        const okxPassphrase = Deno.env.get('OKX_PASSPHRASE')?.trim()
+        
+        if (okxKey && okxSecret && okxPassphrase) {
+          console.log('Configuring OKX with sanitized API credentials')
+          exchange.apiKey = okxKey
+          exchange.secret = okxSecret
+          exchange.password = okxPassphrase
+          exchange.options = {
+            ...exchange.options,
+            defaultType: 'spot',
+          }
+          console.log('OKX configuration complete:', {
+            hasApiKey: !!exchange.apiKey,
+            hasSecret: !!exchange.secret,
+            hasPassphrase: !!exchange.password,
+            options: exchange.options
+          })
+        } else {
+          console.warn('No valid OKX API credentials found', {
+            hasApiKey: !!okxKey,
+            hasSecret: !!okxSecret,
+            hasPassphrase: !!okxPassphrase
+          })
+          throw new Error('OKX API credentials not configured or invalid')
         }
         break
 

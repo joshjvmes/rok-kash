@@ -12,21 +12,21 @@ const DEFAULT_SYMBOLS = [
   'AVAX/USDC'
 ];
 
-const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit', 'Binance', 'Kucoin'];
+const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit', 'Binance', 'Kucoin', 'OKX'];
 
 export async function fetchPrices(): Promise<PriceCardProps[]> {
   try {
     const pricesPromises = DEFAULT_SYMBOLS.flatMap(async (symbol) => {
       // Convert to USD pair for exchanges that require it
       const usdSymbol = symbol.replace('/USDC', '/USD');
-      // Convert to USDT pair for Binance and Kucoin
+      // Convert to USDT pair for Binance, Kucoin and OKX
       const usdtSymbol = symbol.replace('/USDC', '/USDT');
 
       console.log(`Fetching prices for ${symbol}`);
       console.log(`Using USD symbol: ${usdSymbol} for some exchanges`);
-      console.log(`Using USDT symbol: ${usdtSymbol} for Binance and Kucoin`);
+      console.log(`Using USDT symbol: ${usdtSymbol} for Binance, Kucoin and OKX`);
 
-      const [coinbasePrice, krakenPrice, bybitPrice, binancePrice, kucoinPrice] = await Promise.allSettled([
+      const [coinbasePrice, krakenPrice, bybitPrice, binancePrice, kucoinPrice, okxPrice] = await Promise.allSettled([
         fetchCoinbasePrice(usdSymbol).catch((error) => {
           console.error(`Error fetching Coinbase price for ${usdSymbol}:`, error);
           return null;
@@ -45,6 +45,10 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
         }),
         fetchCCXTPrice('kucoin', usdtSymbol).catch((error) => {
           console.error(`Error fetching Kucoin price for ${usdtSymbol}:`, error);
+          return null;
+        }),
+        fetchCCXTPrice('okx', usdtSymbol).catch((error) => {
+          console.error(`Error fetching OKX price for ${usdtSymbol}:`, error);
           return null;
         })
       ]);
@@ -94,6 +98,15 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
           price: kucoinPrice.value.toFixed(2),
           change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Kucoin'
+        });
+      }
+
+      if (okxPrice.status === 'fulfilled' && okxPrice.value) {
+        results.push({
+          symbol,
+          price: okxPrice.value.toFixed(2),
+          change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
+          exchange: 'OKX'
         });
       }
 
