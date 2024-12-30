@@ -27,6 +27,7 @@ export function ExchangeSelector({ selectedExchange, onExchangeChange }: Exchang
           <SelectItem value="coinbase">Coinbase</SelectItem>
           <SelectItem value="kraken">Kraken</SelectItem>
           <SelectItem value="binance">Binance</SelectItem>
+          <SelectItem value="kucoin">Kucoin</SelectItem>
         </SelectContent>
       </Select>
     </div>
