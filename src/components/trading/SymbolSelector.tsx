@@ -38,7 +38,16 @@ export function SymbolSelector({
     "BONK/USDC": "< 1 minute",
     "FLOG/USDC": "< 1 minute",
     "BTTC/USDC": "< 1 minute",
-    "MOG/USDC": "< 1 minute"
+    "MOG/USDC": "< 1 minute",
+    // Add Kucoin popular pairs
+    "DOGE/USDC": "1-5 minutes",
+    "MATIC/USDC": "< 1 minute",
+    "DOT/USDC": "2-5 minutes",
+    "LINK/USDC": "< 1 minute",
+    "UNI/USDC": "< 1 minute",
+    "AAVE/USDC": "< 1 minute",
+    "ATOM/USDC": "2-5 minutes",
+    "FTM/USDC": "< 1 minute"
   };
 
   const handleSymbolChange = (value: string) => {
@@ -66,6 +75,14 @@ export function SymbolSelector({
             <SelectItem value="AVAX/USDC">AVAX/USDC</SelectItem>
             <SelectItem value="ADA/USDC">ADA/USDC</SelectItem>
             <SelectItem value="XRP/USDC">XRP/USDC</SelectItem>
+            <SelectItem value="DOGE/USDC">DOGE/USDC</SelectItem>
+            <SelectItem value="MATIC/USDC">MATIC/USDC</SelectItem>
+            <SelectItem value="DOT/USDC">DOT/USDC</SelectItem>
+            <SelectItem value="LINK/USDC">LINK/USDC</SelectItem>
+            <SelectItem value="UNI/USDC">UNI/USDC</SelectItem>
+            <SelectItem value="AAVE/USDC">AAVE/USDC</SelectItem>
+            <SelectItem value="ATOM/USDC">ATOM/USDC</SelectItem>
+            <SelectItem value="FTM/USDC">FTM/USDC</SelectItem>
             <SelectItem value="PEPE/USDC">PEPE/USDC</SelectItem>
             <SelectItem value="SHI/USDC">SHI/USDC</SelectItem>
             <SelectItem value="BONK/USDC">BONK/USDC</SelectItem>
