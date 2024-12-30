@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
 const MEME_SYMBOLS = ['PEPE/USDC', 'BONK/USDC', 'MOG/USDC'];
-const EXCHANGES = ['bybit', 'coinbase', 'kraken', 'binance'];
+const EXCHANGES = ['bybit', 'coinbase', 'kraken', 'binance', 'kucoin'];
 
 const Index = () => {
   const [selectedSymbol, setSelectedSymbol] = useState(SYMBOLS[0]);
@@ -136,7 +136,7 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="space-y-4">
             <QuickTrade />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
               {EXCHANGES.map((exchange) => (
                 <ExchangeBalance key={exchange} exchange={exchange} />
               ))}

@@ -12,7 +12,7 @@ export function PriceCardsGrid({ symbol, prices }: PriceCardsGridProps) {
       <div className="text-sm font-semibold text-rokcat-purple-light px-2">
         {symbol}
       </div>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         {prices.map((price) => (
           <PriceCard key={`${price.exchange}-${price.symbol}`} {...price} />
         ))}
