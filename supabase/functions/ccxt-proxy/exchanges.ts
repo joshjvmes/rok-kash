@@ -99,13 +99,13 @@ export async function configureExchange(exchange: Exchange, exchangeId: string):
       case 'kucoin':
         const kucoinKey = sanitizeApiKey(Deno.env.get('KUCOIN_API_KEY'))
         const kucoinSecret = sanitizeSecret(Deno.env.get('KUCOIN_SECRET'))
-        const kucoinPassphrase = Deno.env.get('KUCOIN_PASSPHRASE')
+        const kucoinPassphrase = Deno.env.get('KUCOIN_PASSPHRASE')?.trim()
         
         if (kucoinKey && kucoinSecret && kucoinPassphrase) {
           console.log('Configuring Kucoin with sanitized API credentials')
           exchange.apiKey = kucoinKey
           exchange.secret = kucoinSecret
-          exchange.password = kucoinPassphrase // Kucoin requires passphrase
+          exchange.password = kucoinPassphrase
           exchange.options = {
             ...exchange.options,
             defaultType: 'spot',
@@ -114,8 +114,19 @@ export async function configureExchange(exchange: Exchange, exchangeId: string):
               private: { get: ['2'] },
             },
           }
+          // Add debug logging
+          console.log('Kucoin configuration complete:', {
+            hasApiKey: !!exchange.apiKey,
+            hasSecret: !!exchange.secret,
+            hasPassphrase: !!exchange.password,
+            options: exchange.options
+          })
         } else {
-          console.warn('No valid Kucoin API credentials found')
+          console.warn('No valid Kucoin API credentials found', {
+            hasApiKey: !!kucoinKey,
+            hasSecret: !!kucoinSecret,
+            hasPassphrase: !!kucoinPassphrase
+          })
           throw new Error('Kucoin API credentials not configured or invalid')
         }
         break
