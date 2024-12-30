@@ -12,21 +12,21 @@ const DEFAULT_SYMBOLS = [
   'AVAX/USDC'
 ];
 
-const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit', 'Binance'];
+const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit', 'Binance', 'Kucoin'];
 
 export async function fetchPrices(): Promise<PriceCardProps[]> {
   try {
     const pricesPromises = DEFAULT_SYMBOLS.flatMap(async (symbol) => {
       // Convert to USD pair for exchanges that require it
       const usdSymbol = symbol.replace('/USDC', '/USD');
-      // Convert to USDT pair for Binance
-      const binanceSymbol = symbol.replace('/USDC', '/USDT');
+      // Convert to USDT pair for Binance and Kucoin
+      const usdtSymbol = symbol.replace('/USDC', '/USDT');
 
       console.log(`Fetching prices for ${symbol}`);
       console.log(`Using USD symbol: ${usdSymbol} for some exchanges`);
-      console.log(`Using USDT symbol: ${binanceSymbol} for Binance`);
+      console.log(`Using USDT symbol: ${usdtSymbol} for Binance and Kucoin`);
 
-      const [coinbasePrice, krakenPrice, bybitPrice, binancePrice] = await Promise.allSettled([
+      const [coinbasePrice, krakenPrice, bybitPrice, binancePrice, kucoinPrice] = await Promise.allSettled([
         fetchCoinbasePrice(usdSymbol).catch((error) => {
           console.error(`Error fetching Coinbase price for ${usdSymbol}:`, error);
           return null;
@@ -39,8 +39,12 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
           console.error(`Error fetching Bybit price for ${usdSymbol}:`, error);
           return null;
         }),
-        fetchCCXTPrice('binance', binanceSymbol).catch((error) => {
-          console.error(`Error fetching Binance price for ${binanceSymbol}:`, error);
+        fetchCCXTPrice('binance', usdtSymbol).catch((error) => {
+          console.error(`Error fetching Binance price for ${usdtSymbol}:`, error);
+          return null;
+        }),
+        fetchCCXTPrice('kucoin', usdtSymbol).catch((error) => {
+          console.error(`Error fetching Kucoin price for ${usdtSymbol}:`, error);
           return null;
         })
       ]);
@@ -81,6 +85,15 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
           price: binancePrice.value.toFixed(2),
           change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
           exchange: 'Binance'
+        });
+      }
+
+      if (kucoinPrice.status === 'fulfilled' && kucoinPrice.value) {
+        results.push({
+          symbol,
+          price: kucoinPrice.value.toFixed(2),
+          change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
+          exchange: 'Kucoin'
         });
       }
 
