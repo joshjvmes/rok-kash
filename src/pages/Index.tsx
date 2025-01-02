@@ -6,6 +6,7 @@ import { ArbitrageOpportunity } from "@/components/ArbitrageOpportunity";
 import { ExchangeBalance } from "@/components/ExchangeBalance";
 import { TokenPricesTab } from "@/components/trading/TokenPricesTab";
 import { fetchPrices, findArbitrageOpportunities } from "@/utils/exchange";
+import { scanArbitrageOpportunities } from "@/utils/exchanges/arbitrageScanner";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, LogOut, Pause, Play } from "lucide-react";
@@ -51,6 +52,13 @@ const Index = () => {
     queryFn: () => findArbitrageOpportunities(selectedSymbol),
     enabled: !isPaused,
     refetchInterval: isPaused ? false : 5000,
+  });
+
+  const { data: globalArbitrageOpportunities = [], isLoading: isLoadingGlobal } = useQuery({
+    queryKey: ['globalArbitrageOpportunities'],
+    queryFn: scanArbitrageOpportunities,
+    enabled: !isPaused,
+    refetchInterval: isPaused ? false : 30000, // 30 seconds interval for full scan
   });
 
   const handleLogout = async () => {
@@ -121,15 +129,36 @@ const Index = () => {
         </div>
 
         <Tabs defaultValue="main" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="main">Main Tokens</TabsTrigger>
             <TabsTrigger value="meme">Meme Tokens</TabsTrigger>
+            <TabsTrigger value="arbitrage">Global Arbitrage</TabsTrigger>
           </TabsList>
           <TabsContent value="main">
             <TokenPricesTab groupedPrices={groupedPrices} symbols={SYMBOLS} />
           </TabsContent>
           <TabsContent value="meme">
             <TokenPricesTab groupedPrices={groupedPrices} symbols={MEME_SYMBOLS} />
+          </TabsContent>
+          <TabsContent value="arbitrage">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-rokcat-purple-light">
+                  Global Arbitrage Opportunities
+                </h2>
+                {isLoadingGlobal && (
+                  <RefreshCw className="h-4 w-4 animate-spin text-rokcat-purple-light" />
+                )}
+              </div>
+              {globalArbitrageOpportunities.map((opportunity, index) => (
+                <ArbitrageOpportunity key={index} {...opportunity} />
+              ))}
+              {globalArbitrageOpportunities.length === 0 && !isLoadingGlobal && (
+                <div className="text-center text-gray-400 py-4">
+                  No arbitrage opportunities found
+                </div>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
 
