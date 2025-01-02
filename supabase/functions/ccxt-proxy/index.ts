@@ -10,6 +10,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -70,7 +71,6 @@ serve(async (req) => {
     const exchange = new exchangeClass({
       enableRateLimit: true,
       timeout: 30000,
-      // Add proper request handling configuration
       options: {
         defaultType: 'spot',
         adjustForTimeDifference: true,
@@ -88,6 +88,17 @@ serve(async (req) => {
         await exchange.loadMarkets()
       } catch (error) {
         console.error(`Error loading markets for ${exchangeId}:`, error)
+        return new Response(
+          JSON.stringify({
+            error: true,
+            message: `Error loading markets: ${error.message}`,
+            details: error.stack
+          }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
       }
     }
 
