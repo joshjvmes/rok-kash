@@ -16,25 +16,9 @@ serve(async (req) => {
   }
 
   try {
-    let requestBody
-    try {
-      const text = await req.text()
-      requestBody = JSON.parse(text)
-      console.log('Processing request:', {
-        exchange: requestBody.exchange,
-        method: requestBody.method,
-        symbol: requestBody.symbol || 'no symbol'
-      })
-    } catch (error) {
-      console.error('Error parsing request body:', error)
-      return new Response(
-        JSON.stringify({ error: 'Invalid JSON in request body' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
+    const requestBody = await req.json().catch(() => {
+      throw new Error('Invalid JSON in request body')
+    })
 
     const { exchange: exchangeId, symbol, method, params = {} } = requestBody
     
@@ -61,47 +45,39 @@ serve(async (req) => {
 
     const exchange = new exchangeClass({
       enableRateLimit: true,
-      timeout: 10000, // Reduced timeout
+      timeout: 10000,
       options: {
         defaultType: 'spot',
       }
     })
 
-    try {
-      await configureExchange(exchange, exchangeId)
-    } catch (error) {
-      console.error(`Error configuring exchange ${exchangeId}:`, error)
-      return new Response(
-        JSON.stringify({ error: `Exchange configuration error: ${error.message}` }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
+    await configureExchange(exchange, exchangeId)
 
-    try {
-      const result = await executeExchangeMethod(exchange, method, symbol, params)
+    const result = await executeExchangeMethod(exchange, method, symbol, params)
+    
+    // If result is null, it means there was an error but we handled it gracefully
+    if (result === null) {
       return new Response(
-        JSON.stringify(result),
+        JSON.stringify({ data: null }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
-    } catch (error) {
-      console.error(`Error executing method ${method} on ${exchangeId}:`, error)
-      return new Response(
-        JSON.stringify({ error: `Method execution error: ${error.message}` }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
     }
+
+    return new Response(
+      JSON.stringify(result),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   } catch (error) {
     console.error('Error in ccxt-proxy:', error)
     return new Response(
-      JSON.stringify({ error: error.message }), 
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }), 
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
