@@ -7,6 +7,12 @@ interface ExchangePair {
   price: number | null;
 }
 
+interface Market {
+  exchange: string;
+  symbol: string;
+  active: boolean;
+}
+
 export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity[]> {
   const opportunities: ArbitrageOpportunity[] = [];
   const exchanges = ['coinbase', 'kraken', 'bybit', 'binance', 'kucoin', 'okx'];
@@ -39,10 +45,10 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
     });
 
     const allMarkets = await Promise.all(marketsPromises);
-    const flatMarkets = allMarkets.flat();
+    const flatMarkets = allMarkets.flat() as Market[];
 
     // Get unique symbols that are available on at least 2 exchanges
-    const symbolCounts = flatMarkets.reduce((acc: Record<string, number>, market) => {
+    const symbolCounts = flatMarkets.reduce<Record<string, number>>((acc, market) => {
       acc[market.symbol] = (acc[market.symbol] || 0) + 1;
       return acc;
     }, {});
