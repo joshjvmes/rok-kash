@@ -102,8 +102,8 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
           const spread = ((sellExchange.price - buyExchange.price) / buyExchange.price) * 100;
           const reversedSpread = ((buyExchange.price - sellExchange.price) / sellExchange.price) * 100;
 
-          // Check both directions
-          if (spread > 0.5) { // Minimum 0.5% spread to be considered an opportunity
+          // Check both directions for any positive spread
+          if (spread > 0) {
             const potential = (sellExchange.price - buyExchange.price) * 100; // Assuming 100 units traded
             opportunities.push({
               buyExchange: buyExchange.exchange,
@@ -114,7 +114,7 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
             });
           }
 
-          if (reversedSpread > 0.5) {
+          if (reversedSpread > 0) {
             const potential = (buyExchange.price - sellExchange.price) * 100; // Assuming 100 units traded
             opportunities.push({
               buyExchange: sellExchange.exchange,
