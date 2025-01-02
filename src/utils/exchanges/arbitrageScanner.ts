@@ -29,7 +29,7 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
         });
 
         if (error) {
-          console.error(`Error fetching markets for ${exchange}:`, error);
+          console.log(`Error fetching markets for ${exchange}:`, error);
           return [];
         }
 
@@ -39,7 +39,7 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
           active: market.active
         }));
       } catch (error) {
-        console.error(`Error processing markets for ${exchange}:`, error);
+        console.log(`Error processing markets for ${exchange}:`, error);
         return [];
       }
     });
@@ -48,20 +48,30 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
     const flatMarkets = allMarkets.flat() as Market[];
 
     // Get unique symbols that are available on at least 2 exchanges
-    const symbolCounts = flatMarkets.reduce<Record<string, number>>((acc, market) => {
-      acc[market.symbol] = (acc[market.symbol] || 0) + 1;
+    const symbolCounts = flatMarkets.reduce<Record<string, string[]>>((acc, market) => {
+      if (!acc[market.symbol]) {
+        acc[market.symbol] = [];
+      }
+      if (!acc[market.symbol].includes(market.exchange)) {
+        acc[market.symbol].push(market.exchange);
+      }
       return acc;
     }, {});
 
     const validSymbols = Object.entries(symbolCounts)
-      .filter(([_, count]) => count >= 2)
+      .filter(([_, exchanges]) => exchanges.length >= 2)
       .map(([symbol]) => symbol);
 
     console.log(`Found ${validSymbols.length} valid symbols for arbitrage scanning`);
 
     // Fetch prices for each valid symbol from all exchanges
     for (const symbol of validSymbols) {
-      const pricesPromises: Promise<ExchangePair>[] = exchanges.map(async (exchange) => {
+      const pricesPromises = exchanges.map(async (exchange) => {
+        // Only fetch price if the exchange supports this symbol
+        if (!symbolCounts[symbol].includes(exchange)) {
+          return { exchange, symbol, price: null };
+        }
+
         try {
           const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
             body: { 
@@ -72,7 +82,7 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
           });
 
           if (error) {
-            console.error(`Error fetching price for ${symbol} on ${exchange}:`, error);
+            console.log(`Error fetching price for ${symbol} on ${exchange}:`, error);
             return { exchange, symbol, price: null };
           }
 
@@ -82,13 +92,18 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
             price: data?.last || null
           };
         } catch (error) {
-          console.error(`Error processing price for ${symbol} on ${exchange}:`, error);
+          console.log(`Error processing price for ${symbol} on ${exchange}:`, error);
           return { exchange, symbol, price: null };
         }
       });
 
       const prices = await Promise.all(pricesPromises);
       const validPrices = prices.filter(p => p.price !== null);
+
+      if (validPrices.length < 2) {
+        console.log(`Not enough valid prices for ${symbol}, skipping...`);
+        continue;
+      }
 
       // Compare prices between exchanges
       for (let i = 0; i < validPrices.length; i++) {
