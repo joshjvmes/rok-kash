@@ -27,31 +27,9 @@ const Index = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Custom fetch function that respects the pause state
-  const fetchPricesIfNotPaused = async () => {
-    if (isPaused) {
-      return [];
-    }
-    return fetchPrices();
-  };
-
-  const fetchArbitrageIfNotPaused = async () => {
-    if (isPaused) {
-      return [];
-    }
-    return findArbitrageOpportunities(selectedSymbol);
-  };
-
-  const scanArbitrageIfNotPaused = async () => {
-    if (isPaused) {
-      return [];
-    }
-    return scanArbitrageOpportunities();
-  };
-
   const { data: prices = [], isLoading, refetch } = useQuery({
     queryKey: ['prices'],
-    queryFn: fetchPricesIfNotPaused,
+    queryFn: fetchPrices,
     enabled: !isPaused,
     refetchInterval: isPaused ? false : 300000, // 5 minutes
   });
@@ -71,14 +49,14 @@ const Index = () => {
 
   const { data: arbitrageOpportunities = [] } = useQuery({
     queryKey: ['arbitrageOpportunities', selectedSymbol],
-    queryFn: fetchArbitrageIfNotPaused,
+    queryFn: () => findArbitrageOpportunities(selectedSymbol),
     enabled: !isPaused,
     refetchInterval: isPaused ? false : 5000,
   });
 
-  const { data: globalArbitrageOpportunities = [], isLoading: isLoadingGlobalArbitrage } = useQuery({
+  const { data: globalArbitrageOpportunities = [], isLoading: isLoadingGlobal } = useQuery({
     queryKey: ['globalArbitrageOpportunities'],
-    queryFn: scanArbitrageIfNotPaused,
+    queryFn: scanArbitrageOpportunities,
     enabled: !isPaused,
     refetchInterval: isPaused ? false : 30000, // 30 seconds interval for full scan
   });
@@ -93,15 +71,7 @@ const Index = () => {
   };
 
   const handleRefresh = async () => {
-    if (!isPaused) {
-      await refetch();
-    } else {
-      toast({
-        title: "API Requests Paused",
-        description: "Please unpause to refresh data",
-        variant: "destructive",
-      });
-    }
+    await refetch();
   };
 
   const togglePause = () => {
@@ -109,12 +79,12 @@ const Index = () => {
     if (!isPaused) {
       toast({
         title: "API Requests Paused",
-        description: "All automatic data updates and Edge Function calls have been paused",
+        description: "All automatic data updates have been paused",
       });
     } else {
       toast({
         title: "API Requests Resumed",
-        description: "Data updates and Edge Function calls have been resumed",
+        description: "Data updates have been resumed",
       });
       queryClient.invalidateQueries();
     }
@@ -176,14 +146,14 @@ const Index = () => {
                 <h2 className="text-xl font-semibold text-rokcat-purple-light">
                   Global Arbitrage Opportunities
                 </h2>
-                {isLoadingGlobalArbitrage && (
+                {isLoadingGlobal && (
                   <RefreshCw className="h-4 w-4 animate-spin text-rokcat-purple-light" />
                 )}
               </div>
               {globalArbitrageOpportunities.map((opportunity, index) => (
                 <ArbitrageOpportunity key={index} {...opportunity} />
               ))}
-              {globalArbitrageOpportunities.length === 0 && !isLoadingGlobalArbitrage && (
+              {globalArbitrageOpportunities.length === 0 && !isLoadingGlobal && (
                 <div className="text-center text-gray-400 py-4">
                   No arbitrage opportunities found
                 </div>
