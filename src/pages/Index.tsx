@@ -27,9 +27,31 @@ const Index = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Custom fetch function that respects the pause state
+  const fetchPricesIfNotPaused = async () => {
+    if (isPaused) {
+      return [];
+    }
+    return fetchPrices();
+  };
+
+  const fetchArbitrageIfNotPaused = async () => {
+    if (isPaused) {
+      return [];
+    }
+    return findArbitrageOpportunities(selectedSymbol);
+  };
+
+  const scanArbitrageIfNotPaused = async () => {
+    if (isPaused) {
+      return [];
+    }
+    return scanArbitrageOpportunities();
+  };
+
   const { data: prices = [], isLoading, refetch } = useQuery({
     queryKey: ['prices'],
-    queryFn: fetchPrices,
+    queryFn: fetchPricesIfNotPaused,
     enabled: !isPaused,
     refetchInterval: isPaused ? false : 300000, // 5 minutes
   });
@@ -49,14 +71,14 @@ const Index = () => {
 
   const { data: arbitrageOpportunities = [] } = useQuery({
     queryKey: ['arbitrageOpportunities', selectedSymbol],
-    queryFn: () => findArbitrageOpportunities(selectedSymbol),
+    queryFn: fetchArbitrageIfNotPaused,
     enabled: !isPaused,
     refetchInterval: isPaused ? false : 5000,
   });
 
-  const { data: globalArbitrageOpportunities = [], isLoading: isLoadingGlobal } = useQuery({
+  const { data: globalArbitrageOpportunities = [], isLoadingGlobal } = useQuery({
     queryKey: ['globalArbitrageOpportunities'],
-    queryFn: scanArbitrageOpportunities,
+    queryFn: scanArbitrageIfNotPaused,
     enabled: !isPaused,
     refetchInterval: isPaused ? false : 30000, // 30 seconds interval for full scan
   });
@@ -71,7 +93,15 @@ const Index = () => {
   };
 
   const handleRefresh = async () => {
-    await refetch();
+    if (!isPaused) {
+      await refetch();
+    } else {
+      toast({
+        title: "API Requests Paused",
+        description: "Please unpause to refresh data",
+        variant: "destructive",
+      });
+    }
   };
 
   const togglePause = () => {
@@ -79,12 +109,12 @@ const Index = () => {
     if (!isPaused) {
       toast({
         title: "API Requests Paused",
-        description: "All automatic data updates have been paused",
+        description: "All automatic data updates and Edge Function calls have been paused",
       });
     } else {
       toast({
         title: "API Requests Resumed",
-        description: "Data updates have been resumed",
+        description: "Data updates and Edge Function calls have been resumed",
       });
       queryClient.invalidateQueries();
     }
