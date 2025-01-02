@@ -76,7 +76,7 @@ const Index = () => {
     refetchInterval: isPaused ? false : 5000,
   });
 
-  const { data: globalArbitrageOpportunities = [], isLoadingGlobal } = useQuery({
+  const { data: globalArbitrageOpportunities = [], isLoading: isLoadingGlobalArbitrage } = useQuery({
     queryKey: ['globalArbitrageOpportunities'],
     queryFn: scanArbitrageIfNotPaused,
     enabled: !isPaused,
@@ -176,14 +176,14 @@ const Index = () => {
                 <h2 className="text-xl font-semibold text-rokcat-purple-light">
                   Global Arbitrage Opportunities
                 </h2>
-                {isLoadingGlobal && (
+                {isLoadingGlobalArbitrage && (
                   <RefreshCw className="h-4 w-4 animate-spin text-rokcat-purple-light" />
                 )}
               </div>
               {globalArbitrageOpportunities.map((opportunity, index) => (
                 <ArbitrageOpportunity key={index} {...opportunity} />
               ))}
-              {globalArbitrageOpportunities.length === 0 && !isLoadingGlobal && (
+              {globalArbitrageOpportunities.length === 0 && !isLoadingGlobalArbitrage && (
                 <div className="text-center text-gray-400 py-4">
                   No arbitrage opportunities found
                 </div>
