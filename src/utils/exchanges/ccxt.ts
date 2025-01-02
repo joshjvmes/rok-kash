@@ -8,13 +8,13 @@ export async function fetchCCXTPrice(exchange: string, symbol: string) {
 
     if (error) {
       console.error(`Error fetching ${exchange} price:`, error);
-      throw error;
+      return null;
     }
 
     return data?.last || null;
   } catch (error) {
     console.error(`Error fetching ${exchange} price:`, error);
-    throw error;
+    return null;
   }
 }
 
@@ -26,13 +26,13 @@ export async function fetchOrderBook(exchange: string, symbol: string) {
 
     if (error) {
       console.error(`Error fetching ${exchange} order book:`, error);
-      throw error;
+      return null;
     }
 
     return data;
   } catch (error) {
     console.error(`Error fetching ${exchange} order book:`, error);
-    throw error;
+    return null;
   }
 }
 
@@ -44,13 +44,13 @@ export async function fetchTrades(exchange: string, symbol: string) {
 
     if (error) {
       console.error(`Error fetching ${exchange} trades:`, error);
-      throw error;
+      return null;
     }
 
     return data;
   } catch (error) {
     console.error(`Error fetching ${exchange} trades:`, error);
-    throw error;
+    return null;
   }
 }
 
@@ -107,14 +107,14 @@ export async function fetchBalance(exchange: string) {
 
     if (error) {
       console.error(`Error fetching ${exchange} balance:`, error);
-      throw error;
+      return null;
     }
 
     console.log(`Successfully fetched ${exchange} balance:`, data);
     return data;
   } catch (error) {
     console.error(`Error fetching ${exchange} balance:`, error);
-    throw error;
+    return null;
   }
 }
 
@@ -126,12 +126,12 @@ export async function fetchMarketStructure(exchange: string, symbol: string) {
 
     if (error) {
       console.error(`Error fetching ${exchange} market structure:`, error);
-      throw error;
+      return null;
     }
 
     return data;
   } catch (error) {
     console.error(`Error fetching ${exchange} market structure:`, error);
-    throw error;
+    return null;
   }
 }
