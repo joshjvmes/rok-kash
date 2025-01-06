@@ -1,18 +1,60 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { fetchBalance } from "@/utils/exchanges/ccxt";
-import { Loader2 } from "lucide-react";
+import { Loader2, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface ExchangeBalanceProps {
   exchange: string;
 }
 
 export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
-  const { data: balance, isLoading, error } = useQuery({
+  const { toast } = useToast();
+  const { data: balance, isLoading, error, refetch } = useQuery({
     queryKey: ['balance', exchange],
     queryFn: () => fetchBalance(exchange),
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  const handleTestConnection = async () => {
+    try {
+      await refetch();
+      toast({
+        title: "Connection Test",
+        description: `Successfully connected to ${exchange}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Connection Failed",
+        description: `Failed to connect to ${exchange}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFetchBalance = async () => {
+    try {
+      await refetch();
+      toast({
+        title: "Balance Updated",
+        description: `Successfully fetched ${exchange} balance`,
+      });
+    } catch (error) {
+      toast({
+        title: "Balance Update Failed",
+        description: `Failed to fetch ${exchange} balance`,
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -38,7 +80,25 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
 
   return (
     <Card className="p-4 bg-trading-gray">
-      <h3 className="text-lg font-semibold mb-4 capitalize">{exchange}</h3>
+      <div className="flex justify-between items-start mb-4">
+        <h3 className="text-lg font-semibold capitalize">{exchange}</h3>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>API Actions</DropdownMenuLabel>
+            <DropdownMenuItem onClick={handleTestConnection}>
+              Test Connection
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleFetchBalance}>
+              Fetch Balance
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-gray-400">USDC</span>
