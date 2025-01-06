@@ -1,19 +1,13 @@
 import { useState } from "react";
 import { QuickTrade } from "@/components/QuickTrade";
 import { ExchangeBalance } from "@/components/ExchangeBalance";
-import { TokenPricesTab } from "@/components/trading/TokenPricesTab";
-import { fetchPrices } from "@/utils/exchange";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, LogOut, Pause, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const SYMBOLS = ['BTC/USDC', 'ETH/USDC', 'SOL/USDC', 'AVAX/USDC'];
-const MEME_SYMBOLS = ['PEPE/USDC', 'BONK/USDC', 'MOG/USDC'];
 const EXCHANGES = ['bybit', 'coinbase', 'kraken', 'binance', 'kucoin', 'okx'];
 
 const Index = () => {
@@ -22,26 +16,6 @@ const Index = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: prices = [], isLoading, refetch } = useQuery({
-    queryKey: ['prices'],
-    queryFn: fetchPrices,
-    enabled: !isPaused,
-    refetchInterval: isPaused ? false : 300000, // 5 minutes
-  });
-
-  console.log('Raw prices data:', prices);
-
-  // Group prices by symbol
-  const groupedPrices = prices.reduce((acc, price) => {
-    if (!acc[price.symbol]) {
-      acc[price.symbol] = [];
-    }
-    acc[price.symbol].push(price);
-    return acc;
-  }, {} as Record<string, typeof prices>);
-
-  console.log('Grouped prices:', groupedPrices);
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast({
@@ -49,10 +23,6 @@ const Index = () => {
       description: "You have been logged out of your account",
     });
     navigate('/login');
-  };
-
-  const handleRefresh = async () => {
-    await refetch();
   };
 
   const togglePause = () => {
@@ -90,15 +60,6 @@ const Index = () => {
               {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
             </Button>
             <Button
-              onClick={handleRefresh}
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 md:h-9 md:w-9 border-rokcat-purple hover:border-rokcat-purple-light hover:bg-rokcat-purple/10"
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button
               onClick={handleLogout}
               variant="outline"
               size="icon"
@@ -108,19 +69,6 @@ const Index = () => {
             </Button>
           </div>
         </div>
-
-        <Tabs defaultValue="main" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="main">Main Tokens</TabsTrigger>
-            <TabsTrigger value="meme">Meme Tokens</TabsTrigger>
-          </TabsList>
-          <TabsContent value="main">
-            <TokenPricesTab groupedPrices={groupedPrices} symbols={SYMBOLS} />
-          </TabsContent>
-          <TabsContent value="meme">
-            <TokenPricesTab groupedPrices={groupedPrices} symbols={MEME_SYMBOLS} />
-          </TabsContent>
-        </Tabs>
 
         <div className="space-y-4">
           <QuickTrade />

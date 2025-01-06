@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
-import TradingView from "./pages/TradingView";
 
 const queryClient = new QueryClient();
 
@@ -44,14 +43,6 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Index />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/trading/:symbol"
-            element={
-              <ProtectedRoute>
-                <TradingView />
               </ProtectedRoute>
             }
           />
