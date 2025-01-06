@@ -1,69 +1,97 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fetchCCXTPrice } from "@/utils/exchanges/ccxt";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface TradingPair {
   symbol: string;
   price: string;
-}
-
-async function fetchBinancePairs() {
-  try {
-    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
-      body: { 
-        exchange: 'binance', 
-        method: 'fetchMarkets'
-      }
-    });
-
-    if (error) throw error;
-
-    // Filter for spot markets and transform data
-    const spotPairs = data
-      .filter((market: any) => market.type === 'spot')
-      .map((market: any) => ({
-        symbol: market.symbol,
-        price: '0' // Initialize price, will be fetched separately
-      }));
-
-    // Fetch prices for all pairs
-    const pairsWithPrices = await Promise.all(
-      spotPairs.map(async (pair: TradingPair) => {
-        const price = await fetchCCXTPrice('binance', pair.symbol);
-        return {
-          ...pair,
-          price: price ? price.toFixed(8) : 'N/A'
-        };
-      })
-    );
-
-    return pairsWithPrices;
-  } catch (error) {
-    console.error('Error fetching Binance pairs:', error);
-    throw error;
-  }
+  lastUpdated?: Date;
 }
 
 export default function BinanceTest() {
   const { toast } = useToast();
-  
-  const { data: pairs, isLoading, error } = useQuery({
-    queryKey: ['binance-pairs'],
-    queryFn: fetchBinancePairs,
-    refetchInterval: 30000, // Refresh every 30 seconds
-    retry: 1,
-  });
+  const [pairs, setPairs] = useState<TradingPair[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPairIndex, setCurrentPairIndex] = useState(0);
+  const UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minutes in milliseconds
 
-  if (error) {
-    toast({
-      variant: "destructive",
-      title: "Error fetching pairs",
-      description: "Could not fetch trading pairs from Binance"
-    });
-  }
+  // Fetch initial trading pairs
+  useEffect(() => {
+    async function fetchInitialPairs() {
+      try {
+        const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+          body: { 
+            exchange: 'binance', 
+            method: 'fetchMarkets'
+          }
+        });
+
+        if (error) throw error;
+
+        // Filter for spot markets and transform data
+        const spotPairs = data
+          .filter((market: any) => market.type === 'spot')
+          .map((market: any) => ({
+            symbol: market.symbol,
+            price: 'Loading...',
+            lastUpdated: undefined
+          }));
+
+        setPairs(spotPairs);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching Binance pairs:', error);
+        toast({
+          variant: "destructive",
+          title: "Error fetching pairs",
+          description: "Could not fetch trading pairs from Binance"
+        });
+        setIsLoading(false);
+      }
+    }
+
+    fetchInitialPairs();
+  }, [toast]);
+
+  // Sequential price updates
+  useEffect(() => {
+    if (pairs.length === 0) return;
+
+    const updatePrice = async () => {
+      try {
+        const pair = pairs[currentPairIndex];
+        const price = await fetchCCXTPrice('binance', pair.symbol);
+        
+        setPairs(currentPairs => {
+          const newPairs = [...currentPairs];
+          newPairs[currentPairIndex] = {
+            ...pair,
+            price: price ? price.toFixed(8) : 'N/A',
+            lastUpdated: new Date()
+          };
+          return newPairs;
+        });
+
+        // Move to next pair or reset to first pair
+        setCurrentPairIndex(current => 
+          current === pairs.length - 1 ? 0 : current + 1
+        );
+      } catch (error) {
+        console.error(`Error updating price for ${pairs[currentPairIndex].symbol}:`, error);
+      }
+    };
+
+    // Update current pair immediately
+    updatePrice();
+
+    // Set up interval for the current pair
+    const interval = setInterval(updatePrice, UPDATE_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [currentPairIndex, pairs.length]);
 
   return (
     <div className="p-4">
@@ -79,13 +107,19 @@ export default function BinanceTest() {
                 <TableRow>
                   <TableHead>Trading Pair</TableHead>
                   <TableHead>Price</TableHead>
+                  <TableHead>Last Updated</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pairs?.map((pair: TradingPair) => (
+                {pairs.map((pair, index) => (
                   <TableRow key={pair.symbol}>
                     <TableCell>{pair.symbol}</TableCell>
                     <TableCell>{pair.price}</TableCell>
+                    <TableCell>
+                      {pair.lastUpdated 
+                        ? new Date(pair.lastUpdated).toLocaleTimeString()
+                        : 'Not yet updated'}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
