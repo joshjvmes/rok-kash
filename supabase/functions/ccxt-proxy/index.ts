@@ -12,10 +12,7 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      status: 204, 
-      headers: corsHeaders 
-    })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -26,7 +23,6 @@ serve(async (req) => {
     const { exchange: exchangeId, symbol, method, params = {} } = requestBody
     
     if (!exchangeId || !method) {
-      console.error('Missing required parameters:', { exchangeId, method })
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }),
         {
@@ -40,7 +36,6 @@ serve(async (req) => {
 
     const exchangeClass = ccxt[exchangeId]
     if (!exchangeClass) {
-      console.error(`Unsupported exchange: ${exchangeId}`)
       return new Response(
         JSON.stringify({ error: `Unsupported exchange: ${exchangeId}` }),
         {
@@ -52,11 +47,10 @@ serve(async (req) => {
 
     const exchange = new exchangeClass({
       enableRateLimit: true,
-      timeout: 60000, // 60 second timeout
+      timeout: 60000, // Increased timeout to 60 seconds
       options: {
         defaultType: 'spot',
-        recvWindow: 60000, // Important for Binance
-        adjustForTimeDifference: true
+        recvWindow: 60000, // Added recvWindow for Binance
       }
     })
 
@@ -70,10 +64,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify(result),
         {
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json'
-          },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
     } catch (error) {

@@ -3,9 +3,14 @@ import { Exchange } from 'npm:ccxt'
 function formatExchangeSymbol(exchange: string, symbol: string): string {
   if (!symbol) return symbol;
   
+  // Handle special cases for each exchange
   switch (exchange) {
+    case 'bybit':
+      return symbol.replace('/', '');
     case 'binance':
-      return symbol;
+      return symbol.replace('/', '');
+    case 'kucoin':
+      return symbol; // Kucoin accepts standard format
     default:
       return symbol;
   }
@@ -13,10 +18,8 @@ function formatExchangeSymbol(exchange: string, symbol: string): string {
 
 async function safeExecuteMethod(exchange: Exchange, method: string, ...args: any[]) {
   try {
-    console.log(`Executing ${method} on ${exchange.id} with args:`, args)
     // @ts-ignore - dynamic method call
     const result = await exchange[method](...args);
-    console.log(`Successfully executed ${method} on ${exchange.id}`)
     return { success: true, data: result };
   } catch (error: any) {
     console.error(`Error executing ${method} on ${exchange.id}:`, error.message);
