@@ -47,10 +47,9 @@ serve(async (req) => {
 
     const exchange = new exchangeClass({
       enableRateLimit: true,
-      timeout: 60000, // Increased timeout to 60 seconds
+      timeout: 30000, // 30 second timeout
       options: {
         defaultType: 'spot',
-        recvWindow: 60000, // Added recvWindow for Binance
       }
     })
 
