@@ -2,8 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fetchCCXTPrice } from "@/utils/exchanges/ccxt";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 interface TradingPair {
   symbol: string;
@@ -29,16 +31,23 @@ async function fetchBinancePairs() {
         price: '0' // Initialize price, will be fetched separately
       }));
 
-    // Fetch prices for all pairs
-    const pairsWithPrices = await Promise.all(
-      spotPairs.map(async (pair: TradingPair) => {
+    // Fetch prices sequentially
+    const pairsWithPrices = [];
+    for (const pair of spotPairs) {
+      try {
         const price = await fetchCCXTPrice('binance', pair.symbol);
-        return {
+        pairsWithPrices.push({
           ...pair,
           price: price ? price.toFixed(8) : 'N/A'
-        };
-      })
-    );
+        });
+      } catch (error) {
+        console.error(`Error fetching price for ${pair.symbol}:`, error);
+        pairsWithPrices.push({
+          ...pair,
+          price: 'Error'
+        });
+      }
+    }
 
     return pairsWithPrices;
   } catch (error) {
@@ -50,10 +59,10 @@ async function fetchBinancePairs() {
 export default function BinanceTest() {
   const { toast } = useToast();
   
-  const { data: pairs, isLoading, error } = useQuery({
+  const { data: pairs, isLoading, error, refetch } = useQuery({
     queryKey: ['binance-pairs'],
     queryFn: fetchBinancePairs,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchOnWindowFocus: false, // Disable automatic refetching
     retry: 1,
   });
 
@@ -67,7 +76,18 @@ export default function BinanceTest() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Binance API Testing</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Binance API Testing</h1>
+        <Button 
+          onClick={() => refetch()} 
+          disabled={isLoading}
+          variant="outline"
+          size="sm"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh Pairs
+        </Button>
+      </div>
       <Card className="p-4">
         <h2 className="text-xl font-semibold mb-4">Trading Pairs</h2>
         {isLoading ? (
