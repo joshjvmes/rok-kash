@@ -47,34 +47,48 @@ serve(async (req) => {
 
     const exchange = new exchangeClass({
       enableRateLimit: true,
-      timeout: 10000,
+      timeout: 30000, // Increased timeout to 30 seconds
       options: {
         defaultType: 'spot',
       }
     })
 
-    await configureExchange(exchange, exchangeId)
-    console.log(`Exchange ${exchangeId} configured successfully`)
+    try {
+      await configureExchange(exchange, exchangeId)
+      console.log(`Exchange ${exchangeId} configured successfully`)
 
-    const result = await executeExchangeMethod(exchange, method, symbol, params)
-    console.log(`Method ${method} executed successfully for ${exchangeId}`, result)
-    
-    // If result is null, it means there was an error but we handled it gracefully
-    if (result === null) {
+      const result = await executeExchangeMethod(exchange, method, symbol, params)
+      console.log(`Method ${method} executed successfully for ${exchangeId}`)
+      
+      // If result is null, it means there was an error but we handled it gracefully
+      if (result === null) {
+        return new Response(
+          JSON.stringify({ data: null }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
+      }
+
       return new Response(
-        JSON.stringify({ data: null }),
+        JSON.stringify(result),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
+    } catch (error) {
+      console.error(`Error executing method ${method} on ${exchangeId}:`, error)
+      return new Response(
+        JSON.stringify({ 
+          error: `Error executing ${method} on ${exchangeId}: ${error.message}`,
+          details: error.stack 
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
-
-    return new Response(
-      JSON.stringify(result),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
   } catch (error) {
     console.error('Error in ccxt-proxy:', error)
     return new Response(
