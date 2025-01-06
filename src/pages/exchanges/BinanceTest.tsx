@@ -31,15 +31,23 @@ export default function BinanceTest() {
 
         if (error) throw error;
 
+        if (!data || !Array.isArray(data)) {
+          throw new Error('Invalid data format received from API');
+        }
+
         // Filter for spot markets, take only first 10 pairs
         const spotPairs = data
-          .filter((market: any) => market.type === 'spot')
+          .filter((market: any) => market.type === 'spot' && market.symbol)
           .slice(0, 10) // Only take first 10 pairs
           .map((market: any) => ({
             symbol: market.symbol,
             price: 'Loading...',
             lastUpdated: undefined
           }));
+
+        if (spotPairs.length === 0) {
+          throw new Error('No valid trading pairs found');
+        }
 
         setPairs(spotPairs);
         setIsLoading(false);
@@ -59,20 +67,28 @@ export default function BinanceTest() {
 
   // Sequential price updates
   useEffect(() => {
-    if (pairs.length === 0) return;
+    if (pairs.length === 0 || isLoading) return;
 
     const updatePrice = async () => {
       try {
-        const pair = pairs[currentPairIndex];
-        const price = await fetchCCXTPrice('binance', pair.symbol);
+        const currentPair = pairs[currentPairIndex];
+        
+        if (!currentPair || !currentPair.symbol) {
+          console.error('Invalid pair data at index:', currentPairIndex);
+          return;
+        }
+
+        const price = await fetchCCXTPrice('binance', currentPair.symbol);
         
         setPairs(currentPairs => {
           const newPairs = [...currentPairs];
-          newPairs[currentPairIndex] = {
-            ...pair,
-            price: price ? price.toFixed(8) : 'N/A',
-            lastUpdated: new Date()
-          };
+          if (newPairs[currentPairIndex]) {
+            newPairs[currentPairIndex] = {
+              ...currentPair,
+              price: price ? price.toFixed(8) : 'N/A',
+              lastUpdated: new Date()
+            };
+          }
           return newPairs;
         });
 
@@ -81,7 +97,7 @@ export default function BinanceTest() {
           current === pairs.length - 1 ? 0 : current + 1
         );
       } catch (error) {
-        console.error(`Error updating price for ${pairs[currentPairIndex].symbol}:`, error);
+        console.error(`Error updating price for pair at index ${currentPairIndex}:`, error);
       }
     };
 
@@ -92,7 +108,7 @@ export default function BinanceTest() {
     const interval = setInterval(updatePrice, UPDATE_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [currentPairIndex, pairs.length]);
+  }, [currentPairIndex, pairs.length, isLoading]);
 
   return (
     <div className="p-4">
@@ -101,6 +117,8 @@ export default function BinanceTest() {
         <h2 className="text-xl font-semibold mb-4">Trading Pairs (Top 10)</h2>
         {isLoading ? (
           <p className="text-gray-400">Loading trading pairs...</p>
+        ) : pairs.length === 0 ? (
+          <p className="text-gray-400">No trading pairs available</p>
         ) : (
           <div className="overflow-x-auto">
             <Table>
