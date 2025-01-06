@@ -32,6 +32,8 @@ serve(async (req) => {
       )
     }
 
+    console.log(`Processing ${method} request for ${exchangeId}`, { symbol, params })
+
     const exchangeClass = ccxt[exchangeId]
     if (!exchangeClass) {
       return new Response(
@@ -52,8 +54,10 @@ serve(async (req) => {
     })
 
     await configureExchange(exchange, exchangeId)
+    console.log(`Exchange ${exchangeId} configured successfully`)
 
     const result = await executeExchangeMethod(exchange, method, symbol, params)
+    console.log(`Method ${method} executed successfully for ${exchangeId}`, result)
     
     // If result is null, it means there was an error but we handled it gracefully
     if (result === null) {
