@@ -47,9 +47,10 @@ serve(async (req) => {
 
     const exchange = new exchangeClass({
       enableRateLimit: true,
-      timeout: 30000, // Increased timeout to 30 seconds
+      timeout: 60000, // Increased timeout to 60 seconds
       options: {
         defaultType: 'spot',
+        recvWindow: 60000, // Added recvWindow for Binance
       }
     })
 
@@ -60,16 +61,6 @@ serve(async (req) => {
       const result = await executeExchangeMethod(exchange, method, symbol, params)
       console.log(`Method ${method} executed successfully for ${exchangeId}`)
       
-      // If result is null, it means there was an error but we handled it gracefully
-      if (result === null) {
-        return new Response(
-          JSON.stringify({ data: null }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        )
-      }
-
       return new Response(
         JSON.stringify(result),
         {
