@@ -31,9 +31,10 @@ export default function BinanceTest() {
 
         if (error) throw error;
 
-        // Filter for spot markets and transform data
+        // Filter for spot markets, take only first 10 pairs
         const spotPairs = data
           .filter((market: any) => market.type === 'spot')
+          .slice(0, 10) // Only take first 10 pairs
           .map((market: any) => ({
             symbol: market.symbol,
             price: 'Loading...',
@@ -97,7 +98,7 @@ export default function BinanceTest() {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Binance API Testing</h1>
       <Card className="p-4">
-        <h2 className="text-xl font-semibold mb-4">Trading Pairs</h2>
+        <h2 className="text-xl font-semibold mb-4">Trading Pairs (Top 10)</h2>
         {isLoading ? (
           <p className="text-gray-400">Loading trading pairs...</p>
         ) : (
