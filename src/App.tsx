@@ -5,8 +5,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import BybitTest from "./pages/exchanges/BybitTest";
+import CoinbaseTest from "./pages/exchanges/CoinbaseTest";
+import KrakenTest from "./pages/exchanges/KrakenTest";
+import BinanceTest from "./pages/exchanges/BinanceTest";
+import KucoinTest from "./pages/exchanges/KucoinTest";
+import OkxTest from "./pages/exchanges/OkxTest";
 
 const queryClient = new QueryClient();
 
@@ -20,7 +28,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     });
   }, []);
 
-  // Show nothing while checking authentication
   if (isAuthenticated === null) return null;
 
   if (!isAuthenticated) {
@@ -39,10 +46,25 @@ const App = () => (
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route
-            path="/"
+            path="/*"
             element={
               <ProtectedRoute>
-                <Index />
+                <SidebarProvider>
+                  <div className="min-h-screen flex w-full">
+                    <AppSidebar />
+                    <main className="flex-1 overflow-y-auto">
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/exchanges/bybit" element={<BybitTest />} />
+                        <Route path="/exchanges/coinbase" element={<CoinbaseTest />} />
+                        <Route path="/exchanges/kraken" element={<KrakenTest />} />
+                        <Route path="/exchanges/binance" element={<BinanceTest />} />
+                        <Route path="/exchanges/kucoin" element={<KucoinTest />} />
+                        <Route path="/exchanges/okx" element={<OkxTest />} />
+                      </Routes>
+                    </main>
+                  </div>
+                </SidebarProvider>
               </ProtectedRoute>
             }
           />
