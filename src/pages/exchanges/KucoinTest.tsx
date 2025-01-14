@@ -36,7 +36,7 @@ export default function KucoinTest() {
           throw new Error('Invalid data format received from API');
         }
 
-        // Filter for active spot markets and sort by volume
+        // Simplified filtering: just get first 10 spot trading pairs
         const spotPairs = data
           .filter((market: any) => {
             return (
@@ -44,18 +44,10 @@ export default function KucoinTest() {
               typeof market === 'object' && 
               market.type === 'spot' && 
               market.symbol && 
-              typeof market.symbol === 'string' &&
-              market.active === true && // Only include active markets
-              market.quote === 'USDT' // Only include USDT pairs for consistency
+              typeof market.symbol === 'string'
             );
           })
-          .sort((a: any, b: any) => {
-            // Sort by volume if available, otherwise keep original order
-            const volumeA = a.info?.volValue || 0;
-            const volumeB = b.info?.volValue || 0;
-            return Number(volumeB) - Number(volumeA);
-          })
-          .slice(0, 10) // Take top 10 by volume
+          .slice(0, 10) // Take first 10 pairs
           .map((market: any) => ({
             symbol: market.symbol,
             price: 'Loading...',
@@ -66,7 +58,7 @@ export default function KucoinTest() {
           throw new Error('No valid trading pairs found');
         }
 
-        console.log('Top 10 pairs by volume:', spotPairs);
+        console.log('First 10 available pairs:', spotPairs);
         setPairs(spotPairs);
         setIsLoading(false);
       } catch (error) {
@@ -133,7 +125,7 @@ export default function KucoinTest() {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Kucoin API Testing</h1>
       <Card className="p-4">
-        <h2 className="text-xl font-semibold mb-4">Top Trading Pairs by Volume</h2>
+        <h2 className="text-xl font-semibold mb-4">Available Trading Pairs</h2>
         {isLoading ? (
           <p className="text-gray-400">Loading trading pairs...</p>
         ) : pairs.length === 0 ? (
