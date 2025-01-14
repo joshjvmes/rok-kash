@@ -1,12 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import ccxt from 'npm:ccxt'
-import { configureExchange } from './exchanges.ts'
-import { executeExchangeMethod } from './methods.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
@@ -55,10 +52,8 @@ serve(async (req) => {
     })
 
     try {
-      await configureExchange(exchange, exchangeId)
-      console.log(`Exchange ${exchangeId} configured successfully`)
-
-      const result = await executeExchangeMethod(exchange, method, symbol, params)
+      // @ts-ignore - dynamic method call
+      const result = await exchange[method](symbol, params)
       console.log(`Method ${method} executed successfully for ${exchangeId}`)
       
       return new Response(
