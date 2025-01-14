@@ -6,6 +6,44 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function configureExchange(exchange: ccxt.Exchange, exchangeId: string) {
+  switch (exchangeId) {
+    case 'coinbase':
+      exchange.apiKey = Deno.env.get('COINBASE_API_KEY')
+      exchange.secret = Deno.env.get('COINBASE_SECRET')
+      break
+    case 'kraken':
+      exchange.apiKey = Deno.env.get('KRAKEN_API_KEY')
+      exchange.secret = Deno.env.get('KRAKEN_API_SECRET')
+      break
+    case 'bybit':
+      exchange.apiKey = Deno.env.get('BYBIT_API_KEY')
+      exchange.secret = Deno.env.get('BYBIT_SECRET')
+      break
+    case 'binance':
+      exchange.apiKey = Deno.env.get('BINANCE_API_KEY')
+      exchange.secret = Deno.env.get('BINANCE_SECRET')
+      break
+    case 'kucoin':
+      exchange.apiKey = Deno.env.get('KUCOIN_API_KEY')
+      exchange.secret = Deno.env.get('KUCOIN_SECRET')
+      exchange.password = Deno.env.get('KUCOIN_PASSPHRASE')
+      break
+    case 'okx':
+      exchange.apiKey = Deno.env.get('OKX_API_KEY')
+      exchange.secret = Deno.env.get('OKX_SECRET')
+      exchange.password = Deno.env.get('OKX_PASSPHRASE')
+      break
+    default:
+      throw new Error(`Unsupported exchange: ${exchangeId}`)
+  }
+
+  // Verify credentials are present
+  if (!exchange.apiKey || !exchange.secret) {
+    throw new Error(`Missing API credentials for ${exchangeId}`)
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -44,14 +82,20 @@ serve(async (req) => {
 
     const exchange = new exchangeClass({
       enableRateLimit: true,
-      timeout: 60000, // Increased timeout to 60 seconds
+      timeout: 60000,
       options: {
         defaultType: 'spot',
-        recvWindow: 60000, // Added recvWindow for Binance
+        adjustForTimeDifference: true,
+        recvWindow: 60000,
       }
     })
 
     try {
+      // Configure exchange with API credentials
+      configureExchange(exchange, exchangeId)
+      console.log(`Exchange ${exchangeId} configured with credentials`)
+
+      // Execute the requested method
       // @ts-ignore - dynamic method call
       const result = await exchange[method](symbol, params)
       console.log(`Method ${method} executed successfully for ${exchangeId}`)
