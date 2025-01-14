@@ -32,13 +32,23 @@ export default function KucoinTest() {
         if (error) throw error;
 
         if (!data || !Array.isArray(data)) {
+          console.error('Invalid data format received:', data);
           throw new Error('Invalid data format received from API');
         }
 
-        // Filter for spot markets, take only first 10 pairs
+        // Filter for spot markets with valid symbols, take only first 10 pairs
         const spotPairs = data
-          .filter((market: any) => market.type === 'spot' && market.symbol)
-          .slice(0, 10) // Only take first 10 pairs
+          .filter((market: any) => {
+            return (
+              market && 
+              typeof market === 'object' && 
+              market.type === 'spot' && 
+              market.symbol && 
+              typeof market.symbol === 'string' &&
+              market.active !== false // Only include active markets
+            );
+          })
+          .slice(0, 10)
           .map((market: any) => ({
             symbol: market.symbol,
             price: 'Loading...',
@@ -49,6 +59,7 @@ export default function KucoinTest() {
           throw new Error('No valid trading pairs found');
         }
 
+        console.log('Filtered spot pairs:', spotPairs);
         setPairs(spotPairs);
         setIsLoading(false);
       } catch (error) {
@@ -78,6 +89,7 @@ export default function KucoinTest() {
           return;
         }
 
+        console.log(`Fetching price for ${currentPair.symbol}`);
         const price = await fetchCCXTPrice('kucoin', currentPair.symbol);
         
         setPairs(currentPairs => {
