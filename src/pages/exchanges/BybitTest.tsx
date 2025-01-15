@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export default function BybitTest() {
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +32,10 @@ export default function BybitTest() {
 
       const endTime = Date.now();
       const responseTime = endTime - startTime;
-      const data = await response.json();
+      
+      // Clone the response before reading it
+      const responseClone = response.clone();
+      const data = await responseClone.json();
 
       const testResult = {
         exchange_name: "bybit",
