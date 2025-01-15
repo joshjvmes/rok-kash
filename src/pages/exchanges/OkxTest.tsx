@@ -1,98 +1,161 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { fetchCCXTPrice } from "@/utils/exchanges/ccxt";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+
+interface TradingPair {
+  symbol: string;
+  price: string;
+  lastUpdated?: Date;
+}
 
 export default function OkxTest() {
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [pairs, setPairs] = useState<TradingPair[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPairIndex, setCurrentPairIndex] = useState(0);
+  const UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minutes in milliseconds
 
-  const testEndpoints = [
-    { name: "Fetch Markets", endpoint: "fetchMarkets" },
-    { name: "Fetch Balance", endpoint: "fetchBalance" },
-    { name: "Fetch Order Book", endpoint: "fetchOrderBook" },
-    { name: "Fetch Trades", endpoint: "fetchTrades" },
-  ];
+  // Fetch initial trading pairs
+  useEffect(() => {
+    async function fetchInitialPairs() {
+      try {
+        const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+          body: { 
+            exchange: 'okx', 
+            method: 'fetchMarkets'
+          }
+        });
 
-  const runTest = async (testName: string) => {
-    setIsLoading(true);
-    try {
-      const startTime = Date.now();
-      const response = await fetch("/api/ccxt-proxy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          exchange: "okx",
-          method: testName,
-          symbol: testName === "fetchOrderBook" || testName === "fetchTrades" ? "BTC/USDT" : undefined,
-        }),
-      });
+        if (error) throw error;
 
-      const endTime = Date.now();
-      const responseTime = endTime - startTime;
-      const data = await response.json();
+        if (!data || !Array.isArray(data)) {
+          console.error('Invalid data format received:', data);
+          throw new Error('Invalid data format received from API');
+        }
 
-      const testResult = {
-        exchange_name: "okx",
-        test_name: testName,
-        status: response.ok && !data.error,
-        error_message: data.error || null,
-        response_time: responseTime,
-      };
+        // Simplified filtering: just get first 10 spot trading pairs
+        const spotPairs = data
+          .filter((market: any) => {
+            return (
+              market && 
+              typeof market === 'object' && 
+              market.type === 'spot' && 
+              market.symbol && 
+              typeof market.symbol === 'string'
+            );
+          })
+          .slice(0, 10) // Take first 10 pairs
+          .map((market: any) => ({
+            symbol: market.symbol,
+            price: 'Loading...',
+            lastUpdated: undefined
+          }));
 
-      const { error } = await supabase
-        .from("api_test_results")
-        .insert([testResult]);
+        if (spotPairs.length === 0) {
+          throw new Error('No valid trading pairs found');
+        }
 
-      if (error) {
-        console.error("Error saving test result:", error);
+        console.log('First 10 available pairs:', spotPairs);
+        setPairs(spotPairs);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching OKX pairs:', error);
         toast({
-          title: "Error saving test result",
-          description: error.message,
           variant: "destructive",
+          title: "Error fetching pairs",
+          description: "Could not fetch trading pairs from OKX"
         });
-      } else {
-        toast({
-          title: "Test completed",
-          description: `${testName} test ${testResult.status ? "succeeded" : "failed"}`,
-          variant: testResult.status ? "default" : "destructive",
-        });
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error running test:", error);
-      toast({
-        title: "Error running test",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
-  };
+
+    fetchInitialPairs();
+  }, [toast]);
+
+  // Sequential price updates
+  useEffect(() => {
+    if (pairs.length === 0 || isLoading) return;
+
+    const updatePrice = async () => {
+      try {
+        const currentPair = pairs[currentPairIndex];
+        
+        if (!currentPair || !currentPair.symbol) {
+          console.error('Invalid pair data at index:', currentPairIndex);
+          return;
+        }
+
+        console.log(`Fetching price for ${currentPair.symbol}`);
+        const price = await fetchCCXTPrice('okx', currentPair.symbol);
+        
+        setPairs(currentPairs => {
+          const newPairs = [...currentPairs];
+          if (newPairs[currentPairIndex]) {
+            newPairs[currentPairIndex] = {
+              ...currentPair,
+              price: price ? price.toFixed(8) : 'N/A',
+              lastUpdated: new Date()
+            };
+          }
+          return newPairs;
+        });
+
+        // Move to next pair or reset to first pair
+        setCurrentPairIndex(current => 
+          current === pairs.length - 1 ? 0 : current + 1
+        );
+      } catch (error) {
+        console.error(`Error updating price for pair at index ${currentPairIndex}:`, error);
+      }
+    };
+
+    // Update current pair immediately
+    updatePrice();
+
+    // Set up interval for the current pair
+    const interval = setInterval(updatePrice, UPDATE_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [currentPairIndex, pairs.length, isLoading]);
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">OKX API Testing</h1>
+      <h1 className="text-2xl font-bold mb-4">OKX Trading Pairs</h1>
       <Card className="p-4">
-        <div className="space-y-4">
-          <div className="grid gap-4">
-            {testEndpoints.map((test) => (
-              <div key={test.endpoint} className="flex items-center justify-between">
-                <Label>{test.name}</Label>
-                <Button
-                  onClick={() => runTest(test.endpoint)}
-                  disabled={isLoading}
-                  variant="outline"
-                >
-                  {isLoading ? "Testing..." : "Run Test"}
-                </Button>
-              </div>
-            ))}
+        <h2 className="text-xl font-semibold mb-4">Available Trading Pairs</h2>
+        {isLoading ? (
+          <p className="text-gray-400">Loading trading pairs...</p>
+        ) : pairs.length === 0 ? (
+          <p className="text-gray-400">No trading pairs available</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Trading Pair</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pairs.map((pair, index) => (
+                  <TableRow key={pair.symbol}>
+                    <TableCell>{pair.symbol}</TableCell>
+                    <TableCell>{pair.price}</TableCell>
+                    <TableCell>
+                      {pair.lastUpdated 
+                        ? new Date(pair.lastUpdated).toLocaleTimeString()
+                        : 'Not yet updated'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-        </div>
+        )}
       </Card>
     </div>
   );
