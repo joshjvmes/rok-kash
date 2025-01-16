@@ -60,6 +60,7 @@ const WalletConnection: FC = () => {
           variant="destructive" 
           onClick={() => {
             disconnect();
+            console.info('Successfully disconnected from Phantom wallet');
             toast({
               title: "Wallet Disconnected",
               description: "Successfully disconnected from Phantom wallet",
