@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Paintbrush } from "lucide-react";
 
 export const ThemeSwitcher = () => {
-  const [theme, setTheme] = useState<'default' | 'serenity'>('default');
+  const [theme, setTheme] = useState<'default' | 'serenity'>('serenity');
 
   const toggleTheme = () => {
     const newTheme = theme === 'default' ? 'serenity' : 'default';

@@ -23,9 +23,9 @@ export const TradingViewChart = () => {
           symbol: 'BINANCE:BTCUSDT',
           interval: '1D',
           timezone: 'exchange',
-          theme: 'dark',
+          theme: 'light',
           style: '1',
-          toolbar_bg: '#f1f3f6',
+          toolbar_bg: '#FFFFFF',
           enable_publishing: false,
           hide_side_toolbar: false,
           allow_symbol_change: true,
@@ -34,6 +34,11 @@ export const TradingViewChart = () => {
           show_popup_button: true,
           popup_width: '1000',
           popup_height: '650',
+          backgroundColor: '#FFFFFF',
+          gridColor: '#F1F0FB',
+          loading_screen: {
+            backgroundColor: "#FFFFFF"
+          }
         });
       }
     };
@@ -47,8 +52,8 @@ export const TradingViewChart = () => {
   }, []);
 
   return (
-    <Card className="p-4">
-      <div id="tradingview_chart" ref={container} />
+    <Card className="p-4 bg-white shadow-lg rounded-lg border border-serenity-sky-light">
+      <div id="tradingview_chart" ref={container} className="rounded-lg overflow-hidden" />
     </Card>
   );
 };
