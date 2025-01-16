@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { fetchCCXTPrice } from "@/utils/exchanges/ccxt";
+import { fetchCCXTPrice, fetchMarketStructure } from "@/utils/exchanges/ccxt";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -9,6 +9,8 @@ interface TradingPair {
   symbol: string;
   price: string;
   lastUpdated?: Date;
+  makerFee?: string;
+  takerFee?: string;
 }
 
 export default function BybitTest() {
@@ -47,19 +49,39 @@ export default function BybitTest() {
               typeof market.symbol === 'string'
             );
           })
-          .slice(0, 10) // Take first 10 pairs
-          .map((market: any) => ({
-            symbol: market.symbol,
-            price: 'Loading...',
-            lastUpdated: undefined
-          }));
+          .slice(0, 10); // Take first 10 pairs
 
-        if (spotPairs.length === 0) {
+        // Fetch market structure for each pair to get fees
+        const pairsWithFees = await Promise.all(
+          spotPairs.map(async (market: any) => {
+            try {
+              const marketStructure = await fetchMarketStructure('bybit', market.symbol);
+              return {
+                symbol: market.symbol,
+                price: 'Loading...',
+                lastUpdated: undefined,
+                makerFee: marketStructure?.maker ? `${(marketStructure.maker * 100).toFixed(3)}%` : 'N/A',
+                takerFee: marketStructure?.taker ? `${(marketStructure.taker * 100).toFixed(3)}%` : 'N/A'
+              };
+            } catch (error) {
+              console.error(`Error fetching market structure for ${market.symbol}:`, error);
+              return {
+                symbol: market.symbol,
+                price: 'Loading...',
+                lastUpdated: undefined,
+                makerFee: 'N/A',
+                takerFee: 'N/A'
+              };
+            }
+          })
+        );
+
+        if (pairsWithFees.length === 0) {
           throw new Error('No valid trading pairs found');
         }
 
-        console.log('First 10 available pairs:', spotPairs);
-        setPairs(spotPairs);
+        console.log('First 10 available pairs with fees:', pairsWithFees);
+        setPairs(pairsWithFees);
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching Bybit pairs:', error);
@@ -137,14 +159,18 @@ export default function BybitTest() {
                 <TableRow>
                   <TableHead>Trading Pair</TableHead>
                   <TableHead>Price</TableHead>
+                  <TableHead>Maker Fee</TableHead>
+                  <TableHead>Taker Fee</TableHead>
                   <TableHead>Last Updated</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pairs.map((pair, index) => (
+                {pairs.map((pair) => (
                   <TableRow key={pair.symbol}>
                     <TableCell>{pair.symbol}</TableCell>
                     <TableCell>{pair.price}</TableCell>
+                    <TableCell>{pair.makerFee}</TableCell>
+                    <TableCell>{pair.takerFee}</TableCell>
                     <TableCell>
                       {pair.lastUpdated 
                         ? new Date(pair.lastUpdated).toLocaleTimeString()
