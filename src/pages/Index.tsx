@@ -2,7 +2,7 @@ import { QuickTrade } from "@/components/QuickTrade";
 import { ExchangeBalance } from "@/components/ExchangeBalance";
 import { TradingViewChart } from "@/components/TradingViewChart";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { CommandTerminal } from "@/components/CommandTerminal";
+import CommandTerminal from "@/components/CommandTerminal";
 
 const EXCHANGES = ['bybit', 'coinbase', 'kraken', 'binance', 'kucoin', 'okx'];
 
