@@ -2,6 +2,7 @@ import { QuickTrade } from "@/components/QuickTrade";
 import { ExchangeBalance } from "@/components/ExchangeBalance";
 import { TradingViewChart } from "@/components/TradingViewChart";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { CommandTerminal } from "@/components/CommandTerminal";
 
 const EXCHANGES = ['bybit', 'coinbase', 'kraken', 'binance', 'kucoin', 'okx'];
 
@@ -11,6 +12,8 @@ const Index = () => {
       <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
         KASH Dashboard
       </h1>
+
+      <CommandTerminal />
 
       <div className="space-y-4">
         <TradingViewChart />
