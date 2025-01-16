@@ -17,33 +17,56 @@ const WalletConnection: FC = () => {
   useEffect(() => {
     if (connecting) {
       console.info('Wallet connecting...');
+      toast({
+        title: "Connecting Wallet",
+        description: "Please approve the connection in Phantom",
+      });
     }
-  }, [connecting]);
+  }, [connecting, toast]);
 
   useEffect(() => {
-    if (connected) {
+    if (connected && wallet) {
       console.info('Wallet connected successfully');
       toast({
         title: "Wallet Connected",
         description: "Successfully connected to Phantom wallet",
+        variant: "default",
       });
     }
-  }, [connected, toast]);
+  }, [connected, wallet, toast]);
 
   useEffect(() => {
     if (!connected && !connecting && wallet) {
-      console.error('Wallet disconnected');
+      console.error('Wallet disconnected or connection failed');
+      toast({
+        title: "Wallet Disconnected",
+        description: "Wallet connection was lost or failed",
+        variant: "destructive",
+      });
     }
-  }, [connected, connecting, wallet]);
+  }, [connected, connecting, wallet, toast]);
 
   return (
     <div className="flex items-center gap-2">
-      <WalletMultiButton className="phantom-button" />
+      <WalletMultiButton 
+        className="phantom-button"
+        style={{
+          backgroundColor: connecting ? '#4a5568' : undefined,
+          cursor: connecting ? 'not-allowed' : 'pointer',
+        }}
+      />
       {connected && (
         <Button 
           variant="destructive" 
-          onClick={() => disconnect()}
+          onClick={() => {
+            disconnect();
+            toast({
+              title: "Wallet Disconnected",
+              description: "Successfully disconnected from Phantom wallet",
+            });
+          }}
           className="h-[48px]"
+          disabled={connecting}
         >
           Disconnect
         </Button>
@@ -53,7 +76,7 @@ const WalletConnection: FC = () => {
 };
 
 export const PhantomWallet: FC = () => {
-  // Set to 'devnet' or 'mainnet-beta' as needed
+  // Set to 'devnet' for testing
   const network = WalletAdapterNetwork.Devnet;
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
