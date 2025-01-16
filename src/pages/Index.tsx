@@ -1,6 +1,5 @@
 import { ExchangeBalance } from "@/components/ExchangeBalance";
 import { TradingViewChart } from "@/components/TradingViewChart";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { TotalExchangeBalance } from "@/components/TotalExchangeBalance";
 
 const EXCHANGES = ['bybit', 'kraken', 'binance', 'kucoin', 'okx'];
@@ -17,7 +16,6 @@ const Index = () => {
           ))}
         </div>
       </div>
-      <ThemeSwitcher />
     </div>
   );
 };
