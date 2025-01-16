@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import CommandTerminal from "@/components/CommandTerminal";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import BybitTest from "./pages/exchanges/BybitTest";
@@ -53,15 +54,18 @@ const App = () => (
                   <div className="min-h-screen flex w-full">
                     <AppSidebar />
                     <main className="flex-1 overflow-y-auto">
-                      <Routes>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/exchanges/bybit" element={<BybitTest />} />
-                        <Route path="/exchanges/coinbase" element={<CoinbaseTest />} />
-                        <Route path="/exchanges/kraken" element={<KrakenTest />} />
-                        <Route path="/exchanges/binance" element={<BinanceTest />} />
-                        <Route path="/exchanges/kucoin" element={<KucoinTest />} />
-                        <Route path="/exchanges/okx" element={<OkxTest />} />
-                      </Routes>
+                      <div className="p-4 space-y-4">
+                        <CommandTerminal />
+                        <Routes>
+                          <Route path="/" element={<Index />} />
+                          <Route path="/exchanges/bybit" element={<BybitTest />} />
+                          <Route path="/exchanges/coinbase" element={<CoinbaseTest />} />
+                          <Route path="/exchanges/kraken" element={<KrakenTest />} />
+                          <Route path="/exchanges/binance" element={<BinanceTest />} />
+                          <Route path="/exchanges/kucoin" element={<KucoinTest />} />
+                          <Route path="/exchanges/okx" element={<OkxTest />} />
+                        </Routes>
+                      </div>
                     </main>
                   </div>
                 </SidebarProvider>
