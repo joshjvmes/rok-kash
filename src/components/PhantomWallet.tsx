@@ -11,17 +11,30 @@ import { useToast } from '@/hooks/use-toast';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 const WalletConnection: FC = () => {
-  const { connected, wallet, disconnect } = useWallet();
+  const { connected, wallet, connecting, disconnect } = useWallet();
   const { toast } = useToast();
 
   useEffect(() => {
+    if (connecting) {
+      console.info('Wallet connecting...');
+    }
+  }, [connecting]);
+
+  useEffect(() => {
     if (connected) {
+      console.info('Wallet connected successfully');
       toast({
         title: "Wallet Connected",
         description: "Successfully connected to Phantom wallet",
       });
     }
   }, [connected, toast]);
+
+  useEffect(() => {
+    if (!connected && !connecting && wallet) {
+      console.error('Wallet disconnected');
+    }
+  }, [connected, connecting, wallet]);
 
   return (
     <div className="flex items-center gap-2">
