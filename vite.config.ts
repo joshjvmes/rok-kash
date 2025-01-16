@@ -40,7 +40,8 @@ export default defineConfig(({ mode }) => ({
         'node:net',
         'node:events',
         'node:assert',
-        'node:tls'
+        'node:tls',
+        '@solana/web3.js'
       ]
     }
   }
