@@ -2,12 +2,16 @@ import { QuickTrade } from "@/components/QuickTrade";
 import { ExchangeBalance } from "@/components/ExchangeBalance";
 import { TradingViewChart } from "@/components/TradingViewChart";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { PhantomWallet } from "@/components/PhantomWallet";
 
 const EXCHANGES = ['bybit', 'kraken', 'binance', 'kucoin', 'okx'];
 
 const Index = () => {
   return (
     <div className="space-y-4">
+      <div className="flex justify-end mb-4">
+        <PhantomWallet />
+      </div>
       <div className="space-y-4">
         <TradingViewChart />
         <QuickTrade />
