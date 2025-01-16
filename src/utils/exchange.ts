@@ -1,4 +1,3 @@
-import { fetchCoinbasePrice } from "./exchanges/coinbase";
 import { fetchKrakenPrice } from "./exchanges/kraken";
 import { fetchCCXTPrice } from "./exchanges/ccxt";
 import type { PriceCardProps } from "./types/exchange";
@@ -12,7 +11,7 @@ const DEFAULT_SYMBOLS = [
   'AVAX/USDC'
 ];
 
-const EXCHANGE_ORDER = ['Coinbase', 'Kraken', 'Bybit', 'Binance', 'Kucoin', 'OKX'];
+const EXCHANGE_ORDER = ['Kraken', 'Bybit', 'Binance', 'Kucoin', 'OKX'];
 
 export async function fetchPrices(): Promise<PriceCardProps[]> {
   try {
@@ -26,11 +25,7 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
       console.log(`Using USD symbol: ${usdSymbol} for some exchanges`);
       console.log(`Using USDT symbol: ${usdtSymbol} for Binance, Kucoin and OKX`);
 
-      const [coinbasePrice, krakenPrice, bybitPrice, binancePrice, kucoinPrice, okxPrice] = await Promise.allSettled([
-        fetchCoinbasePrice(usdSymbol).catch((error) => {
-          console.error(`Error fetching Coinbase price for ${usdSymbol}:`, error);
-          return null;
-        }),
+      const [krakenPrice, bybitPrice, binancePrice, kucoinPrice, okxPrice] = await Promise.allSettled([
         fetchKrakenPrice(usdSymbol).catch((error) => {
           console.error(`Error fetching Kraken price for ${usdSymbol}:`, error);
           return null;
@@ -56,15 +51,6 @@ export async function fetchPrices(): Promise<PriceCardProps[]> {
       const results: PriceCardProps[] = [];
       
       // Always use the original USDC symbol for consistency in the UI
-      if (coinbasePrice.status === 'fulfilled' && coinbasePrice.value) {
-        results.push({
-          symbol,
-          price: coinbasePrice.value.toFixed(2),
-          change: parseFloat((Math.random() * 4 - 2).toFixed(2)),
-          exchange: 'Coinbase'
-        });
-      }
-
       if (krakenPrice.status === 'fulfilled' && krakenPrice.value) {
         results.push({
           symbol,

@@ -13,7 +13,6 @@ import { useLocation, Link } from "react-router-dom";
 
 const exchangePages = [
   { title: "Bybit", path: "/exchanges/bybit" },
-  { title: "Coinbase", path: "/exchanges/coinbase" },
   { title: "Kraken", path: "/exchanges/kraken" },
   { title: "Binance", path: "/exchanges/binance" },
   { title: "Kucoin", path: "/exchanges/kucoin" },

@@ -4,7 +4,7 @@ import { TradingViewChart } from "@/components/TradingViewChart";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import CommandTerminal from "@/components/CommandTerminal";
 
-const EXCHANGES = ['bybit', 'coinbase', 'kraken', 'binance', 'kucoin', 'okx'];
+const EXCHANGES = ['bybit', 'kraken', 'binance', 'kucoin', 'okx'];
 
 const Index = () => {
   return (
