@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ExchangeBalanceProps {
   exchange: string;
@@ -75,8 +76,11 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
     );
   }
 
-  // Only show USDC balance
-  const usdcBalance = balance?.total?.USDC || 0;
+  // Get all coins with non-zero balances
+  const nonZeroBalances = balance?.total ? 
+    Object.entries(balance.total)
+      .filter(([_, amount]) => amount > 0)
+      .sort(([coinA], [coinB]) => coinA.localeCompare(coinB)) : [];
 
   return (
     <Card className="p-4 bg-trading-gray">
@@ -99,15 +103,20 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-400">USDC</span>
-          <span>{Number(usdcBalance).toFixed(2)}</span>
+      <ScrollArea className="h-[200px] pr-4">
+        <div className="space-y-2">
+          {nonZeroBalances.length > 0 ? (
+            nonZeroBalances.map(([coin, amount]) => (
+              <div key={coin} className="flex justify-between text-sm">
+                <span className="text-gray-400">{coin}</span>
+                <span>{Number(amount).toFixed(8)}</span>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-gray-400">No balance found</p>
+          )}
         </div>
-        {usdcBalance === 0 && (
-          <p className="text-sm text-gray-400">No USDC balance</p>
-        )}
-      </div>
+      </ScrollArea>
     </Card>
   );
 }
