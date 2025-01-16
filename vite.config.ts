@@ -25,11 +25,6 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       external: [
-        'http',
-        'https',
-        'http-proxy-agent',
-        'https-proxy-agent',
-        'socks-proxy-agent',
         'net',
         'tls',
         'events',
