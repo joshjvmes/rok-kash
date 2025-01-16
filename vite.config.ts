@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       external: [
         'http',
@@ -42,7 +45,18 @@ export default defineConfig(({ mode }) => ({
         'node:assert',
         'node:tls',
         '@solana/web3.js'
-      ]
+      ],
+      output: {
+        manualChunks: {
+          'solana-web3': ['@solana/web3.js'],
+        }
+      }
+    }
+  },
+  optimizeDeps: {
+    exclude: ['@solana/web3.js'],
+    esbuildOptions: {
+      target: 'esnext'
     }
   }
 }));
