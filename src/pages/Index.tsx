@@ -1,6 +1,7 @@
 import { QuickTrade } from "@/components/QuickTrade";
 import { ExchangeBalance } from "@/components/ExchangeBalance";
 import { TradingViewChart } from "@/components/TradingViewChart";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 const EXCHANGES = ['bybit', 'coinbase', 'kraken', 'binance', 'kucoin', 'okx'];
 
@@ -20,6 +21,7 @@ const Index = () => {
           ))}
         </div>
       </div>
+      <ThemeSwitcher />
     </div>
   );
 };

@@ -49,6 +49,14 @@ export default {
           gray: "#1A1F2C",
           "gray-light": "#2B2F36",
         },
+        serenity: {
+          white: "#FFFFFF",
+          "sky-light": "#B7E9FF",
+          "sky-dark": "#87CEEB",
+          mountain: "#4A6670",
+          grass: "#2F4F4F",
+          "grass-light": "#8FBC8F",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
