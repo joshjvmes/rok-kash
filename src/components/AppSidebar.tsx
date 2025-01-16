@@ -8,8 +8,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import { useLocation, Link } from "react-router-dom";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 const exchangePages = [
   { title: "Bybit", path: "/exchanges/bybit" },
@@ -61,6 +63,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="p-4">
+        <ThemeSwitcher />
+      </SidebarFooter>
     </Sidebar>
   );
 }

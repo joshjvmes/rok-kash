@@ -12,23 +12,22 @@ export const ThemeSwitcher = () => {
     // Apply theme classes to the root element
     const root = document.documentElement;
     if (newTheme === 'serenity') {
-      root.style.setProperty('--background', '210 100% 98%'); // Light blue-white
-      root.style.setProperty('--foreground', '200 33% 36%'); // Mountain blue
-      root.style.setProperty('--card', '195 100% 95%'); // Sky light
-      root.style.setProperty('--card-foreground', '200 33% 36%'); // Mountain blue
-      root.style.setProperty('--primary', '195 71% 73%'); // Sky blue
-      root.style.setProperty('--primary-foreground', '200 33% 36%'); // Mountain blue
-      root.style.setProperty('--secondary', '146 25% 66%'); // Grass light
-      root.style.setProperty('--secondary-foreground', '200 33% 36%'); // Mountain blue
-      root.style.setProperty('--muted', '210 40% 96%'); // Light gray-blue
-      root.style.setProperty('--muted-foreground', '200 33% 36%'); // Mountain blue
-      root.style.setProperty('--accent', '195 71% 73%'); // Sky blue
-      root.style.setProperty('--accent-foreground', '200 33% 36%'); // Mountain blue
-      root.style.setProperty('--border', '195 71% 73%'); // Sky blue
-      root.style.setProperty('--input', '210 40% 96%'); // Light gray-blue
-      root.style.setProperty('--ring', '195 71% 73%'); // Sky blue
+      root.style.setProperty('--background', '210 100% 98%');
+      root.style.setProperty('--foreground', '200 33% 36%');
+      root.style.setProperty('--card', '195 100% 95%');
+      root.style.setProperty('--card-foreground', '200 33% 36%');
+      root.style.setProperty('--primary', '195 71% 73%');
+      root.style.setProperty('--primary-foreground', '200 33% 36%');
+      root.style.setProperty('--secondary', '146 25% 66%');
+      root.style.setProperty('--secondary-foreground', '200 33% 36%');
+      root.style.setProperty('--muted', '210 40% 96%');
+      root.style.setProperty('--muted-foreground', '200 33% 36%');
+      root.style.setProperty('--accent', '195 71% 73%');
+      root.style.setProperty('--accent-foreground', '200 33% 36%');
+      root.style.setProperty('--border', '195 71% 73%');
+      root.style.setProperty('--input', '210 40% 96%');
+      root.style.setProperty('--ring', '195 71% 73%');
     } else {
-      // Reset to default dark theme
       root.style.setProperty('--background', '222.2 84% 4.9%');
       root.style.setProperty('--foreground', '210 40% 98%');
       root.style.setProperty('--card', '222.2 84% 4.9%');
@@ -52,7 +51,7 @@ export const ThemeSwitcher = () => {
       variant="outline"
       size="icon"
       onClick={toggleTheme}
-      className={`fixed bottom-4 right-4 z-50 ${
+      className={`${
         theme === 'serenity' ? 'bg-serenity-sky-light text-serenity-mountain' : ''
       }`}
     >
