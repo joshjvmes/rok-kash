@@ -15,7 +15,7 @@ interface BalanceData {
 export function TotalExchangeBalance() {
   // Fetch balances for all exchanges
   const balanceQueries = EXCHANGES.map(exchange => 
-    useQuery({
+    useQuery<BalanceData>({
       queryKey: ['balance', exchange],
       queryFn: () => fetchBalance(exchange),
       refetchInterval: 30000,
@@ -30,7 +30,7 @@ export function TotalExchangeBalance() {
   balanceQueries.forEach(query => {
     if (query.data?.total) {
       Object.entries(query.data.total).forEach(([coin, amount]) => {
-        totalBalances[coin] = (totalBalances[coin] || 0) + amount;
+        totalBalances[coin] = (totalBalances[coin] || 0) + (amount as number);
       });
     }
   });
