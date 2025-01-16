@@ -88,47 +88,51 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
       .sort(([coinA], [coinB]) => coinA.localeCompare(coinB)) : [];
 
   return (
-    <Card className="p-4 bg-serenity-white shadow-lg border border-serenity-sky-light">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center gap-2">
-          <img 
-            src={`/${exchange}-logo.png`} 
-            alt={`${exchange} logo`}
-            className="w-6 h-6 object-contain"
-          />
+    <Card className="relative p-4 bg-serenity-white shadow-lg border border-serenity-sky-light overflow-hidden">
+      <div className="relative z-10">
+        <div className="flex justify-between items-start mb-4">
           <h3 className="text-lg font-semibold capitalize text-serenity-mountain">{exchange}</h3>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0 text-serenity-mountain hover:text-serenity-sky-dark">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-serenity-white border-serenity-sky-light">
+              <DropdownMenuLabel className="text-serenity-mountain">API Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={handleTestConnection} className="text-serenity-mountain hover:bg-serenity-sky-light">
+                Test Connection
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleFetchBalance} className="text-serenity-mountain hover:bg-serenity-sky-light">
+                Fetch Balance
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0 text-serenity-mountain hover:text-serenity-sky-dark">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-serenity-white border-serenity-sky-light">
-            <DropdownMenuLabel className="text-serenity-mountain">API Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={handleTestConnection} className="text-serenity-mountain hover:bg-serenity-sky-light">
-              Test Connection
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleFetchBalance} className="text-serenity-mountain hover:bg-serenity-sky-light">
-              Fetch Balance
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <ScrollArea className="h-[200px] pr-4">
+          <div className="space-y-2">
+            {nonZeroBalances.length > 0 ? (
+              nonZeroBalances.map(([coin, amount]) => (
+                <div key={coin} className="flex justify-between text-sm">
+                  <span className="text-serenity-mountain">{coin}</span>
+                  <span className="text-serenity-mountain font-medium">{Number(amount).toFixed(8)}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-serenity-mountain">No balance found</p>
+            )}
+          </div>
+        </ScrollArea>
       </div>
-      <ScrollArea className="h-[200px] pr-4">
-        <div className="space-y-2">
-          {nonZeroBalances.length > 0 ? (
-            nonZeroBalances.map(([coin, amount]) => (
-              <div key={coin} className="flex justify-between text-sm">
-                <span className="text-serenity-mountain">{coin}</span>
-                <span className="text-serenity-mountain font-medium">{Number(amount).toFixed(8)}</span>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-serenity-mountain">No balance found</p>
-          )}
-        </div>
-      </ScrollArea>
+      <div 
+        className="absolute bottom-0 left-0 right-0 h-24 opacity-10"
+        style={{
+          backgroundImage: `url(/${exchange}-logo.png)`,
+          backgroundPosition: 'center bottom',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: 'contain'
+        }}
+      />
     </Card>
   );
 }
