@@ -55,8 +55,8 @@ const App = () => (
                     <AppSidebar />
                     <main className="flex-1 overflow-y-auto">
                       <div className="p-4 space-y-4">
-                        <div className="flex flex-col items-center space-y-4">
-                          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
+                        <div className="space-y-4">
+                          <h1 className="text-center text-2xl md:text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
                             KASH $ROK
                           </h1>
                           <CommandTerminal />
