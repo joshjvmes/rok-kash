@@ -17,9 +17,16 @@ interface ExchangeBalanceProps {
   exchange: string;
 }
 
+// Define the shape of the balance data
+interface BalanceData {
+  total: {
+    [key: string]: number;
+  };
+}
+
 export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
   const { toast } = useToast();
-  const { data: balance, isLoading, error, refetch } = useQuery({
+  const { data: balance, isLoading, error, refetch } = useQuery<BalanceData>({
     queryKey: ['balance', exchange],
     queryFn: () => fetchBalance(exchange),
     refetchInterval: 30000, // Refresh every 30 seconds
