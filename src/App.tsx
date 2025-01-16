@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import CommandTerminal from "@/components/CommandTerminal";
+import { PhantomWallet } from "@/components/PhantomWallet";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import BybitTest from "./pages/exchanges/BybitTest";
@@ -55,12 +56,13 @@ const App = () => (
                     <AppSidebar />
                     <main className="flex-1 overflow-y-auto">
                       <div className="p-4 space-y-4">
-                        <div className="space-y-4">
-                          <h1 className="text-center text-2xl md:text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
+                        <div className="flex justify-between items-center">
+                          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
                             KASH $ROK
                           </h1>
-                          <CommandTerminal />
+                          <PhantomWallet />
                         </div>
+                        <CommandTerminal />
                         <Routes>
                           <Route path="/" element={<Index />} />
                           <Route path="/exchanges/bybit" element={<BybitTest />} />
