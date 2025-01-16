@@ -60,7 +60,10 @@ const CommandTerminal = () => {
   }, [logs]);
 
   return (
-    <Card className="bg-serenity-white shadow-lg border border-serenity-sky-light">
+    <Card className="bg-serenity-white shadow-lg border border-serenity-sky-light relative">
+      {/* Fade overlay */}
+      <div className="absolute top-0 left-0 right-0 h-16 z-10 pointer-events-none bg-gradient-to-b from-serenity-white via-serenity-white/80 to-transparent" />
+      
       <ScrollArea 
         ref={scrollAreaRef} 
         className="h-[200px] rounded-lg"
