@@ -43,18 +43,11 @@ export default defineConfig(({ mode }) => ({
         'node:net',
         'node:events',
         'node:assert',
-        'node:tls',
-        '@solana/web3.js'
-      ],
-      output: {
-        manualChunks: {
-          'solana-web3': ['@solana/web3.js'],
-        }
-      }
+        'node:tls'
+      ]
     }
   },
   optimizeDeps: {
-    exclude: ['@solana/web3.js'],
     esbuildOptions: {
       target: 'esnext'
     }
