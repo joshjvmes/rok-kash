@@ -90,7 +90,14 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
   return (
     <Card className="p-4 bg-serenity-white shadow-lg border border-serenity-sky-light">
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-lg font-semibold capitalize text-serenity-mountain">{exchange}</h3>
+        <div className="flex items-center gap-2">
+          <img 
+            src={`/${exchange}-logo.png`} 
+            alt={`${exchange} logo`}
+            className="w-6 h-6 object-contain"
+          />
+          <h3 className="text-lg font-semibold capitalize text-serenity-mountain">{exchange}</h3>
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0 text-serenity-mountain hover:text-serenity-sky-dark">
