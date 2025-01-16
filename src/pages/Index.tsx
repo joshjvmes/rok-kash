@@ -9,7 +9,7 @@ const Index = () => {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
-        KASH Dashboard
+        KASH $ROK
       </h1>
 
       <div className="space-y-4">
