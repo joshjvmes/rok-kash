@@ -10,7 +10,7 @@ interface LogMessage {
 
 const CommandTerminal = () => {
   const [logs, setLogs] = useState<LogMessage[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Override console methods to capture logs
   useEffect(() => {
@@ -51,25 +51,31 @@ const CommandTerminal = () => {
 
   // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (scrollAreaRef.current) {
+      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
     }
   }, [logs]);
 
   return (
-    <Card className="bg-black text-green-400 font-mono text-sm p-4">
-      <ScrollArea className="h-[200px]" ref={scrollRef}>
-        <div className="space-y-1">
+    <Card className="bg-serenity-white shadow-lg border border-serenity-sky-light">
+      <ScrollArea 
+        ref={scrollAreaRef} 
+        className="h-[200px] rounded-lg"
+      >
+        <div className="space-y-1 p-4 font-mono text-sm">
           {logs.map((log, index) => (
             <div
               key={index}
               className={`
-                ${log.type === 'error' ? 'text-red-400' : ''}
-                ${log.type === 'success' ? 'text-green-400' : ''}
-                ${log.type === 'info' ? 'text-blue-400' : ''}
+                ${log.type === 'error' ? 'text-trading-red' : ''}
+                ${log.type === 'success' ? 'text-trading-green' : ''}
+                ${log.type === 'info' ? 'text-serenity-mountain' : ''}
               `}
             >
-              <span className="text-gray-500">[{log.timestamp}]</span>{' '}
+              <span className="text-serenity-sky-dark">[{log.timestamp}]</span>{' '}
               <span>{log.message}</span>
             </div>
           ))}
