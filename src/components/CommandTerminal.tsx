@@ -1,58 +1,55 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 
-export type LogEntry = {
-  id: string;
+interface LogMessage {
+  timestamp: string;
   message: string;
-  timestamp: Date;
-  type?: 'info' | 'error' | 'success';
-};
+  type: 'info' | 'error' | 'success';
+}
 
 const CommandTerminal = () => {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logs, setLogs] = useState<LogMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Override console methods to capture logs
   useEffect(() => {
-    // Listen to console logs
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalInfo = console.info;
+    const originalConsoleLog = console.log;
+    const originalConsoleError = console.error;
+    const originalConsoleInfo = console.info;
+
+    const addLog = (message: any, type: 'info' | 'error' | 'success') => {
+      const timestamp = new Date().toLocaleTimeString();
+      setLogs(prev => [...prev, {
+        timestamp,
+        message: typeof message === 'object' ? JSON.stringify(message, null, 2) : String(message),
+        type
+      }]);
+    };
 
     console.log = (...args) => {
-      originalLog.apply(console, args);
-      addLog(args.join(' '), 'info');
+      originalConsoleLog.apply(console, args);
+      addLog(args[0], 'info');
     };
 
     console.error = (...args) => {
-      originalError.apply(console, args);
-      addLog(args.join(' '), 'error');
+      originalConsoleError.apply(console, args);
+      addLog(args[0], 'error');
     };
 
     console.info = (...args) => {
-      originalInfo.apply(console, args);
-      addLog(args.join(' '), 'info');
+      originalConsoleInfo.apply(console, args);
+      addLog(args[0], 'success');
     };
 
     return () => {
-      console.log = originalLog;
-      console.error = originalError;
-      console.info = originalInfo;
+      console.log = originalConsoleLog;
+      console.error = originalConsoleError;
+      console.info = originalConsoleInfo;
     };
   }, []);
 
-  const addLog = (message: string, type: 'info' | 'error' | 'success' = 'info') => {
-    setLogs(prev => [
-      ...prev,
-      {
-        id: Math.random().toString(36).substr(2, 9),
-        message,
-        timestamp: new Date(),
-        type
-      }
-    ].slice(-100)); // Keep only last 100 logs
-  };
-
+  // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -60,22 +57,20 @@ const CommandTerminal = () => {
   }, [logs]);
 
   return (
-    <Card className="bg-black border-gray-800 p-4 font-mono text-sm">
-      <ScrollArea className="h-[200px] w-full" ref={scrollRef}>
-        <div className="space-y-2">
-          {logs.map((log) => (
+    <Card className="bg-black text-green-400 font-mono text-sm p-4">
+      <ScrollArea className="h-[200px]" ref={scrollRef}>
+        <div className="space-y-1">
+          {logs.map((log, index) => (
             <div
-              key={log.id}
-              className={`flex items-start space-x-2 ${
-                log.type === 'error' ? 'text-red-400' :
-                log.type === 'success' ? 'text-green-400' :
-                'text-gray-300'
-              }`}
+              key={index}
+              className={`
+                ${log.type === 'error' ? 'text-red-400' : ''}
+                ${log.type === 'success' ? 'text-green-400' : ''}
+                ${log.type === 'info' ? 'text-blue-400' : ''}
+              `}
             >
-              <span className="text-gray-500 min-w-[70px]">
-                {log.timestamp.toLocaleTimeString()}
-              </span>
-              <span className="flex-1 whitespace-pre-wrap">{log.message}</span>
+              <span className="text-gray-500">[{log.timestamp}]</span>{' '}
+              <span>{log.message}</span>
             </div>
           ))}
         </div>
