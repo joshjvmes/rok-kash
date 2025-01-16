@@ -17,7 +17,6 @@ interface ExchangeBalanceProps {
   exchange: string;
 }
 
-// Define the shape of the balance data
 interface BalanceData {
   total: {
     [key: string]: number;
@@ -29,7 +28,7 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
   const { data: balance, isLoading, error, refetch } = useQuery<BalanceData>({
     queryKey: ['balance', exchange],
     queryFn: () => fetchBalance(exchange),
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
   });
 
   const handleTestConnection = async () => {
@@ -66,10 +65,10 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
 
   if (isLoading) {
     return (
-      <Card className="p-4 bg-trading-gray">
+      <Card className="p-4 bg-serenity-white shadow-lg border border-serenity-sky-light">
         <div className="flex items-center justify-center">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <p className="text-sm text-gray-400 ml-2">Loading balance...</p>
+          <Loader2 className="h-4 w-4 animate-spin text-serenity-sky-dark" />
+          <p className="text-sm text-serenity-mountain ml-2">Loading balance...</p>
         </div>
       </Card>
     );
@@ -77,34 +76,33 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
 
   if (error) {
     return (
-      <Card className="p-4 bg-trading-gray">
+      <Card className="p-4 bg-serenity-white shadow-lg border border-serenity-sky-light">
         <p className="text-sm text-red-400">Error loading balance</p>
       </Card>
     );
   }
 
-  // Get all coins with non-zero balances
   const nonZeroBalances = balance?.total ? 
     Object.entries(balance.total)
       .filter(([_, amount]) => amount > 0)
       .sort(([coinA], [coinB]) => coinA.localeCompare(coinB)) : [];
 
   return (
-    <Card className="p-4 bg-trading-gray">
+    <Card className="p-4 bg-serenity-white shadow-lg border border-serenity-sky-light">
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-lg font-semibold capitalize">{exchange}</h3>
+        <h3 className="text-lg font-semibold capitalize text-serenity-mountain">{exchange}</h3>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
+            <Button variant="ghost" className="h-8 w-8 p-0 text-serenity-mountain hover:text-serenity-sky-dark">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>API Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={handleTestConnection}>
+          <DropdownMenuContent align="end" className="bg-serenity-white border-serenity-sky-light">
+            <DropdownMenuLabel className="text-serenity-mountain">API Actions</DropdownMenuLabel>
+            <DropdownMenuItem onClick={handleTestConnection} className="text-serenity-mountain hover:bg-serenity-sky-light">
               Test Connection
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleFetchBalance}>
+            <DropdownMenuItem onClick={handleFetchBalance} className="text-serenity-mountain hover:bg-serenity-sky-light">
               Fetch Balance
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -115,12 +113,12 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
           {nonZeroBalances.length > 0 ? (
             nonZeroBalances.map(([coin, amount]) => (
               <div key={coin} className="flex justify-between text-sm">
-                <span className="text-gray-400">{coin}</span>
-                <span>{Number(amount).toFixed(8)}</span>
+                <span className="text-serenity-mountain">{coin}</span>
+                <span className="text-serenity-mountain font-medium">{Number(amount).toFixed(8)}</span>
               </div>
             ))
           ) : (
-            <p className="text-sm text-gray-400">No balance found</p>
+            <p className="text-sm text-serenity-mountain">No balance found</p>
           )}
         </div>
       </ScrollArea>
