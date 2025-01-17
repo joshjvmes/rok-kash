@@ -58,8 +58,16 @@ export function SolanaTokenTransfer() {
 
     setIsLoading(true);
     try {
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       // Record the transfer in the database
       const { error } = await supabase.from('solana_transfers').insert({
+        user_id: user.id,
         from_type: fromType,
         to_type: toType,
         from_address: fromType === 'wallet' ? publicKey.toString() : selectedExchange,
