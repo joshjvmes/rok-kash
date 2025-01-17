@@ -59,16 +59,16 @@ export function SymbolSelector({
 
   return (
     <div>
-      <label className="text-sm text-gray-400 mb-2 block">Symbol</label>
+      <label className="text-sm text-serenity-mountain mb-2 block">Symbol</label>
       <div className="flex items-center gap-2">
         <Select
           value={selectedSymbol}
           onValueChange={handleSymbolChange}
         >
-          <SelectTrigger className="bg-trading-gray-light border-trading-gray-light flex-1">
+          <SelectTrigger className="bg-white border-serenity-sky-dark flex-1">
             <SelectValue placeholder="Select symbol" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white">
             <SelectItem value="BTC/USDC">BTC/USDC</SelectItem>
             <SelectItem value="ETH/USDC">ETH/USDC</SelectItem>
             <SelectItem value="SOL/USDC">SOL/USDC</SelectItem>
@@ -94,7 +94,7 @@ export function SymbolSelector({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
-              <div className="flex items-center text-gray-400">
+              <div className="flex items-center text-serenity-mountain">
                 <Clock className="h-4 w-4" />
               </div>
             </TooltipTrigger>
