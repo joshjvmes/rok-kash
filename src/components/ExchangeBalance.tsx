@@ -28,7 +28,7 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
   const { data: balance, isLoading, error, refetch } = useQuery<BalanceData>({
     queryKey: ['balance', exchange],
     queryFn: () => fetchBalance(exchange),
-    refetchInterval: 30000,
+    refetchInterval: 3600000, // Changed from 30000 to 3600000 (1 hour)
   });
 
   const handleTestConnection = async () => {
