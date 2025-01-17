@@ -18,6 +18,14 @@ import BinanceTest from "./pages/exchanges/BinanceTest";
 import KucoinTest from "./pages/exchanges/KucoinTest";
 import OkxTest from "./pages/exchanges/OkxTest";
 import Rebalance from "./pages/protocols/rebalance";
+import ClosePositions from "./pages/protocols/close-positions";
+import Withdraw from "./pages/protocols/withdraw";
+import Pure from "./pages/algorithms/pure";
+import Triangle from "./pages/algorithms/triangle";
+import Pools from "./pages/algorithms/pools";
+import Statistical from "./pages/algorithms/statistical";
+import Counter from "./pages/algorithms/counter";
+import SemiAutomatic from "./pages/algorithms/semi-automatic";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +81,14 @@ const App = () => (
                           <Route path="/exchanges/kucoin" element={<KucoinTest />} />
                           <Route path="/exchanges/okx" element={<OkxTest />} />
                           <Route path="/protocols/rebalance" element={<Rebalance />} />
+                          <Route path="/protocols/close-positions" element={<ClosePositions />} />
+                          <Route path="/protocols/withdraw" element={<Withdraw />} />
+                          <Route path="/algorithms/pure" element={<Pure />} />
+                          <Route path="/algorithms/triangle" element={<Triangle />} />
+                          <Route path="/algorithms/pools" element={<Pools />} />
+                          <Route path="/algorithms/statistical" element={<Statistical />} />
+                          <Route path="/algorithms/counter" element={<Counter />} />
+                          <Route path="/algorithms/semi-automatic" element={<SemiAutomatic />} />
                         </Routes>
                       </div>
                     </main>
