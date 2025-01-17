@@ -273,6 +273,54 @@ export type Database = {
         }
         Relationships: []
       }
+      solana_transfers: {
+        Row: {
+          amount: number
+          created_at: string
+          error_message: string | null
+          from_address: string
+          from_type: string
+          id: string
+          status: string
+          to_address: string
+          to_type: string
+          token_mint: string
+          transaction_signature: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          error_message?: string | null
+          from_address: string
+          from_type: string
+          id?: string
+          status?: string
+          to_address: string
+          to_type: string
+          token_mint: string
+          transaction_signature?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          error_message?: string | null
+          from_address?: string
+          from_type?: string
+          id?: string
+          status?: string
+          to_address?: string
+          to_type?: string
+          token_mint?: string
+          transaction_signature?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trading_settings: {
         Row: {
           created_at: string
