@@ -37,8 +37,16 @@ export default function PureArbitrage() {
     const fetchSettings = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+          toast({
+            title: "Authentication required",
+            description: "Please log in to access arbitrage settings",
+            variant: "destructive",
+          });
+          return;
+        }
 
+        // First try to get existing settings
         const { data, error } = await supabase
           .from("arbitrage_settings")
           .select("*")
@@ -46,25 +54,49 @@ export default function PureArbitrage() {
           .maybeSingle();
 
         if (error) throw error;
+
         if (data) {
+          // Use existing settings if found
           setSettings(data);
+        } else {
+          // If no settings exist, create default settings for the user
+          const { error: insertError } = await supabase
+            .from("arbitrage_settings")
+            .insert({
+              user_id: user.id,
+              ...DEFAULT_SETTINGS
+            });
+
+          if (insertError) {
+            console.error("Error creating default settings:", insertError);
+            toast({
+              title: "Error",
+              description: "Failed to create default settings",
+              variant: "destructive",
+            });
+          }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching arbitrage settings:", error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to fetch settings",
+          variant: "destructive",
+        });
       }
     };
 
     fetchSettings();
-  }, []);
+  }, [toast]);
 
   // Monitor arbitrage opportunities based on settings
   useEffect(() => {
     const fetchOpportunities = async () => {
       try {
         setIsLoading(true);
-        const allOpportunities: ArbitrageOpportunityType[] = [];
-
+        
         // Fetch opportunities for each symbol in settings
+        const allOpportunities: ArbitrageOpportunityType[] = [];
         for (const symbol of settings.symbols) {
           const opportunities = await findArbitrageOpportunities(symbol);
           
@@ -88,11 +120,11 @@ export default function PureArbitrage() {
             description: `Found ${allOpportunities.length} opportunities matching your criteria.`,
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching arbitrage opportunities:", error);
         toast({
           title: "Error",
-          description: "Failed to fetch arbitrage opportunities",
+          description: error.message || "Failed to fetch opportunities",
           variant: "destructive",
         });
       } finally {
