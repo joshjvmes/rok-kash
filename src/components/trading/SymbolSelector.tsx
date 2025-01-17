@@ -1,5 +1,4 @@
 import { Clock } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -13,33 +12,28 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Loader2 } from "lucide-react";
 
 interface SymbolSelectorProps {
   selectedSymbol: string;
   onSymbolChange: (value: string) => void;
-  navigateOnChange?: boolean;
+  availableSymbols?: string[];
+  isLoading?: boolean;
 }
 
 export function SymbolSelector({ 
   selectedSymbol, 
   onSymbolChange,
-  navigateOnChange = false 
+  availableSymbols = [],
+  isLoading = false
 }: SymbolSelectorProps) {
-  const navigate = useNavigate();
-  const estimatedTimes = {
+  const estimatedTimes: { [key: string]: string } = {
     "BTC/USDC": "10-60 minutes",
     "ETH/USDC": "5-10 minutes",
     "SOL/USDC": "< 1 minute",
     "AVAX/USDC": "< 1 minute",
     "ADA/USDC": "5-10 minutes",
     "XRP/USDC": "3-5 seconds",
-    "PEPE/USDC": "< 1 minute",
-    "SHI/USDC": "< 1 minute",
-    "BONK/USDC": "< 1 minute",
-    "FLOG/USDC": "< 1 minute",
-    "BTTC/USDC": "< 1 minute",
-    "MOG/USDC": "< 1 minute",
-    // Add Kucoin popular pairs
     "DOGE/USDC": "1-5 minutes",
     "MATIC/USDC": "< 1 minute",
     "DOT/USDC": "2-5 minutes",
@@ -50,59 +44,50 @@ export function SymbolSelector({
     "FTM/USDC": "< 1 minute"
   };
 
-  const handleSymbolChange = (value: string) => {
-    onSymbolChange(value);
-    if (navigateOnChange) {
-      navigate(`/trading/${encodeURIComponent(value)}`);
-    }
-  };
-
   return (
     <div>
       <label className="text-sm text-serenity-mountain mb-2 block">Symbol</label>
       <div className="flex items-center gap-2">
         <Select
-          value={selectedSymbol}
-          onValueChange={handleSymbolChange}
+          value={selectedSymbol || undefined}
+          onValueChange={onSymbolChange}
         >
           <SelectTrigger className="bg-white border-serenity-sky-dark flex-1">
-            <SelectValue placeholder="Select symbol" />
+            <SelectValue placeholder={isLoading ? "Loading symbols..." : "Select symbol"} />
           </SelectTrigger>
           <SelectContent className="bg-white">
-            <SelectItem value="BTC/USDC">BTC/USDC</SelectItem>
-            <SelectItem value="ETH/USDC">ETH/USDC</SelectItem>
-            <SelectItem value="SOL/USDC">SOL/USDC</SelectItem>
-            <SelectItem value="AVAX/USDC">AVAX/USDC</SelectItem>
-            <SelectItem value="ADA/USDC">ADA/USDC</SelectItem>
-            <SelectItem value="XRP/USDC">XRP/USDC</SelectItem>
-            <SelectItem value="DOGE/USDC">DOGE/USDC</SelectItem>
-            <SelectItem value="MATIC/USDC">MATIC/USDC</SelectItem>
-            <SelectItem value="DOT/USDC">DOT/USDC</SelectItem>
-            <SelectItem value="LINK/USDC">LINK/USDC</SelectItem>
-            <SelectItem value="UNI/USDC">UNI/USDC</SelectItem>
-            <SelectItem value="AAVE/USDC">AAVE/USDC</SelectItem>
-            <SelectItem value="ATOM/USDC">ATOM/USDC</SelectItem>
-            <SelectItem value="FTM/USDC">FTM/USDC</SelectItem>
-            <SelectItem value="PEPE/USDC">PEPE/USDC</SelectItem>
-            <SelectItem value="SHI/USDC">SHI/USDC</SelectItem>
-            <SelectItem value="BONK/USDC">BONK/USDC</SelectItem>
-            <SelectItem value="FLOG/USDC">FLOG/USDC</SelectItem>
-            <SelectItem value="BTTC/USDC">BTTC/USDC</SelectItem>
-            <SelectItem value="MOG/USDC">MOG/USDC</SelectItem>
+            {isLoading ? (
+              <div className="flex items-center justify-center p-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="ml-2">Loading available symbols...</span>
+              </div>
+            ) : availableSymbols.length > 0 ? (
+              availableSymbols.map((symbol) => (
+                <SelectItem key={symbol} value={symbol}>
+                  {symbol}
+                </SelectItem>
+              ))
+            ) : (
+              <div className="p-2 text-sm text-gray-500">
+                No tokens available for transfer
+              </div>
+            )}
           </SelectContent>
         </Select>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <div className="flex items-center text-serenity-mountain">
-                <Clock className="h-4 w-4" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Estimated transaction time: {estimatedTimes[selectedSymbol]}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {selectedSymbol && estimatedTimes[selectedSymbol] && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <div className="flex items-center text-serenity-mountain">
+                  <Clock className="h-4 w-4" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Estimated transaction time: {estimatedTimes[selectedSymbol]}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
     </div>
   );

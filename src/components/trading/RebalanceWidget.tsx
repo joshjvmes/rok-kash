@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 import { ExchangeSelector } from "@/components/trading/ExchangeSelector";
 import { TradeAmount } from "@/components/trading/TradeAmount";
 import { SymbolSelector } from "@/components/trading/SymbolSelector";
+import { fetchBalance } from "@/utils/exchanges/ccxt";
 
 interface RebalanceTransaction {
   id: string;
@@ -21,6 +22,12 @@ interface RebalanceTransaction {
   error_message?: string;
 }
 
+interface BalanceData {
+  total: {
+    [key: string]: number;
+  };
+}
+
 export function RebalanceWidget() {
   const { toast } = useToast();
   const [fromExchange, setFromExchange] = useState<string>("");
@@ -28,6 +35,33 @@ export function RebalanceWidget() {
   const [selectedToken, setSelectedToken] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableSymbols, setAvailableSymbols] = useState<string[]>([]);
+
+  // Fetch balance for the selected 'from' exchange
+  const { data: fromExchangeBalance, isLoading: isLoadingBalance } = useQuery<BalanceData>({
+    queryKey: ['balance', fromExchange],
+    queryFn: () => fetchBalance(fromExchange),
+    enabled: !!fromExchange,
+    refetchInterval: 360000, // 6 minutes
+  });
+
+  // Update available symbols when fromExchange balance changes
+  useEffect(() => {
+    if (fromExchangeBalance?.total) {
+      const symbols = Object.entries(fromExchangeBalance.total)
+        .filter(([_, balance]) => balance > 0)
+        .map(([symbol]) => `${symbol}/USDC`);
+      setAvailableSymbols(symbols);
+      
+      // Reset selected token if it's not in the new list of available symbols
+      if (selectedToken && !symbols.includes(selectedToken)) {
+        setSelectedToken("");
+      }
+    } else {
+      setAvailableSymbols([]);
+      setSelectedToken("");
+    }
+  }, [fromExchangeBalance, fromExchange]);
 
   const { data: transactions, refetch: refetchTransactions } = useQuery({
     queryKey: ['rebalance-transactions'],
@@ -78,7 +112,7 @@ export function RebalanceWidget() {
           body: {
             fromExchange,
             toExchange,
-            token: selectedToken,
+            token: selectedToken.split('/')[0], // Extract base token from trading pair
             amount: parseFloat(amount),
             transactionId: transaction.id
           }
@@ -111,7 +145,10 @@ export function RebalanceWidget() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <ExchangeSelector
             selectedExchange={fromExchange}
-            onExchangeChange={setFromExchange}
+            onExchangeChange={(value) => {
+              setFromExchange(value);
+              setSelectedToken(""); // Reset selected token when exchange changes
+            }}
           />
 
           <ExchangeSelector
@@ -122,6 +159,8 @@ export function RebalanceWidget() {
           <SymbolSelector
             selectedSymbol={selectedToken}
             onSymbolChange={setSelectedToken}
+            availableSymbols={availableSymbols}
+            isLoading={isLoadingBalance}
           />
 
           <TradeAmount
@@ -148,7 +187,7 @@ export function RebalanceWidget() {
       </Card>
 
       <Card className="p-6 bg-serenity-white border-serenity-sky-dark">
-        <h2 className="text-lg font-semibold mb-4 text-serenity-mountain">Transaction History</h2>
+        <h2 className="text-lg font-semibold mb-4 text-serenity-mountain">Transaction Status</h2>
         <div className="space-y-4 max-h-[500px] overflow-y-auto">
           {transactions?.map((tx) => (
             <div
