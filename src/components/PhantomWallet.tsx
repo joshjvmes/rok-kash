@@ -78,7 +78,7 @@ const WalletConnection: FC = () => {
 
 export const PhantomWallet: FC = () => {
   // Set to 'mainnet-beta' for production
-  const network = WalletAdapterNetwork.MainnetBeta;
+  const network = 'mainnet-beta' as WalletAdapterNetwork;
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
 
