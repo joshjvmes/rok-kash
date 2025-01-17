@@ -1,94 +1,94 @@
-import { FC, useEffect } from 'react';
-import { useWeb3React } from '@web3-react/core';
-import { InjectedConnector } from '@web3-react/injected-connector';
+import { FC, useEffect, useMemo } from 'react';
+import { ConnectionProvider, WalletProvider, useWallet } from '@solana/wallet-adapter-react';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { clusterApiUrl } from '@solana/web3.js';
 import { Button } from './ui/button';
 import { useToast } from '@/hooks/use-toast';
 
-const injected = new InjectedConnector({
-  supportedChainIds: [1, 2], // Solana chain IDs
-});
+// Import wallet adapter CSS
+import '@solana/wallet-adapter-react-ui/styles.css';
 
-export const PhantomWallet: FC = () => {
-  const { activate, deactivate, active, account, error } = useWeb3React();
+const WalletConnection: FC = () => {
+  const { connected, wallet, connecting, disconnect } = useWallet();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (error) {
-      console.error('Wallet connection error:', error);
+    if (connecting) {
+      console.info('Wallet connecting...');
       toast({
-        title: "Connection Error",
-        description: "Failed to connect to Phantom wallet. Please make sure it's installed and try again.",
-        variant: "destructive",
+        title: "Connecting Wallet",
+        description: "Please approve the connection in Phantom",
       });
     }
-  }, [error, toast]);
+  }, [connecting, toast]);
 
   useEffect(() => {
-    if (active && account) {
-      console.info('Wallet connected successfully:', account);
+    if (connected && wallet) {
+      console.info('Wallet connected successfully');
       toast({
         title: "Wallet Connected",
         description: "Successfully connected to Phantom wallet",
         variant: "default",
       });
     }
-  }, [active, account, toast]);
+  }, [connected, wallet, toast]);
 
-  const connectWallet = async () => {
-    try {
-      console.log('Attempting to connect to Phantom wallet...');
-      await activate(injected);
-    } catch (err) {
-      console.error('Failed to connect:', err);
-      toast({
-        title: "Connection Failed",
-        description: "Could not connect to Phantom wallet",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const disconnectWallet = () => {
-    try {
-      console.log('Disconnecting wallet...');
-      deactivate();
+  useEffect(() => {
+    if (!connected && !connecting && wallet) {
+      console.error('Wallet disconnected or connection failed');
       toast({
         title: "Wallet Disconnected",
-        description: "Successfully disconnected from Phantom wallet",
-      });
-    } catch (err) {
-      console.error('Failed to disconnect:', err);
-      toast({
-        title: "Disconnect Failed",
-        description: "Could not disconnect from wallet",
+        description: "Wallet connection was lost or failed",
         variant: "destructive",
       });
     }
-  };
+  }, [connected, connecting, wallet, toast]);
 
   return (
     <div className="flex items-center gap-2">
-      {!active ? (
+      <WalletMultiButton 
+        className="phantom-button"
+        style={{
+          backgroundColor: connecting ? '#4a5568' : undefined,
+          cursor: connecting ? 'not-allowed' : 'pointer',
+        }}
+      />
+      {connected && (
         <Button 
-          onClick={connectWallet}
-          className="bg-purple-600 hover:bg-purple-700"
+          variant="destructive" 
+          onClick={() => {
+            disconnect();
+            console.info('Successfully disconnected from Phantom wallet');
+            toast({
+              title: "Wallet Disconnected",
+              description: "Successfully disconnected from Phantom wallet",
+            });
+          }}
+          className="h-[48px]"
+          disabled={connecting}
         >
-          Connect Phantom
+          Disconnect
         </Button>
-      ) : (
-        <>
-          <span className="text-sm text-gray-600">
-            {account?.slice(0, 6)}...{account?.slice(-4)}
-          </span>
-          <Button 
-            variant="destructive" 
-            onClick={disconnectWallet}
-            className="h-[48px]"
-          >
-            Disconnect
-          </Button>
-        </>
       )}
     </div>
+  );
+};
+
+export const PhantomWallet: FC = () => {
+  // Set to 'devnet' for testing
+  const network = WalletAdapterNetwork.Devnet;
+  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
+
+  return (
+    <ConnectionProvider endpoint={endpoint}>
+      <WalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>
+          <WalletConnection />
+        </WalletModalProvider>
+      </WalletProvider>
+    </ConnectionProvider>
   );
 };
