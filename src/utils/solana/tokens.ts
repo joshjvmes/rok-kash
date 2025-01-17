@@ -1,6 +1,6 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import * as splToken from '@solana/spl-token';
+import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
 import { supabase } from "@/integrations/supabase/client";
 
 export interface TokenInfo {
@@ -48,13 +48,13 @@ export async function getTokenBalance(tokenMint: string, walletAddress: string):
     const walletPubkey = new PublicKey(walletAddress);
 
     // Get the associated token account
-    const tokenAccount = await splToken.getAssociatedTokenAddress(
+    const tokenAccount = await getAssociatedTokenAddress(
       mintPubkey,
       walletPubkey
     );
 
     try {
-      const account = await splToken.getAccount(connection, tokenAccount);
+      const account = await getAccount(connection, tokenAccount);
       console.log('Token account found:', account);
       
       return {
