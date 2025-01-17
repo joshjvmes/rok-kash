@@ -29,7 +29,6 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
   const [amount, setAmount] = useState<string>('');
   const [tokenMint, setTokenMint] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [depositAddress, setDepositAddress] = useState<string>('');
 
   const { balance } = useSolanaTokens(tokenMint);
 
@@ -92,10 +91,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         </div>
       )}
 
-      <DepositAddressDisplay
-        address={depositAddress}
-        isLoading={isLoading}
-      />
+      <DepositAddressDisplay />
 
       <TransferValidation
         connected={connected}
@@ -104,7 +100,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         selectedExchange={selectedExchange}
         amount={amount}
         tokenMint={tokenMint}
-        depositAddress={depositAddress}
+        depositAddress={publicKey?.toString() || ''}
       />
 
       <Input
