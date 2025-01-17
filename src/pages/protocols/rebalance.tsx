@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -16,8 +15,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { ExchangeSelector } from "@/components/trading/ExchangeSelector";
 import { TradeAmount } from "@/components/trading/TradeAmount";
-
-const EXCHANGES = ['bybit', 'kraken', 'binance', 'kucoin', 'okx'];
 
 interface BalanceData {
   total: {
@@ -100,29 +97,49 @@ export default function RebalancePage() {
         throw new Error("User not authenticated");
       }
 
-      const { error } = await supabase.from('rebalance_transactions').insert({
-        user_id: user.id,
-        from_exchange: fromExchange,
-        to_exchange: toExchange,
-        token_symbol: selectedToken,
-        amount: parseFloat(amount),
-        status: 'pending'
-      });
+      // Create initial transaction record
+      const { data: transaction, error: insertError } = await supabase
+        .from('rebalance_transactions')
+        .insert({
+          user_id: user.id,
+          from_exchange: fromExchange,
+          to_exchange: toExchange,
+          token_symbol: selectedToken,
+          amount: parseFloat(amount),
+          status: 'pending'
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (insertError) throw insertError;
+
+      // Call the edge function to execute the transfer
+      const { data: transferResult, error: transferError } = await supabase.functions
+        .invoke('rebalance-transfer', {
+          body: {
+            fromExchange,
+            toExchange,
+            token: selectedToken,
+            amount: parseFloat(amount),
+            transactionId: transaction.id
+          }
+        });
+
+      if (transferError) throw transferError;
 
       toast({
-        title: "Success",
-        description: "Rebalance transaction initiated",
+        title: "Transfer Initiated",
+        description: "Your transfer has been initiated successfully. Check the transaction history for updates.",
       });
 
       // Reset form
       setAmount("");
       await refetchTransactions();
     } catch (error) {
+      console.error('Transfer error:', error);
       toast({
-        title: "Error",
-        description: "Failed to create rebalance transaction",
+        title: "Transfer Failed",
+        description: error instanceof Error ? error.message : "Failed to initiate transfer",
         variant: "destructive",
       });
     } finally {
