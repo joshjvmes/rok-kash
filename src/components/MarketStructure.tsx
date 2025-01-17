@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { fetchMarketStructure } from "@/utils/exchanges/ccxt";
-import { Loader2 } from "lucide-react";
+import { Loader2, DollarSign, Scale, Wallet } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 interface MarketStructureProps {
   symbol: string;
@@ -27,36 +28,73 @@ export function MarketStructure({ symbol, exchange }: MarketStructureProps) {
   }
 
   return (
-    <Card className="p-4 bg-trading-gray">
-      <h3 className="text-sm font-semibold mb-2">Market Structure - {exchange}</h3>
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <p className="text-gray-400">Min Order Size</p>
-          <p className="font-medium">{marketInfo.limits?.amount?.min || 'N/A'} {symbol.split('/')[0]}</p>
+    <Card className="p-6 bg-serenity-white">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-serenity-mountain flex items-center gap-2">
+            <Scale className="h-5 w-5" />
+            Market Structure - {exchange}
+          </h3>
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-serenity-sky-dark" />
+            <span className="text-sm text-serenity-mountain">{symbol}</span>
+          </div>
         </div>
-        <div>
-          <p className="text-gray-400">Max Order Size</p>
-          <p className="font-medium">{marketInfo.limits?.amount?.max || 'N/A'} {symbol.split('/')[0]}</p>
+
+        <div className="bg-serenity-sky-light/10 p-4 rounded-lg">
+          <h4 className="text-sm font-medium text-serenity-mountain mb-3 flex items-center gap-2">
+            <Wallet className="h-4 w-4" />
+            Fee Information
+          </h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white p-3 rounded-md shadow-sm">
+              <p className="text-xs text-serenity-mountain/70">Maker Fee</p>
+              <p className="text-lg font-semibold text-serenity-mountain">
+                {(marketInfo.maker * 100).toFixed(3)}%
+              </p>
+            </div>
+            <div className="bg-white p-3 rounded-md shadow-sm">
+              <p className="text-xs text-serenity-mountain/70">Taker Fee</p>
+              <p className="text-lg font-semibold text-serenity-mountain">
+                {(marketInfo.taker * 100).toFixed(3)}%
+              </p>
+            </div>
+          </div>
         </div>
-        <div>
-          <p className="text-gray-400">Price Precision</p>
-          <p className="font-medium">{marketInfo.precision?.price || 'N/A'} decimals</p>
-        </div>
-        <div>
-          <p className="text-gray-400">Amount Precision</p>
-          <p className="font-medium">{marketInfo.precision?.amount || 'N/A'} decimals</p>
-        </div>
-        <div>
-          <p className="text-gray-400">Min Notional</p>
-          <p className="font-medium">${marketInfo.limits?.cost?.min || 'N/A'}</p>
-        </div>
-        <div>
-          <p className="text-gray-400">Maker Fee</p>
-          <p className="font-medium">{(marketInfo.maker * 100).toFixed(3)}%</p>
-        </div>
-        <div>
-          <p className="text-gray-400">Taker Fee</p>
-          <p className="font-medium">{(marketInfo.taker * 100).toFixed(3)}%</p>
+
+        <Separator />
+
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-serenity-mountain/70">Min Order Size</p>
+            <p className="font-medium text-serenity-mountain">
+              {marketInfo.limits?.amount?.min || 'N/A'} {symbol.split('/')[0]}
+            </p>
+          </div>
+          <div>
+            <p className="text-serenity-mountain/70">Max Order Size</p>
+            <p className="font-medium text-serenity-mountain">
+              {marketInfo.limits?.amount?.max || 'N/A'} {symbol.split('/')[0]}
+            </p>
+          </div>
+          <div>
+            <p className="text-serenity-mountain/70">Price Precision</p>
+            <p className="font-medium text-serenity-mountain">
+              {marketInfo.precision?.price || 'N/A'} decimals
+            </p>
+          </div>
+          <div>
+            <p className="text-serenity-mountain/70">Amount Precision</p>
+            <p className="font-medium text-serenity-mountain">
+              {marketInfo.precision?.amount || 'N/A'} decimals
+            </p>
+          </div>
+          <div>
+            <p className="text-serenity-mountain/70">Min Notional</p>
+            <p className="font-medium text-serenity-mountain">
+              ${marketInfo.limits?.cost?.min || 'N/A'}
+            </p>
+          </div>
         </div>
       </div>
     </Card>
