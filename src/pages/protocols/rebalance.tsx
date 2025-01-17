@@ -17,6 +17,12 @@ import { Loader2 } from "lucide-react";
 
 const EXCHANGES = ['bybit', 'kraken', 'binance', 'kucoin', 'okx'];
 
+interface BalanceData {
+  total: {
+    [key: string]: number;
+  };
+}
+
 interface RebalanceTransaction {
   id: string;
   from_exchange: string;
@@ -38,13 +44,13 @@ export default function RebalancePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch balances for both exchanges
-  const { data: fromBalance, isLoading: isLoadingFromBalance } = useQuery({
+  const { data: fromBalance, isLoading: isLoadingFromBalance } = useQuery<BalanceData>({
     queryKey: ['balance', fromExchange],
     queryFn: () => fetchBalance(fromExchange),
     enabled: !!fromExchange,
   });
 
-  const { data: toBalance, isLoading: isLoadingToBalance } = useQuery({
+  const { data: toBalance, isLoading: isLoadingToBalance } = useQuery<BalanceData>({
     queryKey: ['balance', toExchange],
     queryFn: () => fetchBalance(toExchange),
     enabled: !!toExchange,
@@ -84,7 +90,16 @@ export default function RebalancePage() {
 
     setIsSubmitting(true);
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
       const { error } = await supabase.from('rebalance_transactions').insert({
+        user_id: user.id,
         from_exchange: fromExchange,
         to_exchange: toExchange,
         token_symbol: selectedToken,
