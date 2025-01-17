@@ -13,13 +13,43 @@ serve(async (req) => {
   }
 
   try {
-    const { fromType, toType, fromAddress, toAddress, amount, tokenMint } = await req.json()
+    const { action, exchange, fromType, toType, fromAddress, toAddress, amount, tokenMint } = await req.json()
 
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    )
+    // Handle deposit address request
+    if (action === 'getDepositAddress') {
+      console.log('Fetching deposit address for:', { exchange, tokenMint })
+      
+      if (exchange === 'binance') {
+        const binance = new Binance({
+          apiKey: Deno.env.get('BINANCE_API_KEY'),
+          secret: Deno.env.get('BINANCE_SECRET'),
+        })
+
+        try {
+          const depositAddress = await binance.fetchDepositAddress(tokenMint)
+          console.log('Binance deposit address:', depositAddress)
+
+          return new Response(
+            JSON.stringify({ 
+              status: 'success',
+              address: depositAddress.address,
+              tag: depositAddress.tag
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Error fetching Binance deposit address:', error)
+          throw new Error(`Failed to fetch Binance deposit address: ${error.message}`)
+        }
+      }
+
+      throw new Error('Unsupported exchange for deposit address')
+    }
+
+    // Handle transfer request
+    if (!fromType || !toType || !amount || !tokenMint) {
+      throw new Error('Missing required transfer parameters')
+    }
 
     // Initialize Binance client when needed
     let binanceClient
@@ -57,7 +87,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Transfer error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        status: 'error',
+        error: error.message 
+      }),
       { 
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -92,7 +125,7 @@ async function handleWalletToBinance(
       status: 'pending',
       message: 'Transfer initiated from wallet to Binance',
       depositAddress: depositAddress.address,
-      tag: depositAddress.tag, // Some tokens might require a tag/memo
+      tag: depositAddress.tag,
       instructions: [
         'Send the specified amount to the provided Binance deposit address',
         'Ensure you include the tag/memo if provided',
