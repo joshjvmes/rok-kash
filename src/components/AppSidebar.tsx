@@ -1,4 +1,4 @@
-import { Home, TestTube2, LogOut, Database, Link2, ArrowDown, XOctagon, Brain, Triangle, Code, ChartLine, Infinity, ChevronDown } from "lucide-react";
+import { Home, TestTube2, LogOut, Database, Link2, ArrowDown, XOctagon, Brain, Triangle, Code, ChartLine, Infinity, ChevronDown, Wallet, TrendingUp, History } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -45,6 +45,12 @@ const algorithmPages = [
   { title: "Semi-Automatic", path: "/algorithms/semi-automatic", icon: Infinity },
 ];
 
+const summaryPages = [
+  { title: "Balances", path: "/balances", icon: Wallet },
+  { title: "Profit/Loss", path: "/profit-loss", icon: TrendingUp },
+  { title: "Trade History", path: "/trade-history", icon: History },
+];
+
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -84,6 +90,27 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Summary</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {summaryPages.map((page) => (
+                <SidebarMenuItem key={page.path}>
+                  <SidebarMenuButton asChild>
+                    <Link
+                      to={page.path}
+                      className={location.pathname === page.path ? "text-rokcat-purple" : ""}
+                    >
+                      <page.icon />
+                      <span>{page.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

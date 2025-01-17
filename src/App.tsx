@@ -26,6 +26,9 @@ import Pools from "./pages/algorithms/pools";
 import Statistical from "./pages/algorithms/statistical";
 import Counter from "./pages/algorithms/counter";
 import SemiAutomatic from "./pages/algorithms/semi-automatic";
+import Balances from "./pages/Balances";
+import ProfitLoss from "./pages/ProfitLoss";
+import TradeHistory from "./pages/TradeHistory";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +92,9 @@ const App = () => (
                           <Route path="/algorithms/statistical" element={<Statistical />} />
                           <Route path="/algorithms/counter" element={<Counter />} />
                           <Route path="/algorithms/semi-automatic" element={<SemiAutomatic />} />
+                          <Route path="/balances" element={<Balances />} />
+                          <Route path="/profit-loss" element={<ProfitLoss />} />
+                          <Route path="/trade-history" element={<TradeHistory />} />
                         </Routes>
                       </div>
                     </main>
