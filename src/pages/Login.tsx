@@ -2,11 +2,13 @@ import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [displayedTitle, setDisplayedTitle] = useState("");
+  const title = "$ROK KASH";
 
   useEffect(() => {
     supabase.auth.onAuthStateChange((event, session) => {
@@ -16,11 +18,37 @@ export default function Login() {
     });
   }, [navigate]);
 
+  useEffect(() => {
+    let currentIndex = 0;
+    const intervalId = setInterval(() => {
+      if (currentIndex <= title.length) {
+        setDisplayedTitle(title.slice(0, currentIndex));
+        currentIndex++;
+      } else {
+        clearInterval(intervalId);
+      }
+    }, 150);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-serenity-white flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-serenity-sky-light to-serenity-sky-dark">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-trading-gray">
       <Card className="w-full max-w-[320px] p-4 xs:p-5 sm:p-6 bg-white/90 backdrop-blur-lg border border-serenity-sky-dark/20 shadow-2xl">
-        <h1 className="text-xl xs:text-2xl font-bold mb-4 sm:mb-6 text-center text-serenity-mountain tracking-wider uppercase">
-          $ROK KASH
+        <h1 
+          className="text-xl xs:text-2xl font-bold mb-4 sm:mb-6 text-center text-serenity-mountain tracking-wider uppercase transition-all duration-300 hover:text-shadow-glow cursor-default"
+          style={{
+            textShadow: 'none',
+            transition: 'text-shadow 0.3s ease-in-out',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.textShadow = '0 0 10px rgba(135, 206, 235, 0.7)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.textShadow = 'none';
+          }}
+        >
+          {displayedTitle || '\u00A0'}
         </h1>
         <Auth
           supabaseClient={supabase}
