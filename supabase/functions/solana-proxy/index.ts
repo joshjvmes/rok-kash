@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { Connection, PublicKey, Transaction } from "npm:@solana/web3.js"
-import { Token, TOKEN_PROGRAM_ID } from "npm:@solana/spl-token"
+import { Connection, PublicKey } from "npm:@solana/web3.js"
+import { getAccount, TOKEN_PROGRAM_ID } from "npm:@solana/spl-token"
 import { TokenListProvider } from "npm:@solana/spl-token-registry"
 
 const corsHeaders = {
@@ -40,18 +40,24 @@ serve(async (req) => {
 
       case 'getTokenBalance':
         const { tokenMint, walletAddress } = params
-        const token = new Token(
-          connection,
-          new PublicKey(tokenMint),
-          TOKEN_PROGRAM_ID,
-          // @ts-ignore: Placeholder for wallet
-          null
-        )
-        const account = await token.getAccountInfo(new PublicKey(walletAddress))
-        result = {
-          mint: tokenMint,
-          balance: account.amount.toString(),
-          decimals: account.decimals
+        try {
+          const account = await getAccount(
+            connection,
+            new PublicKey(walletAddress),
+            TOKEN_PROGRAM_ID
+          )
+          result = {
+            mint: tokenMint,
+            balance: account.amount.toString(),
+            decimals: account.decimals
+          }
+        } catch (error) {
+          console.error('Error getting token balance:', error)
+          result = {
+            mint: tokenMint,
+            balance: '0',
+            decimals: 0
+          }
         }
         break
 
