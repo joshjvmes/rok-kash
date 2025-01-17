@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { Binance } from 'https://esm.sh/ccxt@4.2.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,44 +21,33 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    // Initialize exchange API clients based on fromType/toType
-    let sourceExchange, destinationExchange
-    if (fromType === 'exchange') {
-      // Initialize source exchange client
-      sourceExchange = await initializeExchangeClient(fromAddress)
-    }
-    if (toType === 'exchange') {
-      // Initialize destination exchange client
-      destinationExchange = await initializeExchangeClient(toAddress)
+    // Initialize Binance client when needed
+    let binanceClient
+    if (fromType === 'exchange' && fromAddress === 'binance' || 
+        toType === 'exchange' && toAddress === 'binance') {
+      binanceClient = new Binance({
+        apiKey: Deno.env.get('BINANCE_API_KEY'),
+        secret: Deno.env.get('BINANCE_SECRET'),
+      })
     }
 
-    // Perform the transfer based on the direction
     let result
-    if (fromType === 'wallet' && toType === 'exchange') {
-      result = await handleWalletToExchangeTransfer(
-        destinationExchange,
+    if (fromType === 'wallet' && toType === 'exchange' && toAddress === 'binance') {
+      result = await handleWalletToBinance(
+        binanceClient,
         fromAddress,
+        amount,
+        tokenMint
+      )
+    } else if (fromType === 'exchange' && fromAddress === 'binance' && toType === 'wallet') {
+      result = await handleBinanceToWallet(
+        binanceClient,
         toAddress,
         amount,
         tokenMint
       )
-    } else if (fromType === 'exchange' && toType === 'wallet') {
-      result = await handleExchangeToWalletTransfer(
-        sourceExchange,
-        fromAddress,
-        toAddress,
-        amount,
-        tokenMint
-      )
-    } else if (fromType === 'exchange' && toType === 'exchange') {
-      result = await handleExchangeToExchangeTransfer(
-        sourceExchange,
-        destinationExchange,
-        fromAddress,
-        toAddress,
-        amount,
-        tokenMint
-      )
+    } else {
+      throw new Error('Unsupported transfer type or exchange')
     }
 
     return new Response(
@@ -65,6 +55,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
+    console.error('Transfer error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
@@ -75,95 +66,83 @@ serve(async (req) => {
   }
 })
 
-async function initializeExchangeClient(exchangeName: string) {
-  // Initialize the appropriate exchange client based on the exchange name
-  switch (exchangeName.toLowerCase()) {
-    case 'bybit':
-      return {
-        name: 'bybit',
-        apiKey: Deno.env.get('BYBIT_API_KEY'),
-        secret: Deno.env.get('BYBIT_SECRET')
-      }
-    case 'kucoin':
-      return {
-        name: 'kucoin',
-        apiKey: Deno.env.get('KUCOIN_API_KEY'),
-        secret: Deno.env.get('KUCOIN_SECRET'),
-        passphrase: Deno.env.get('KUCOIN_PASSPHRASE')
-      }
-    // Add other exchanges as needed
-    default:
-      throw new Error(`Unsupported exchange: ${exchangeName}`)
+async function handleWalletToBinance(
+  binance: any,
+  fromAddress: string,
+  amount: number,
+  tokenMint: string
+) {
+  console.log('Handling wallet to Binance transfer:', {
+    fromAddress,
+    amount,
+    tokenMint
+  })
+
+  try {
+    // 1. Generate a Binance deposit address for the token
+    const depositAddress = await binance.fetchDepositAddress(tokenMint)
+    console.log('Generated Binance deposit address:', depositAddress)
+
+    if (!depositAddress || !depositAddress.address) {
+      throw new Error('Failed to generate Binance deposit address')
+    }
+
+    // 2. Return the deposit address and instructions
+    return {
+      status: 'pending',
+      message: 'Transfer initiated from wallet to Binance',
+      depositAddress: depositAddress.address,
+      tag: depositAddress.tag, // Some tokens might require a tag/memo
+      instructions: [
+        'Send the specified amount to the provided Binance deposit address',
+        'Ensure you include the tag/memo if provided',
+        'Wait for the transaction to be confirmed on the blockchain',
+        'Binance will credit your account once sufficient confirmations are received'
+      ]
+    }
+  } catch (error) {
+    console.error('Error in handleWalletToBinance:', error)
+    throw new Error(`Failed to process wallet to Binance transfer: ${error.message}`)
   }
 }
 
-async function handleWalletToExchangeTransfer(
-  exchange: any,
-  fromAddress: string,
+async function handleBinanceToWallet(
+  binance: any,
   toAddress: string,
   amount: number,
   tokenMint: string
 ) {
-  // Implement wallet to exchange transfer logic
-  console.log('Handling wallet to exchange transfer:', {
-    exchange,
-    fromAddress,
+  console.log('Handling Binance to wallet transfer:', {
     toAddress,
     amount,
     tokenMint
   })
-  
-  // This is a placeholder. Implement actual transfer logic here
-  return {
-    status: 'pending',
-    message: 'Transfer initiated from wallet to exchange'
-  }
-}
 
-async function handleExchangeToWalletTransfer(
-  exchange: any,
-  fromAddress: string,
-  toAddress: string,
-  amount: number,
-  tokenMint: string
-) {
-  // Implement exchange to wallet transfer logic
-  console.log('Handling exchange to wallet transfer:', {
-    exchange,
-    fromAddress,
-    toAddress,
-    amount,
-    tokenMint
-  })
-  
-  // This is a placeholder. Implement actual transfer logic here
-  return {
-    status: 'pending',
-    message: 'Transfer initiated from exchange to wallet'
-  }
-}
+  try {
+    // 1. Verify the withdrawal is possible
+    const withdrawalFees = await binance.fetchWithdrawalFees([tokenMint])
+    console.log('Withdrawal fees:', withdrawalFees)
 
-async function handleExchangeToExchangeTransfer(
-  sourceExchange: any,
-  destinationExchange: any,
-  fromAddress: string,
-  toAddress: string,
-  amount: number,
-  tokenMint: string
-) {
-  // Implement exchange to exchange transfer logic
-  console.log('Handling exchange to exchange transfer:', {
-    sourceExchange,
-    destinationExchange,
-    fromAddress,
-    toAddress,
-    amount,
-    tokenMint
-  })
-  
-  // This is a placeholder. Implement actual transfer logic here
-  return {
-    status: 'pending',
-    message: 'Transfer initiated between exchanges'
+    // 2. Initiate the withdrawal
+    const withdrawal = await binance.withdraw(tokenMint, amount, toAddress, {
+      network: 'SOL', // Specify Solana network
+    })
+    console.log('Withdrawal initiated:', withdrawal)
+
+    return {
+      status: 'pending',
+      message: 'Transfer initiated from Binance to wallet',
+      withdrawalId: withdrawal.id,
+      transactionHash: withdrawal.txid,
+      estimatedTime: '10-30 minutes',
+      instructions: [
+        'Withdrawal has been initiated',
+        'You can track the status in your Binance withdrawal history',
+        'Funds will appear in your wallet once the transaction is confirmed'
+      ]
+    }
+  } catch (error) {
+    console.error('Error in handleBinanceToWallet:', error)
+    throw new Error(`Failed to process Binance to wallet transfer: ${error.message}`)
   }
 }
