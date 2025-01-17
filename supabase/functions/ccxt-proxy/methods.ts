@@ -89,6 +89,22 @@ export async function executeExchangeMethod(
         return result.data;
       }
 
+      case 'fetchMarket': {
+        if (!formattedSymbol) throw new Error('Symbol required for fetchMarket');
+        // For KuCoin, we need to fetch all markets and find the specific one
+        const result = await safeExecuteMethod(exchange, 'fetchMarkets');
+        if (!result.success) {
+          console.log(`Failed to fetch markets on ${exchange.id}`);
+          return null;
+        }
+        const market = result.data.find((m: any) => m.symbol === formattedSymbol);
+        if (!market) {
+          console.log(`Market ${formattedSymbol} not found on ${exchange.id}`);
+          return null;
+        }
+        return market;
+      }
+
       default:
         throw new Error(`Unsupported method: ${method}`);
     }
