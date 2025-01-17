@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const EXCHANGES = ['binance', 'kraken', 'kucoin', 'okx'];
 
@@ -34,40 +35,53 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
   const [amount, setAmount] = useState<string>('');
   const [tokenMint, setTokenMint] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   const [depositAddress, setDepositAddress] = useState<string>('');
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     const fetchAddress = async () => {
       if (!selectedExchange || !fromType || !toType) {
         setDepositAddress('');
+        setError('');
         return;
       }
 
-      if (fromType === 'wallet' && toType === 'exchange') {
-        try {
+      setIsFetchingAddress(true);
+      setError('');
+
+      try {
+        if (fromType === 'wallet' && toType === 'exchange') {
           const { data, error } = await supabase.functions.invoke('solana-transfer', {
-            body: { action: 'getDepositAddress', exchange: selectedExchange }
+            body: { 
+              action: 'getDepositAddress', 
+              exchange: selectedExchange,
+              tokenMint 
+            }
           });
 
           if (error) throw error;
           if (data?.address) {
             setDepositAddress(data.address);
           }
-        } catch (error) {
-          console.error('Error fetching deposit address:', error);
-          toast({
-            title: "Error",
-            description: "Failed to fetch deposit address",
-            variant: "destructive",
-          });
+        } else if (fromType === 'exchange' && toType === 'wallet' && publicKey) {
+          setDepositAddress(publicKey.toString());
         }
-      } else if (fromType === 'exchange' && toType === 'wallet' && publicKey) {
-        setDepositAddress(publicKey.toString());
+      } catch (err) {
+        console.error('Error fetching deposit address:', err);
+        setError('Failed to fetch deposit address. Please try again.');
+        toast({
+          title: "Error",
+          description: "Failed to fetch deposit address",
+          variant: "destructive",
+        });
+      } finally {
+        setIsFetchingAddress(false);
       }
     };
 
     fetchAddress();
-  }, [selectedExchange, fromType, toType, publicKey]);
+  }, [selectedExchange, fromType, toType, publicKey, tokenMint]);
 
   const handleSwapDirection = () => {
     setFromType(fromType === 'wallet' ? 'exchange' : 'wallet');
@@ -84,7 +98,9 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
       return;
     }
 
-    if (!amount || !tokenMint || (fromType === 'exchange' && !selectedExchange) || (toType === 'exchange' && !selectedExchange)) {
+    if (!amount || !tokenMint || !depositAddress || 
+        (fromType === 'exchange' && !selectedExchange) || 
+        (toType === 'exchange' && !selectedExchange)) {
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",
@@ -130,6 +146,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
           size="icon"
           onClick={handleSwapDirection}
           className="rounded-full"
+          disabled={isLoading || isFetchingAddress}
         >
           <ArrowRightLeft className="h-4 w-4" />
         </Button>
@@ -175,13 +192,26 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         onChange={(e) => setTokenMint(e.target.value)}
       />
 
-      <Input
-        type="text"
-        placeholder="Deposit/Withdrawal address"
-        value={depositAddress}
-        readOnly
-        className="bg-gray-50"
-      />
+      <div className="relative">
+        <Input
+          type="text"
+          placeholder="Deposit/Withdrawal address"
+          value={depositAddress}
+          readOnly
+          className="bg-gray-50 pr-10"
+        />
+        {isFetchingAddress && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <Input
         type="number"
@@ -195,7 +225,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
       <Button
         className="w-full"
         onClick={handleSubmit}
-        disabled={isLoading || !connected}
+        disabled={isLoading || isFetchingAddress || !connected}
       >
         {isLoading ? "Processing..." : "Transfer"}
       </Button>

@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { TransferForm } from './solana/TransferForm';
-import { TransferHistory } from './solana/TransferHistory';
+import { TransferStatus } from './solana/TransferStatus';
 
 export function SolanaTokenTransfer() {
   const { publicKey } = useWallet();
@@ -23,14 +23,12 @@ export function SolanaTokenTransfer() {
     tokenMint: string;
   }) => {
     try {
-      // Get the current user's ID
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
         throw new Error('User not authenticated');
       }
 
-      // Prepare transfer data
       const data = {
         fromType: transferData.fromType,
         toType: transferData.toType,
@@ -40,14 +38,12 @@ export function SolanaTokenTransfer() {
         amount: parseFloat(transferData.amount),
       };
 
-      // Call the transfer edge function
       const { data: functionResponse, error: functionError } = await supabase.functions.invoke('solana-transfer', {
         body: data
       });
 
       if (functionError) throw functionError;
 
-      // Record the transfer in the database
       const { error: dbError } = await supabase.from('solana_transfers').insert({
         user_id: user.id,
         from_type: transferData.fromType,
@@ -93,7 +89,7 @@ export function SolanaTokenTransfer() {
           <CardDescription>Monitor your recent transfer activities</CardDescription>
         </CardHeader>
         <CardContent>
-          <TransferHistory />
+          <TransferStatus />
         </CardContent>
       </Card>
     </div>
