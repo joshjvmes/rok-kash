@@ -7,6 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const TIMEOUT = 30000; // 30 seconds timeout
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -45,50 +47,47 @@ serve(async (req) => {
 
     const exchange = new exchangeClass({
       enableRateLimit: true,
-      timeout: 60000,
+      timeout: TIMEOUT,
       options: {
         defaultType: 'spot',
         adjustForTimeDifference: true,
-        recvWindow: 60000,
+        recvWindow: TIMEOUT,
       }
     })
 
-    try {
-      // Configure exchange with API credentials
-      const apiKey = Deno.env.get(`${exchangeId.toUpperCase()}_API_KEY`)
-      const secret = Deno.env.get(`${exchangeId.toUpperCase()}_SECRET`)
-      const passphrase = Deno.env.get(`${exchangeId.toUpperCase()}_PASSPHRASE`)
+    // Configure exchange with API credentials if available
+    const apiKey = Deno.env.get(`${exchangeId.toUpperCase()}_API_KEY`)
+    const secret = Deno.env.get(`${exchangeId.toUpperCase()}_SECRET`)
+    const passphrase = Deno.env.get(`${exchangeId.toUpperCase()}_PASSPHRASE`)
 
-      if (apiKey && secret) {
-        exchange.apiKey = apiKey
-        exchange.secret = secret
-        if (passphrase) {
-          exchange.password = passphrase
-        }
+    if (apiKey && secret) {
+      exchange.apiKey = apiKey
+      exchange.secret = secret
+      if (passphrase) {
+        exchange.password = passphrase
       }
-
-      // Execute the requested method
-      const result = await executeExchangeMethod(exchange, method, symbol, params)
-      
-      return new Response(
-        JSON.stringify(result),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    } catch (error) {
-      console.error(`Error executing method ${method} on ${exchangeId}:`, error)
-      return new Response(
-        JSON.stringify({ 
-          error: `Error executing ${method} on ${exchangeId}: ${error.message}`,
-          details: error.stack 
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
     }
+
+    // Execute the requested method with a timeout
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Operation timed out')), TIMEOUT);
+    });
+
+    const result = await Promise.race([
+      executeExchangeMethod(exchange, method, symbol, params),
+      timeoutPromise
+    ]);
+
+    if (!result) {
+      throw new Error(`Failed to execute ${method} on ${exchangeId}`);
+    }
+    
+    return new Response(
+      JSON.stringify(result),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   } catch (error) {
     console.error('Error in ccxt-proxy:', error)
     return new Response(
@@ -97,7 +96,7 @@ serve(async (req) => {
         details: error.stack 
       }), 
       {
-        status: 500,
+        status: error.status || 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
