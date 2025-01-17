@@ -33,7 +33,7 @@ export default function Login() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-trading-gray">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-serenity-white">
       <Card className="w-full max-w-[320px] p-4 xs:p-5 sm:p-6 bg-white/90 backdrop-blur-lg border border-serenity-sky-dark/20 shadow-2xl">
         <h1 
           className="text-xl xs:text-2xl font-bold mb-4 sm:mb-6 text-center text-serenity-mountain tracking-wider uppercase transition-all duration-300 hover:text-shadow-glow cursor-default"
