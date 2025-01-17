@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSolanaBalance } from '@/utils/solana';
-import { getTokenBalance, TokenInfo } from '@/utils/solana/tokens';
+import { getTokenBalance } from '@/utils/solana/tokens';
 import { Skeleton } from './ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Card } from './ui/card';
@@ -48,15 +48,17 @@ export const PhantomWalletBalances = () => {
       setIsLoading(true);
       try {
         // Fetch SOL balance
-        console.log('Fetching SOL balance...');
+        console.log('Fetching SOL balance for address:', publicKey.toString());
         const balance = await getSolanaBalance(publicKey.toString());
+        console.log('SOL balance:', balance);
         setSolBalance(balance);
 
         // Fetch token balances
         const balancePromises = DISPLAY_TOKENS.map(async (token) => {
           try {
-            console.log(`Fetching balance for ${token.symbol}...`);
+            console.log(`Fetching balance for ${token.symbol} (${token.address})...`);
             const tokenBalance = await getTokenBalance(token.address, publicKey.toString());
+            console.log(`${token.symbol} balance:`, tokenBalance);
             return {
               symbol: token.symbol,
               balance: tokenBalance.balance,
@@ -75,6 +77,7 @@ export const PhantomWalletBalances = () => {
         });
 
         const balances = await Promise.all(balancePromises);
+        console.log('All token balances:', balances);
         setTokenBalances(balances);
       } catch (error) {
         console.error('Error fetching wallet balances:', error);

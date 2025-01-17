@@ -53,6 +53,8 @@ export async function getTokenBalance(tokenMint: string, walletAddress: string):
       }
     );
 
+    console.log('Token accounts found:', tokenAccounts.value.length);
+
     // Find the specific token account for this mint
     const tokenAccount = tokenAccounts.value.find(
       (account) => account.account.data.parsed.info.mint === tokenMint
@@ -68,11 +70,11 @@ export async function getTokenBalance(tokenMint: string, walletAddress: string):
         decimals: parsedInfo.tokenAmount.decimals
       };
     } else {
-      console.log('No token account found, returning zero balance');
+      console.log('No token account found for mint:', tokenMint);
       return {
         mint: tokenMint,
         balance: '0',
-        decimals: 6 // Default decimals
+        decimals: 6 // Default decimals for most SPL tokens
       };
     }
   } catch (error) {
