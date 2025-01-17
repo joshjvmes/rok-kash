@@ -77,7 +77,8 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
             );
           }
 
-          timeoutId = setTimeout(checkNextPair, 10000);
+          // Increased the timeout to 30 seconds (30000 milliseconds)
+          timeoutId = setTimeout(checkNextPair, 30000);
         };
 
         checkNextPair();
