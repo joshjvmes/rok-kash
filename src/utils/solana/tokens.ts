@@ -1,6 +1,5 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
 import { supabase } from "@/integrations/supabase/client";
 
 export interface TokenInfo {
@@ -44,30 +43,36 @@ export async function getTokenBalance(tokenMint: string, walletAddress: string):
   try {
     console.log(`Fetching balance for token ${tokenMint} and wallet ${walletAddress}`);
     const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
-    const mintPubkey = new PublicKey(tokenMint);
     const walletPubkey = new PublicKey(walletAddress);
 
-    // Get the associated token account
-    const tokenAccount = await getAssociatedTokenAddress(
-      mintPubkey,
-      walletPubkey
+    // Get all token accounts owned by the wallet
+    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+      walletPubkey,
+      {
+        programId: TOKEN_PROGRAM_ID,
+      }
     );
 
-    try {
-      const account = await getAccount(connection, tokenAccount);
-      console.log('Token account found:', account);
+    // Find the specific token account for this mint
+    const tokenAccount = tokenAccounts.value.find(
+      (account) => account.account.data.parsed.info.mint === tokenMint
+    );
+
+    if (tokenAccount) {
+      console.log('Token account found:', tokenAccount);
+      const parsedInfo = tokenAccount.account.data.parsed.info;
       
       return {
         mint: tokenMint,
-        balance: account.amount.toString(),
-        decimals: account.mint ? 9 : 6 // Default to 6 for SPL tokens, 9 for SOL
+        balance: parsedInfo.tokenAmount.amount,
+        decimals: parsedInfo.tokenAmount.decimals
       };
-    } catch (error) {
+    } else {
       console.log('No token account found, returning zero balance');
       return {
         mint: tokenMint,
         balance: '0',
-        decimals: 6
+        decimals: 6 // Default decimals
       };
     }
   } catch (error) {
