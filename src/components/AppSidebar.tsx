@@ -1,4 +1,4 @@
-import { Home, TestTube2 } from "lucide-react";
+import { Home, TestTube2, LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -10,8 +10,11 @@ import {
   SidebarMenuItem,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "./ui/button";
+import { useToast } from "./ui/use-toast";
 
 const exchangePages = [
   { title: "Bybit", path: "/exchanges/bybit" },
@@ -23,6 +26,25 @@ const exchangePages = [
 
 export function AppSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out successfully",
+        duration: 2000,
+      });
+      navigate("/login");
+    } catch (error) {
+      toast({
+        title: "Error logging out",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Sidebar>
@@ -63,8 +85,16 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 flex items-center justify-between">
         <ThemeSwitcher />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleLogout}
+          className="hover:bg-rokcat-purple/10"
+        >
+          <LogOut className="h-5 w-5" />
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );
