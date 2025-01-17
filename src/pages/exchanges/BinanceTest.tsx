@@ -3,7 +3,6 @@ import { BinanceAccountInfo } from "@/components/BinanceAccountInfo";
 import { TradingHistory } from "@/components/TradingHistory";
 import { MarketStructure } from "@/components/MarketStructure";
 import { OrderBook } from "@/components/OrderBook";
-import { QuickTrade } from "@/components/QuickTrade";
 import { useState } from "react";
 
 export default function BinanceTest() {
@@ -24,7 +23,6 @@ export default function BinanceTest() {
           
           <div className="space-y-6">
             <OrderBook exchange="binance" symbol={selectedSymbol} />
-            <QuickTrade />
           </div>
         </div>
       </div>
