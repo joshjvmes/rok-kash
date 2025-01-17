@@ -29,7 +29,7 @@ export function ArbitrageSettings() {
     symbols: ["BTC/USDT"],
     min_spread_percentage: 0.1,
     min_profit_amount: 10.0,
-    exchanges: ["Binance", "Kraken", "Bybit", "Kucoin", "OKX"],
+    exchanges: ["Binance", "Kucoin"],
     refresh_interval: 30,
     notifications_enabled: true,
   });

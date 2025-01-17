@@ -1,9 +1,8 @@
 import { fetchCCXTPrice } from "./ccxt";
-import { fetchKrakenPrice } from "./kraken";
 import { supabase } from "@/integrations/supabase/client";
 import type { ArbitrageOpportunity } from "../types/exchange";
 
-const EXCHANGES = ['kraken', 'bybit', 'binance', 'kucoin', 'okx'];
+const EXCHANGES = ['binance', 'kucoin'];
 
 async function getPriceForExchange(exchange: string, symbol: string): Promise<number | null> {
   try {
@@ -11,20 +10,11 @@ async function getPriceForExchange(exchange: string, symbol: string): Promise<nu
     let price: number | null = null;
     
     switch (exchange) {
-      case 'kraken':
-        price = await fetchKrakenPrice(symbol);
-        break;
-      case 'bybit':
-        price = await fetchCCXTPrice('bybit', symbol);
-        break;
       case 'binance':
         price = await fetchCCXTPrice('binance', symbol);
         break;
       case 'kucoin':
         price = await fetchCCXTPrice('kucoin', symbol);
-        break;
-      case 'okx':
-        price = await fetchCCXTPrice('okx', symbol);
         break;
     }
 
