@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { fetchBalance } from "@/utils/exchanges/ccxt";
+import { fetchBalance, fetchCCXTPrice } from "@/utils/exchanges/ccxt";
 import { Loader2, Database, CreditCard, User, DollarSign } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useEffect, useState } from "react";
 
 interface BalanceData {
   total: {
@@ -11,12 +12,63 @@ interface BalanceData {
   };
 }
 
+interface TokenValue {
+  balance: number;
+  usdValue: number;
+}
+
+interface TokenValues {
+  [key: string]: TokenValue;
+}
+
 export function KucoinAccountInfo() {
+  const [tokenValues, setTokenValues] = useState<TokenValues>({});
+  const [totalUSDValue, setTotalUSDValue] = useState<number>(0);
+
   const { data: balance, isLoading } = useQuery<BalanceData>({
     queryKey: ['balance', 'kucoin'],
     queryFn: () => fetchBalance('kucoin'),
     refetchInterval: 360000, // 6 minutes
   });
+
+  useEffect(() => {
+    async function fetchPrices() {
+      if (!balance?.total) return;
+
+      const newTokenValues: TokenValues = {};
+      let newTotalUSD = 0;
+
+      for (const [coin, amount] of Object.entries(balance.total)) {
+        if (amount > 0) {
+          try {
+            // Skip price fetch for stablecoins
+            let usdValue = amount;
+            if (!['USDT', 'USDC', 'DAI'].includes(coin)) {
+              const price = await fetchCCXTPrice('kucoin', `${coin}/USDT`);
+              usdValue = price ? amount * price : 0;
+            }
+            
+            newTokenValues[coin] = {
+              balance: amount,
+              usdValue: usdValue
+            };
+            newTotalUSD += usdValue;
+          } catch (error) {
+            console.error(`Error fetching price for ${coin}:`, error);
+            newTokenValues[coin] = {
+              balance: amount,
+              usdValue: 0
+            };
+          }
+        }
+      }
+
+      setTokenValues(newTokenValues);
+      setTotalUSDValue(newTotalUSD);
+    }
+
+    fetchPrices();
+  }, [balance]);
 
   if (isLoading) {
     return (
@@ -29,12 +81,8 @@ export function KucoinAccountInfo() {
     );
   }
 
-  const totalBalances = balance?.total || {};
-  const nonZeroBalances = Object.entries(totalBalances)
-    .filter(([_, amount]) => amount > 0)
-    .sort(([coinA], [coinB]) => coinB.localeCompare(coinA));
-
-  const totalUSDTValue = nonZeroBalances.reduce((acc, [_, amount]) => acc + Number(amount), 0);
+  const sortedTokens = Object.entries(tokenValues)
+    .sort(([, a], [, b]) => b.usdValue - a.usdValue);
 
   return (
     <Card className="p-6 bg-serenity-white shadow-lg border border-serenity-sky-light">
@@ -54,10 +102,10 @@ export function KucoinAccountInfo() {
           <Card className="p-4 bg-gradient-to-br from-serenity-sky-light to-white">
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-serenity-sky-dark" />
-              <span className="text-sm text-serenity-mountain">Total Assets (Estimated)</span>
+              <span className="text-sm text-serenity-mountain">Total Assets (USD)</span>
             </div>
             <p className="text-xl font-bold text-serenity-mountain mt-2">
-              {totalUSDTValue.toFixed(2)} USDT
+              ${totalUSDValue.toFixed(2)}
             </p>
           </Card>
 
@@ -67,7 +115,7 @@ export function KucoinAccountInfo() {
               <span className="text-sm text-serenity-mountain">Active Assets</span>
             </div>
             <p className="text-xl font-bold text-serenity-mountain mt-2">
-              {nonZeroBalances.length} Coins
+              {sortedTokens.length} Coins
             </p>
           </Card>
         </div>
@@ -78,13 +126,16 @@ export function KucoinAccountInfo() {
           <h3 className="text-sm font-medium text-serenity-mountain mb-2">Asset Distribution</h3>
           <ScrollArea className="h-[200px]">
             <div className="space-y-2">
-              {nonZeroBalances.map(([coin, amount], index) => (
+              {sortedTokens.map(([coin, value], index) => (
                 <div 
                   key={`${coin}-${index}`} 
                   className="flex justify-between items-center p-2 hover:bg-gray-50 rounded"
                 >
-                  <span className="text-sm font-medium text-serenity-mountain">{coin}</span>
-                  <span className="text-sm text-serenity-mountain">{Number(amount).toFixed(8)}</span>
+                  <div>
+                    <span className="text-sm font-medium text-serenity-mountain">{coin}</span>
+                    <span className="text-xs text-gray-500 ml-2">({value.balance.toFixed(8)})</span>
+                  </div>
+                  <span className="text-sm text-serenity-mountain">${value.usdValue.toFixed(2)}</span>
                 </div>
               ))}
             </div>
