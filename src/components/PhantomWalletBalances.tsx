@@ -4,12 +4,10 @@ import { getSolanaBalance } from '@/utils/solana';
 import { getTokenBalance, getTokenList, TokenInfo, TokenBalance } from '@/utils/solana/tokens';
 import { Skeleton } from './ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Button } from './ui/button';
-import { Separator } from './ui/separator';
+import { Card } from './ui/card';
 
 export const PhantomWalletBalances = () => {
-  const { connected, publicKey, connecting, disconnect } = useWallet();
+  const { connected, publicKey } = useWallet();
   const { toast } = useToast();
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [tokenBalances, setTokenBalances] = useState<Array<TokenBalance & TokenInfo>>([]);
@@ -61,79 +59,51 @@ export const PhantomWalletBalances = () => {
     fetchBalances();
   }, [connected, publicKey, toast]);
 
+  if (!connected) {
+    return null;
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <WalletMultiButton 
-          className="phantom-button"
-          style={{
-            backgroundColor: connecting ? '#4a5568' : undefined,
-            cursor: connecting ? 'not-allowed' : 'pointer',
-          }}
-        />
-        {connected && (
-          <Button 
-            variant="destructive" 
-            onClick={() => {
-              disconnect();
-              console.info('Successfully disconnected from Phantom wallet');
-              toast({
-                title: "Wallet Disconnected",
-                description: "Successfully disconnected from Phantom wallet",
-              });
-            }}
-            className="h-[48px]"
-            disabled={connecting}
-          >
-            Disconnect
-          </Button>
+      <Card className="p-4">
+        <h3 className="text-lg font-semibold mb-2">SOL Balance</h3>
+        {isLoading ? (
+          <Skeleton className="h-6 w-24" />
+        ) : (
+          <p className="text-xl font-bold">{solBalance?.toFixed(4) || '0'} SOL</p>
         )}
-      </div>
+      </Card>
 
-      {connected && (
-        <>
-          <Separator className="my-4" />
-          <div className="p-4 rounded-lg border">
-            <h3 className="text-lg font-semibold mb-2">SOL Balance</h3>
+      {tokenBalances.length > 0 && (
+        <Card className="p-4">
+          <h3 className="text-lg font-semibold mb-2">Token Balances</h3>
+          <div className="space-y-2">
             {isLoading ? (
-              <Skeleton className="h-6 w-24" />
+              <>
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+              </>
             ) : (
-              <p className="text-xl font-bold">{solBalance?.toFixed(4) || '0'} SOL</p>
+              tokenBalances.map((token) => (
+                <div key={token.address} className="flex items-center justify-between p-2 hover:bg-accent rounded-lg transition-colors">
+                  <div className="flex items-center gap-2">
+                    {token.logoURI && (
+                      <img
+                        src={token.logoURI}
+                        alt={token.symbol}
+                        className="w-6 h-6 rounded-full"
+                      />
+                    )}
+                    <span>{token.symbol}</span>
+                  </div>
+                  <span className="font-medium">
+                    {(Number(token.balance) / Math.pow(10, token.decimals)).toFixed(4)}
+                  </span>
+                </div>
+              ))
             )}
           </div>
-
-          {tokenBalances.length > 0 && (
-            <div className="p-4 rounded-lg border">
-              <h3 className="text-lg font-semibold mb-2">Token Balances</h3>
-              <div className="space-y-2">
-                {isLoading ? (
-                  <>
-                    <Skeleton className="h-6 w-full" />
-                    <Skeleton className="h-6 w-full" />
-                  </>
-                ) : (
-                  tokenBalances.map((token) => (
-                    <div key={token.address} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {token.logoURI && (
-                          <img
-                            src={token.logoURI}
-                            alt={token.symbol}
-                            className="w-6 h-6 rounded-full"
-                          />
-                        )}
-                        <span>{token.symbol}</span>
-                      </div>
-                      <span className="font-medium">
-                        {(Number(token.balance) / Math.pow(10, token.decimals)).toFixed(4)}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </>
+        </Card>
       )}
     </div>
   );
