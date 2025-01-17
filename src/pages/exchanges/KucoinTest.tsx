@@ -3,6 +3,7 @@ import { KucoinAccountInfo } from "@/components/KucoinAccountInfo";
 import { TradingHistory } from "@/components/TradingHistory";
 import { TradingPairsTable } from "@/components/kucoin/TradingPairsTable";
 import { useKucoinTradingPairs } from "@/hooks/useKucoinTradingPairs";
+import { MarketStructure } from "@/components/MarketStructure";
 
 export default function KucoinTest() {
   const { pairs, isLoading, selectedPair, setSelectedPair } = useKucoinTradingPairs();
@@ -15,7 +16,10 @@ export default function KucoinTest() {
         <KucoinAccountInfo />
         
         {selectedPair && (
-          <TradingHistory exchange="kucoin" symbol={selectedPair} />
+          <>
+            <MarketStructure exchange="kucoin" symbol={selectedPair} />
+            <TradingHistory exchange="kucoin" symbol={selectedPair} />
+          </>
         )}
         
         <Card className="p-4">
