@@ -18,7 +18,7 @@ export function OkxAccountInfo() {
 
   if (isLoading) {
     return (
-      <Card className="p-4 bg-serenity-white shadow-lg border border-serenity-sky-light">
+      <Card className="p-4 bg-serenity-white bg-opacity-90">
         <div className="flex items-center justify-center">
           <Loader2 className="h-4 w-4 animate-spin text-serenity-sky-dark" />
           <p className="text-sm text-serenity-mountain ml-2">Loading balance...</p>
