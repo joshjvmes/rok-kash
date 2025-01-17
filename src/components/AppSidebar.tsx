@@ -21,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const exchangePages = [
   { title: "Bybit", path: "/exchanges/bybit" },
@@ -43,12 +44,6 @@ const algorithmPages = [
   { title: "Statistical", path: "/algorithms/statistical", icon: ChartLine },
   { title: "Counter", path: "/algorithms/counter", icon: Brain },
   { title: "Semi-Automatic", path: "/algorithms/semi-automatic", icon: Infinity },
-];
-
-const summaryPages = [
-  { title: "Balances", path: "/balances", icon: Wallet },
-  { title: "Profit/Loss", path: "/profit-loss", icon: TrendingUp },
-  { title: "Trade History", path: "/trade-history", icon: History },
 ];
 
 export function AppSidebar() {
@@ -90,27 +85,6 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Summary</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {summaryPages.map((page) => (
-                <SidebarMenuItem key={page.path}>
-                  <SidebarMenuButton asChild>
-                    <Link
-                      to={page.path}
-                      className={location.pathname === page.path ? "text-rokcat-purple" : ""}
-                    >
-                      <page.icon />
-                      <span>{page.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -197,6 +171,54 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="p-4 flex flex-row items-center gap-2 justify-end">
         <div className="flex items-center space-x-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                className="hover:bg-rokcat-purple/10"
+              >
+                <Link to="/balances">
+                  <Wallet className="h-5 w-5" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Balances</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                className="hover:bg-rokcat-purple/10"
+              >
+                <Link to="/profit-loss">
+                  <TrendingUp className="h-5 w-5" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Profit/Loss</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                className="hover:bg-rokcat-purple/10"
+              >
+                <Link to="/trade-history">
+                  <History className="h-5 w-5" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Trade History</TooltipContent>
+          </Tooltip>
+
           <ThemeSwitcher />
           <Button
             variant="ghost"
