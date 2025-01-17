@@ -41,6 +41,11 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
     refetchInterval: 360000, // Refetch every 360 seconds (6 minutes)
   });
 
+  // If there are no trades, return null to hide the component
+  if (!isLoading && (!trades || trades.length === 0)) {
+    return null;
+  }
+
   if (isLoading) {
     return (
       <Card className="p-4 bg-serenity-sky-dark/10 border-serenity-sky-light/30">
@@ -84,9 +89,6 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
               </div>
             );
           })}
-          {trades.length === 0 && (
-            <p className="text-sm text-serenity-mountain/70 text-center py-4">No trade history available</p>
-          )}
         </div>
       </ScrollArea>
     </Card>
