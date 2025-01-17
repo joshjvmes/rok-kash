@@ -61,42 +61,76 @@ serve(async (req) => {
     const passphrase = Deno.env.get(`${exchangeId.toUpperCase()}_PASSPHRASE`)
 
     if (apiKey && secret) {
+      console.log(`Configuring ${exchangeId} with API credentials`)
       exchange.apiKey = apiKey
       exchange.secret = secret
       if (passphrase) {
         exchange.password = passphrase
       }
+    } else {
+      console.log(`No API credentials found for ${exchangeId}`)
     }
 
     // Execute the requested method with a timeout
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Operation timed out')), TIMEOUT);
+      setTimeout(() => reject(new Error(`Operation timed out after ${TIMEOUT}ms`)), TIMEOUT);
     });
 
-    const result = await Promise.race([
-      executeExchangeMethod(exchange, method, symbol, params),
-      timeoutPromise
-    ]);
+    try {
+      const result = await Promise.race([
+        executeExchangeMethod(exchange, method, symbol, params),
+        timeoutPromise
+      ]);
 
-    if (!result) {
-      throw new Error(`Failed to execute ${method} on ${exchangeId}`);
-    }
-    
-    return new Response(
-      JSON.stringify(result),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      if (!result) {
+        throw new Error(`Failed to execute ${method} on ${exchangeId}: No result returned`);
       }
-    )
+
+      console.log(`Successfully executed ${method} on ${exchangeId}:`, result);
+      
+      return new Response(
+        JSON.stringify(result),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    } catch (methodError) {
+      console.error(`Error executing ${method} on ${exchangeId}:`, methodError);
+      
+      // Check if it's an authentication error
+      if (methodError.message.includes('API-key') || methodError.message.includes('Invalid credentials')) {
+        return new Response(
+          JSON.stringify({
+            error: `Authentication failed for ${exchangeId}`,
+            details: methodError.message
+          }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        )
+      }
+
+      throw methodError; // Re-throw to be caught by outer try-catch
+    }
   } catch (error) {
-    console.error('Error in ccxt-proxy:', error)
+    console.error('Error in ccxt-proxy:', error);
+    
+    // Determine appropriate status code
+    let status = 500;
+    if (error.message.includes('timed out')) {
+      status = 504; // Gateway Timeout
+    } else if (error.message.includes('rate limit')) {
+      status = 429; // Too Many Requests
+    }
+
     return new Response(
       JSON.stringify({ 
         error: error.message,
         details: error.stack 
       }), 
       {
-        status: error.status || 500,
+        status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )

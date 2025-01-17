@@ -43,74 +43,50 @@ export async function executeExchangeMethod(
     const formattedSymbol = symbol ? formatExchangeSymbol(exchange.id, symbol) : symbol;
     console.log(`Executing ${method} for ${exchange.id} with symbol: ${formattedSymbol}`);
 
+    // Load markets before executing any method to ensure proper symbol mapping
+    if (['fetchBalance', 'fetchTicker', 'fetchOrderBook', 'fetchTrades'].includes(method)) {
+      await exchange.loadMarkets();
+    }
+
     switch (method) {
       case 'fetchTicker': {
         if (!formattedSymbol) throw new Error('Symbol required for fetchTicker');
-        
-        // For KuCoin, ensure the exchange is properly loaded before fetching
-        if (exchange.id === 'kucoin') {
-          await exchange.loadMarkets();
-        }
-        
         const result = await safeExecuteMethod(exchange, 'fetchTicker', formattedSymbol);
-        if (!result.success) {
-          console.error(`Failed to fetch ticker for ${formattedSymbol} on ${exchange.id}:`, result.error);
-          return null;
-        }
+        if (!result.success) throw new Error(result.error);
         return result.data;
       }
 
       case 'fetchMarkets': {
         const result = await safeExecuteMethod(exchange, 'fetchMarkets');
-        if (!result.success) {
-          console.error(`Failed to fetch markets on ${exchange.id}:`, result.error);
-          return [];
-        }
+        if (!result.success) throw new Error(result.error);
         return result.data;
       }
 
       case 'fetchBalance': {
         const result = await safeExecuteMethod(exchange, 'fetchBalance');
-        if (!result.success) {
-          console.error(`Failed to fetch balance on ${exchange.id}:`, result.error);
-          return null;
-        }
+        if (!result.success) throw new Error(result.error);
         return result.data;
       }
 
       case 'fetchOrderBook': {
         if (!formattedSymbol) throw new Error('Symbol required for fetchOrderBook');
         const result = await safeExecuteMethod(exchange, 'fetchOrderBook', formattedSymbol, params.limit || 20);
-        if (!result.success) {
-          console.error(`Failed to fetch order book for ${formattedSymbol} on ${exchange.id}:`, result.error);
-          return null;
-        }
+        if (!result.success) throw new Error(result.error);
         return result.data;
       }
 
       case 'fetchTrades': {
         if (!formattedSymbol) throw new Error('Symbol required for fetchTrades');
         const result = await safeExecuteMethod(exchange, 'fetchTrades', formattedSymbol, undefined, params.limit || 50);
-        if (!result.success) {
-          console.error(`Failed to fetch trades for ${formattedSymbol} on ${exchange.id}:`, result.error);
-          return null;
-        }
+        if (!result.success) throw new Error(result.error);
         return result.data;
       }
 
       case 'fetchMarket': {
         if (!formattedSymbol) throw new Error('Symbol required for fetchMarket');
-        // For KuCoin, we need to fetch all markets and find the specific one
-        const result = await safeExecuteMethod(exchange, 'fetchMarkets');
-        if (!result.success) {
-          console.error(`Failed to fetch markets on ${exchange.id}:`, result.error);
-          return null;
-        }
-        const market = result.data.find((m: any) => m.symbol === formattedSymbol);
-        if (!market) {
-          console.error(`Market ${formattedSymbol} not found on ${exchange.id}`);
-          return null;
-        }
+        const markets = await exchange.loadMarkets();
+        const market = markets[formattedSymbol];
+        if (!market) throw new Error(`Market ${formattedSymbol} not found on ${exchange.id}`);
         return market;
       }
 
@@ -126,10 +102,7 @@ export async function executeExchangeMethod(
           params.price,
           params.extra || {}
         );
-        if (!result.success) {
-          console.error(`Failed to create order for ${formattedSymbol} on ${exchange.id}:`, result.error);
-          return null;
-        }
+        if (!result.success) throw new Error(result.error);
         return result.data;
       }
 
@@ -143,10 +116,7 @@ export async function executeExchangeMethod(
           params.id,
           formattedSymbol
         );
-        if (!result.success) {
-          console.error(`Failed to cancel order ${params.id} on ${exchange.id}:`, result.error);
-          return null;
-        }
+        if (!result.success) throw new Error(result.error);
         return result.data;
       }
 
@@ -155,6 +125,6 @@ export async function executeExchangeMethod(
     }
   } catch (error) {
     console.error(`Error in executeExchangeMethod for ${method} on ${exchange.id}:`, error);
-    return null;
+    throw error;
   }
 }
