@@ -3,6 +3,7 @@ import { BinanceAccountInfo } from "@/components/BinanceAccountInfo";
 import { TradingHistory } from "@/components/TradingHistory";
 import { MarketStructure } from "@/components/MarketStructure";
 import { OrderBook } from "@/components/OrderBook";
+import { BinanceTradeWidget } from "@/components/binance/BinanceTradeWidget";
 import { useState } from "react";
 
 export default function BinanceTest() {
@@ -25,6 +26,8 @@ export default function BinanceTest() {
             <OrderBook exchange="binance" symbol={selectedSymbol} />
           </div>
         </div>
+
+        <BinanceTradeWidget />
       </div>
     </div>
   );
