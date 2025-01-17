@@ -17,8 +17,27 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: [
+      'react',
+      'react-dom',
+      '@radix-ui/react-dialog',
+      '@tanstack/react-query'
+    ],
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      '@radix-ui/react-dialog',
+      '@tanstack/react-query'
+    ],
+    force: true
   },
   build: {
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true
+    },
     rollupOptions: {
       external: [
         'http',
@@ -41,7 +60,18 @@ export default defineConfig(({ mode }) => ({
         'node:events',
         'node:assert',
         'node:tls'
-      ]
+      ],
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'radix-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-accordion',
+            '@radix-ui/react-alert-dialog'
+          ],
+          'query-vendor': ['@tanstack/react-query']
+        }
+      }
     }
   }
 }));
