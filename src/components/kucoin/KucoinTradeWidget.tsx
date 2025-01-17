@@ -36,6 +36,12 @@ interface ActiveOrder {
   status: string;
 }
 
+interface OrderResponse {
+  id: string;
+  status: string;
+  amount: number;
+}
+
 export function KucoinTradeWidget() {
   const [availablePairs, setAvailablePairs] = useState<TradingPair[]>([]);
   const [selectedPair, setSelectedPair] = useState<string>("");
@@ -174,10 +180,20 @@ export function KucoinTradeWidget() {
       return;
     }
 
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid amount greater than 0",
+        variant: "destructive",
+      });
+      return;
+    }
+
     addTradeLog(`Initiating ${side} order for ${amount} ${selectedPair}...`, 'info');
 
     try {
-      const order = await createOrder('kucoin', selectedPair, 'market', side, parseFloat(amount));
+      const order = await createOrder('kucoin', selectedPair, 'market', side, numericAmount) as OrderResponse;
       
       if (!order || !order.id) {
         throw new Error('Order creation failed - no order ID received');
@@ -187,7 +203,7 @@ export function KucoinTradeWidget() {
         id: order.id,
         symbol: selectedPair,
         side,
-        amount: parseFloat(amount),
+        amount: numericAmount,
         status: order.status || 'pending'
       });
       
