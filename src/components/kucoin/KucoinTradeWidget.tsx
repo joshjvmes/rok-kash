@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { fetchBalance, createOrder, fetchCCXTPrice } from "@/utils/exchanges/ccxt";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { TradingPairSelector } from "./TradingPairSelector";
+import { TradeAmountInput } from "./TradeAmountInput";
+import { TradeButtons } from "./TradeButtons";
+import { TradeStatusLogs } from "./TradeStatusLogs";
 
 interface Balance {
   total: {
@@ -32,11 +32,10 @@ export function KucoinTradeWidget() {
   const [selectedPair, setSelectedPair] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
   const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
-  const [tradeLogs, setTradeLogs] = useState<TradeLog[]>([]);
   const [estimatedReceiveAmount, setEstimatedReceiveAmount] = useState<string>("");
+  const [tradeLogs, setTradeLogs] = useState<TradeLog[]>([]);
   const { toast } = useToast();
 
-  // Fetch user's balance
   const { data: balanceData, isLoading: isLoadingBalance } = useQuery<Balance>({
     queryKey: ['balance', 'kucoin'],
     queryFn: () => fetchBalance('kucoin'),
@@ -46,7 +45,6 @@ export function KucoinTradeWidget() {
   const addTradeLog = (message: string, type: 'info' | 'success' | 'error') => {
     const timestamp = new Date().toLocaleTimeString();
     setTradeLogs(prev => [...prev, { timestamp, message, type }]);
-    // Also log to main console for global visibility
     if (type === 'error') {
       console.error(message);
     } else if (type === 'success') {
@@ -56,7 +54,6 @@ export function KucoinTradeWidget() {
     }
   };
 
-  // Calculate estimated receive amount when amount or price changes
   useEffect(() => {
     if (amount && estimatedPrice) {
       const numericAmount = parseFloat(amount);
@@ -67,7 +64,6 @@ export function KucoinTradeWidget() {
     }
   }, [amount, estimatedPrice]);
 
-  // Filter non-zero balances and generate trading pairs
   useEffect(() => {
     if (!balanceData?.total) return;
 
@@ -98,7 +94,6 @@ export function KucoinTradeWidget() {
     }
   }, [balanceData, selectedPair]);
 
-  // Fetch estimated price when pair changes
   useEffect(() => {
     let isMounted = true;
 
@@ -122,7 +117,7 @@ export function KucoinTradeWidget() {
     };
 
     fetchPrice();
-    const interval = setInterval(fetchPrice, 10000); // Update price every 10 seconds
+    const interval = setInterval(fetchPrice, 10000);
 
     return () => {
       isMounted = false;
@@ -153,7 +148,6 @@ export function KucoinTradeWidget() {
       addTradeLog(successMessage, 'success');
       addTradeLog(`Order details: ${JSON.stringify(order)}`, 'info');
       
-      // Reset amount after successful trade
       setAmount("");
     } catch (error: any) {
       const errorMessage = `Failed to place ${side} order: ${error.message}`;
@@ -183,83 +177,29 @@ export function KucoinTradeWidget() {
         <h2 className="text-lg font-semibold mb-4">KuCoin Trade</h2>
         
         <div className="space-y-4">
-          <div>
-            <label className="text-sm text-gray-500 mb-2 block">Trading Pair</label>
-            <Select
-              value={selectedPair}
-              onValueChange={setSelectedPair}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select trading pair" />
-              </SelectTrigger>
-              <SelectContent>
-                {availablePairs.map((pair) => (
-                  <SelectItem key={pair.symbol} value={pair.symbol}>
-                    {pair.symbol}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <TradingPairSelector
+            availablePairs={availablePairs}
+            selectedPair={selectedPair}
+            onPairSelect={setSelectedPair}
+          />
 
-          <div>
-            <label className="text-sm text-gray-500 mb-2 block">Amount</label>
-            <Input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount..."
-            />
-          </div>
+          <TradeAmountInput
+            amount={amount}
+            onAmountChange={setAmount}
+            estimatedPrice={estimatedPrice}
+            estimatedReceiveAmount={estimatedReceiveAmount}
+          />
 
-          {estimatedPrice && (
-            <div className="space-y-2">
-              <div className="text-sm text-gray-500">
-                Current Price: ${estimatedPrice.toFixed(8)}
-              </div>
-              {amount && (
-                <div className="text-sm text-gray-500">
-                  Estimated Value: ${estimatedReceiveAmount}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <Button
-              onClick={() => handleTrade('buy')}
-              className="w-full bg-green-500 hover:bg-green-600"
-            >
-              Buy
-            </Button>
-            <Button
-              onClick={() => handleTrade('sell')}
-              className="w-full bg-red-500 hover:bg-red-600"
-            >
-              Sell
-            </Button>
-          </div>
+          <TradeButtons
+            onBuy={() => handleTrade('buy')}
+            onSell={() => handleTrade('sell')}
+          />
         </div>
       </Card>
 
       <Card className="p-6">
         <h2 className="text-lg font-semibold mb-4">Trade Status</h2>
-        <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-          <div className="space-y-2">
-            {tradeLogs.map((log, index) => (
-              <div
-                key={index}
-                className={`text-sm ${
-                  log.type === 'error' ? 'text-red-500' :
-                  log.type === 'success' ? 'text-green-500' :
-                  'text-gray-500'
-                }`}
-              >
-                <span className="text-gray-400">[{log.timestamp}]</span> {log.message}
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
+        <TradeStatusLogs logs={tradeLogs} />
       </Card>
     </div>
   );
