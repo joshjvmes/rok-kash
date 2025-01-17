@@ -135,6 +135,8 @@ export type Database = {
           created_at: string
           current_version: string
           id: string
+          is_dev_dependency: boolean | null
+          is_peer_dependency: boolean | null
           notes: string | null
           package_name: string
           required_by: string[] | null
@@ -146,6 +148,8 @@ export type Database = {
           created_at?: string
           current_version: string
           id?: string
+          is_dev_dependency?: boolean | null
+          is_peer_dependency?: boolean | null
           notes?: string | null
           package_name: string
           required_by?: string[] | null
@@ -157,6 +161,8 @@ export type Database = {
           created_at?: string
           current_version?: string
           id?: string
+          is_dev_dependency?: boolean | null
+          is_peer_dependency?: boolean | null
           notes?: string | null
           package_name?: string
           required_by?: string[] | null
