@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { fetchCCXTPrice } from "@/utils/exchanges/ccxt";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { KucoinAccountInfo } from "@/components/KucoinAccountInfo";
 
 interface TradingPair {
   symbol: string;
@@ -18,7 +19,6 @@ export default function KucoinTest() {
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minutes in milliseconds
 
-  // Fetch initial trading pairs
   useEffect(() => {
     async function fetchInitialPairs() {
       try {
@@ -75,7 +75,6 @@ export default function KucoinTest() {
     fetchInitialPairs();
   }, [toast]);
 
-  // Sequential price updates
   useEffect(() => {
     if (pairs.length === 0 || isLoading) return;
 
@@ -124,39 +123,44 @@ export default function KucoinTest() {
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Kucoin API Testing</h1>
-      <Card className="p-4">
-        <h2 className="text-xl font-semibold mb-4">Available Trading Pairs</h2>
-        {isLoading ? (
-          <p className="text-gray-400">Loading trading pairs...</p>
-        ) : pairs.length === 0 ? (
-          <p className="text-gray-400">No trading pairs available</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Trading Pair</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Last Updated</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pairs.map((pair, index) => (
-                  <TableRow key={pair.symbol}>
-                    <TableCell>{pair.symbol}</TableCell>
-                    <TableCell>{pair.price}</TableCell>
-                    <TableCell>
-                      {pair.lastUpdated 
-                        ? new Date(pair.lastUpdated).toLocaleTimeString()
-                        : 'Not yet updated'}
-                    </TableCell>
+      
+      <div className="space-y-6">
+        <KucoinAccountInfo />
+        
+        <Card className="p-4">
+          <h2 className="text-xl font-semibold mb-4">Available Trading Pairs</h2>
+          {isLoading ? (
+            <p className="text-gray-400">Loading trading pairs...</p>
+          ) : pairs.length === 0 ? (
+            <p className="text-gray-400">No trading pairs available</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Trading Pair</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Last Updated</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {pairs.map((pair, index) => (
+                    <TableRow key={pair.symbol}>
+                      <TableCell>{pair.symbol}</TableCell>
+                      <TableCell>{pair.price}</TableCell>
+                      <TableCell>
+                        {pair.lastUpdated 
+                          ? new Date(pair.lastUpdated).toLocaleTimeString()
+                          : 'Not yet updated'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }
