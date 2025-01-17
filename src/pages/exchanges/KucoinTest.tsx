@@ -59,7 +59,7 @@ export default function KucoinTest() {
             .filter(([_, amount]) => amount > 0)
             .map(([coin]) => coin) : [];
 
-        // Filter spot pairs that include our balance coins
+        // Filter spot pairs where we have balance in base currency only
         const spotPairs = data
           .filter((market: any) => {
             if (!(market && 
@@ -70,10 +70,10 @@ export default function KucoinTest() {
               return false;
             }
             
-            // Split the symbol to get base and quote currencies
-            const [base, quote] = market.symbol.split('/');
-            // Keep pair if we have balance in either base or quote currency
-            return nonZeroBalances.includes(base) || nonZeroBalances.includes(quote);
+            // Split the symbol to get base currency only
+            const [base] = market.symbol.split('/');
+            // Only keep pairs where we have balance in base currency
+            return nonZeroBalances.includes(base);
           })
           .map((market: any) => ({
             symbol: market.symbol,
@@ -88,7 +88,7 @@ export default function KucoinTest() {
           return;
         }
 
-        console.log('Available pairs with balance:', spotPairs);
+        console.log('Available pairs with base currency balance:', spotPairs);
         setPairs(spotPairs);
         setSelectedPair(spotPairs[0].symbol);
         setIsLoading(false);
@@ -104,7 +104,7 @@ export default function KucoinTest() {
     }
 
     fetchInitialPairs();
-  }, [toast, balanceData]); // Added balanceData as dependency
+  }, [toast, balanceData]);
 
   useEffect(() => {
     if (pairs.length === 0 || isLoading) return;
@@ -162,7 +162,7 @@ export default function KucoinTest() {
           {isLoading ? (
             <p className="text-gray-400">Loading trading pairs...</p>
           ) : pairs.length === 0 ? (
-            <p className="text-gray-400">No trading pairs available for your balance</p>
+            <p className="text-gray-400">No trading pairs available for your base currency balance</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
