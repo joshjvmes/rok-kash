@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { fetchBalance, createOrder, fetchCCXTPrice } from "@/utils/exchanges/ccxt";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Balance {
   total: {
@@ -20,11 +21,18 @@ interface TradingPair {
   symbol: string;
 }
 
+interface TradeLog {
+  timestamp: string;
+  message: string;
+  type: 'info' | 'success' | 'error';
+}
+
 export function KucoinTradeWidget() {
   const [availablePairs, setAvailablePairs] = useState<TradingPair[]>([]);
   const [selectedPair, setSelectedPair] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
   const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
+  const [tradeLogs, setTradeLogs] = useState<TradeLog[]>([]);
   const { toast } = useToast();
 
   // Fetch user's balance
@@ -33,6 +41,19 @@ export function KucoinTradeWidget() {
     queryFn: () => fetchBalance('kucoin'),
     refetchInterval: 10000,
   });
+
+  const addTradeLog = (message: string, type: 'info' | 'success' | 'error') => {
+    const timestamp = new Date().toLocaleTimeString();
+    setTradeLogs(prev => [...prev, { timestamp, message, type }]);
+    // Also log to main console for global visibility
+    if (type === 'error') {
+      console.error(message);
+    } else if (type === 'success') {
+      console.info(message);
+    } else {
+      console.log(message);
+    }
+  };
 
   // Filter non-zero balances and generate trading pairs
   useEffect(() => {
@@ -72,12 +93,18 @@ export function KucoinTradeWidget() {
     const fetchPrice = async () => {
       if (selectedPair) {
         try {
+          addTradeLog(`Fetching price for ${selectedPair}...`, 'info');
           const price = await fetchCCXTPrice('kucoin', selectedPair);
           if (isMounted) {
             setEstimatedPrice(price);
+            if (price) {
+              addTradeLog(`Current price for ${selectedPair}: $${price}`, 'info');
+            }
           }
         } catch (error) {
-          console.error('Error fetching price:', error);
+          if (isMounted) {
+            addTradeLog(`Error fetching price: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+          }
         }
       }
     };
@@ -99,20 +126,29 @@ export function KucoinTradeWidget() {
       return;
     }
 
+    addTradeLog(`Initiating ${side} order for ${amount} ${selectedPair}...`, 'info');
+
     try {
       const order = await createOrder('kucoin', selectedPair, 'market', side, parseFloat(amount));
+      
+      const successMessage = `${side.toUpperCase()} order placed successfully for ${amount} ${selectedPair}`;
       toast({
         title: "Success",
-        description: `${side.toUpperCase()} order placed successfully`,
+        description: successMessage,
       });
-      console.log('Order placed:', order);
+      addTradeLog(successMessage, 'success');
+      addTradeLog(`Order details: ${JSON.stringify(order)}`, 'info');
+      
+      // Reset amount after successful trade
+      setAmount("");
     } catch (error: any) {
+      const errorMessage = `Failed to place ${side} order: ${error.message}`;
       toast({
         title: "Error",
-        description: `Failed to place ${side} order: ${error.message}`,
+        description: errorMessage,
         variant: "destructive",
       });
-      console.error('Trade error:', error);
+      addTradeLog(errorMessage, 'error');
     }
   };
 
@@ -128,60 +164,82 @@ export function KucoinTradeWidget() {
   }
 
   return (
-    <Card className="p-6">
-      <h2 className="text-lg font-semibold mb-4">KuCoin Trade</h2>
-      
-      <div className="space-y-4">
-        <div>
-          <label className="text-sm text-gray-500 mb-2 block">Trading Pair</label>
-          <Select
-            value={selectedPair}
-            onValueChange={setSelectedPair}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select trading pair" />
-            </SelectTrigger>
-            <SelectContent>
-              {availablePairs.map((pair) => (
-                <SelectItem key={pair.symbol} value={pair.symbol}>
-                  {pair.symbol}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="text-sm text-gray-500 mb-2 block">Amount</label>
-          <Input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Enter amount..."
-          />
-        </div>
-
-        {estimatedPrice && (
-          <div className="text-sm text-gray-500">
-            Estimated Price: {estimatedPrice} USDT
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold mb-4">KuCoin Trade</h2>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm text-gray-500 mb-2 block">Trading Pair</label>
+            <Select
+              value={selectedPair}
+              onValueChange={setSelectedPair}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select trading pair" />
+              </SelectTrigger>
+              <SelectContent>
+                {availablePairs.map((pair) => (
+                  <SelectItem key={pair.symbol} value={pair.symbol}>
+                    {pair.symbol}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <Button
-            onClick={() => handleTrade('buy')}
-            className="w-full bg-green-500 hover:bg-green-600"
-          >
-            Buy
-          </Button>
-          <Button
-            onClick={() => handleTrade('sell')}
-            className="w-full bg-red-500 hover:bg-red-600"
-          >
-            Sell
-          </Button>
+          <div>
+            <label className="text-sm text-gray-500 mb-2 block">Amount</label>
+            <Input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Enter amount..."
+            />
+          </div>
+
+          {estimatedPrice && (
+            <div className="text-sm text-gray-500">
+              Estimated Price: ${estimatedPrice}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <Button
+              onClick={() => handleTrade('buy')}
+              className="w-full bg-green-500 hover:bg-green-600"
+            >
+              Buy
+            </Button>
+            <Button
+              onClick={() => handleTrade('sell')}
+              className="w-full bg-red-500 hover:bg-red-600"
+            >
+              Sell
+            </Button>
+          </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold mb-4">Trade Status</h2>
+        <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+          <div className="space-y-2">
+            {tradeLogs.map((log, index) => (
+              <div
+                key={index}
+                className={`text-sm ${
+                  log.type === 'error' ? 'text-red-500' :
+                  log.type === 'success' ? 'text-green-500' :
+                  'text-gray-500'
+                }`}
+              >
+                <span className="text-gray-400">[{log.timestamp}]</span> {log.message}
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </Card>
+    </div>
   );
 }

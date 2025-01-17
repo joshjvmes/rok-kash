@@ -4,7 +4,6 @@ import { TradingHistory } from "@/components/TradingHistory";
 import { TradingPairsTable } from "@/components/kucoin/TradingPairsTable";
 import { useKucoinTradingPairs } from "@/hooks/useKucoinTradingPairs";
 import { MarketStructure } from "@/components/MarketStructure";
-import { OrderBook } from "@/components/OrderBook";
 import { KucoinTradeWidget } from "@/components/kucoin/KucoinTradeWidget";
 
 export default function KucoinTest() {
@@ -33,15 +32,7 @@ export default function KucoinTest() {
           />
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <KucoinTradeWidget />
-          {selectedPair && (
-            <OrderBook 
-              exchange="kucoin" 
-              symbol={selectedPair}
-            />
-          )}
-        </div>
+        <KucoinTradeWidget />
       </div>
     </div>
   );
