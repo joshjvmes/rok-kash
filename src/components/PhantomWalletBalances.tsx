@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWeb3React } from '@web3-react/core';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { getSolanaBalance } from '@/utils/solana';
 import { getTokenBalance, getTokenList, TokenInfo, TokenBalance } from '@/utils/solana/tokens';
 import { Skeleton } from './ui/skeleton';
@@ -7,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card } from './ui/card';
 
 export const PhantomWalletBalances = () => {
-  const { connected, publicKey, connecting } = useWallet();
+  const { active, account } = useWeb3React();
   const { toast } = useToast();
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [tokenBalances, setTokenBalances] = useState<Array<TokenBalance & TokenInfo>>([]);
@@ -15,18 +16,18 @@ export const PhantomWalletBalances = () => {
 
   useEffect(() => {
     const fetchBalances = async () => {
-      if (!connected || !publicKey) {
-        console.log('Wallet not connected or no public key available');
+      if (!active || !account) {
+        console.log('Wallet not connected or no account available');
         return;
       }
 
-      console.log('Fetching balances for wallet:', publicKey.toString());
+      console.log('Fetching balances for account:', account);
       setIsLoading(true);
       
       try {
         // Get SOL balance
         console.log('Fetching SOL balance...');
-        const balance = await getSolanaBalance(publicKey.toString());
+        const balance = await getSolanaBalance(account);
         console.info('SOL balance fetched successfully:', balance);
         setSolBalance(balance);
 
@@ -38,7 +39,7 @@ export const PhantomWalletBalances = () => {
         const balancePromises = tokens.map(async (token) => {
           try {
             console.log(`Fetching balance for token ${token.symbol} (${token.address})...`);
-            const balance = await getTokenBalance(token.address, publicKey.toString());
+            const balance = await getTokenBalance(token.address, account);
             console.info(`Balance for ${token.symbol}:`, balance);
             return {
               ...token,
@@ -69,20 +70,19 @@ export const PhantomWalletBalances = () => {
       }
     };
 
-    if (connected && publicKey) {
+    if (active && account) {
       console.log('Wallet connected, initiating balance fetch...');
       fetchBalances();
     } else {
-      // Reset balances when wallet is disconnected
       setSolBalance(null);
       setTokenBalances([]);
-      if (!connecting) {
+      if (!active) {
         console.log('Wallet disconnected, balances reset');
       }
     }
-  }, [connected, publicKey, toast, connecting]);
+  }, [active, account, toast]);
 
-  if (!connected) {
+  if (!active) {
     return null;
   }
 
