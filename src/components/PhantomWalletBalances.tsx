@@ -30,7 +30,7 @@ interface TokenBalance {
 }
 
 export const PhantomWalletBalances = () => {
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey, connecting } = useWallet();
   const { toast } = useToast();
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
@@ -40,6 +40,8 @@ export const PhantomWalletBalances = () => {
     const fetchBalances = async () => {
       if (!connected || !publicKey) {
         console.log('Wallet not connected or no public key available');
+        setSolBalance(null);
+        setTokenBalances([]);
         return;
       }
 
@@ -86,14 +88,29 @@ export const PhantomWalletBalances = () => {
       }
     };
 
-    if (connected && publicKey) {
-      fetchBalances();
-    } else {
+    // Reset balances when disconnected
+    if (!connected) {
       setSolBalance(null);
       setTokenBalances([]);
+      setIsLoading(false);
+    } else {
+      fetchBalances();
     }
   }, [connected, publicKey, toast]);
 
+  // Don't render anything while connecting
+  if (connecting) {
+    return (
+      <div className="space-y-4">
+        <Card className="p-4">
+          <h3 className="text-lg font-semibold mb-2">Connecting Wallet...</h3>
+          <Skeleton className="h-6 w-24" />
+        </Card>
+      </div>
+    );
+  }
+
+  // Don't render if not connected
   if (!connected) {
     return null;
   }

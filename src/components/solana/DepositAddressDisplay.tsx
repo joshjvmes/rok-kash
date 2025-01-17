@@ -1,26 +1,61 @@
-import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { useWallet } from '@solana/wallet-adapter-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Copy } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-interface DepositAddressDisplayProps {
-  address: string;
-  isLoading: boolean;
-}
+export const DepositAddressDisplay = () => {
+  const { publicKey, connected } = useWallet();
+  const { toast } = useToast();
 
-export function DepositAddressDisplay({ address, isLoading }: DepositAddressDisplayProps) {
+  const copyToClipboard = async () => {
+    if (publicKey) {
+      try {
+        await navigator.clipboard.writeText(publicKey.toString());
+        toast({
+          title: "Address Copied",
+          description: "Deposit address has been copied to clipboard",
+        });
+      } catch (error) {
+        console.error('Failed to copy address:', error);
+        toast({
+          title: "Error",
+          description: "Failed to copy address to clipboard",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  if (!connected || !publicKey) {
+    return (
+      <Card className="p-4">
+        <p className="text-sm text-muted-foreground">
+          Connect your wallet to view deposit address
+        </p>
+      </Card>
+    );
+  }
+
   return (
-    <div className="relative">
-      <Input
-        type="text"
-        placeholder="Deposit/Withdrawal address"
-        value={address}
-        readOnly
-        className="bg-gray-50 pr-10"
-      />
-      {isLoading && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+    <Card className="p-4">
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium">Your Deposit Address</h3>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 bg-muted p-2 rounded text-sm break-all">
+            {publicKey.toString()}
+          </code>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={copyToClipboard}
+            className="flex items-center gap-2"
+          >
+            <Copy className="h-4 w-4" />
+            Copy
+          </Button>
         </div>
-      )}
-    </div>
+      </div>
+    </Card>
   );
-}
+};
