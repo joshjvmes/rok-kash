@@ -24,7 +24,6 @@ async function getPriceForExchange(exchange: string, symbol: string): Promise<nu
     } else {
       console.log(`Price for ${exchange} - ${symbol}: ${price}`);
       
-      // Update execution time in the database
       await supabase
         .from('matching_trading_pairs')
         .update({ 
@@ -106,14 +105,6 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
         if (error) {
           console.error('Error storing arbitrage opportunity:', error);
         }
-
-        // Update average price difference in the database
-        await supabase
-          .from('matching_trading_pairs')
-          .update({ 
-            average_price_difference: spread
-          })
-          .eq('symbol', symbol);
       }
     }
 
@@ -150,18 +141,10 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
         if (error) {
           console.error('Error storing arbitrage opportunity:', error);
         }
-
-        // Update average price difference in the database
-        await supabase
-          .from('matching_trading_pairs')
-          .update({ 
-            average_price_difference: spread
-          })
-          .eq('symbol', symbol);
       }
     }
   }
 
   console.log(`Found ${opportunities.length} arbitrage opportunities`);
-  return opportunities.sort((a, b) => b.spread - a.spread);
+  return opportunities;
 }

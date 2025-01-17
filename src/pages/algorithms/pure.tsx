@@ -51,7 +51,19 @@ export default function PureArbitrage() {
   }, []);
 
   const handleNewOpportunities = (newOpportunities: ArbitrageOpportunity[]) => {
-    setOpportunities(prev => [...newOpportunities, ...prev]);
+    console.log("Received new opportunities:", newOpportunities);
+    setOpportunities(prev => {
+      // Filter out duplicates based on symbol and exchanges
+      const existing = new Set(prev.map(o => 
+        `${o.buyExchange}-${o.sellExchange}-${o.symbol}`
+      ));
+      
+      const filtered = newOpportunities.filter(opp => 
+        !existing.has(`${opp.buyExchange}-${opp.sellExchange}-${opp.symbol}`)
+      );
+
+      return [...filtered, ...prev];
+    });
   };
 
   return (
