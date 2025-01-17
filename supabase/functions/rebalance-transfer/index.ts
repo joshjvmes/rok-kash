@@ -33,26 +33,53 @@ serve(async (req) => {
     }
 
     // Initialize source exchange with proper configuration
-    const sourceExchange = new ccxt[fromExchange]({
+    const sourceExchangeConfig: any = {
       apiKey: Deno.env.get(`${fromExchange.toUpperCase()}_API_KEY`),
       secret: Deno.env.get(`${fromExchange.toUpperCase()}_SECRET`),
-      password: fromExchange === 'kucoin' ? Deno.env.get('KUCOIN_PASSPHRASE') : undefined,
       enableRateLimit: true,
-    })
+      options: {}
+    }
+
+    // Add special configuration for KuCoin
+    if (fromExchange === 'kucoin') {
+      sourceExchangeConfig.password = Deno.env.get('KUCOIN_PASSPHRASE')
+      sourceExchangeConfig.options = {
+        versions: {
+          public: { get: ['2'] },
+          private: { get: ['2'] },
+        }
+      }
+    }
+
+    const sourceExchange = new ccxt[fromExchange](sourceExchangeConfig)
 
     // Initialize destination exchange with proper configuration
-    const destExchange = new ccxt[toExchange]({
+    const destExchangeConfig: any = {
       apiKey: Deno.env.get(`${toExchange.toUpperCase()}_API_KEY`),
       secret: Deno.env.get(`${toExchange.toUpperCase()}_SECRET`),
-      password: toExchange === 'kucoin' ? Deno.env.get('KUCOIN_PASSPHRASE') : undefined,
       enableRateLimit: true,
-    })
+      options: {}
+    }
+
+    // Add special configuration for KuCoin
+    if (toExchange === 'kucoin') {
+      destExchangeConfig.password = Deno.env.get('KUCOIN_PASSPHRASE')
+      destExchangeConfig.options = {
+        versions: {
+          public: { get: ['2'] },
+          private: { get: ['2'] },
+        }
+      }
+    }
+
+    const destExchange = new ccxt[toExchange](destExchangeConfig)
 
     try {
       console.log(`Configuring ${fromExchange} with credentials:`, {
         hasApiKey: !!sourceExchange.apiKey,
         hasSecret: !!sourceExchange.secret,
-        hasPassphrase: !!sourceExchange.password,
+        hasPassphrase: fromExchange === 'kucoin' ? !!sourceExchange.password : 'N/A',
+        hasOptions: !!Object.keys(sourceExchange.options).length
       })
 
       // Step 1: Withdraw from source exchange
@@ -64,6 +91,11 @@ serve(async (req) => {
       }
 
       console.log('Got deposit address:', withdrawalAddress.address)
+
+      // For KuCoin, we need to load markets first
+      if (fromExchange === 'kucoin') {
+        await sourceExchange.loadMarkets()
+      }
 
       const withdrawal = await sourceExchange.withdraw(
         token,
