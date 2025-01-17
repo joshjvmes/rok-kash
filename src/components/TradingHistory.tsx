@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 interface TradingHistoryProps {
@@ -29,7 +28,8 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
         .select('*')
         .eq('exchange', exchange)
         .eq('symbol', symbol)
-        .order('timestamp', { ascending: false });
+        .order('timestamp', { ascending: false })
+        .limit(6);  // Limit to 6 most recent trades
 
       if (error) {
         console.error('Error fetching trades:', error);
@@ -38,6 +38,7 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
 
       return data as Trade[];
     },
+    refetchInterval: 360000, // Refetch every 360 seconds (6 minutes)
   });
 
   if (isLoading) {
@@ -61,7 +62,7 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
 
   return (
     <Card className="p-4 bg-serenity-sky-dark/10 border-serenity-sky-light/30 backdrop-blur-sm">
-      <h3 className="text-lg font-semibold mb-4 text-serenity-mountain">Your {symbol} Trade History</h3>
+      <h3 className="text-lg font-semibold mb-4 text-serenity-mountain">Your Recent {symbol} Trades</h3>
       <ScrollArea className="h-[300px] pr-4">
         <div className="space-y-2">
           {trades.map((trade) => {
