@@ -58,7 +58,7 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
         }
 
         const newTrades = liveTrades.map(trade => ({
-          user_id: user.id,
+          user_id: user.id,  // Explicitly set the user_id from the authenticated user
           exchange,
           symbol,
           side: trade.side,
@@ -67,6 +67,8 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
           timestamp: new Date(trade.timestamp).toISOString(),
           trade_id: trade.id || `${trade.timestamp}-${trade.price}-${trade.amount}`,
         }));
+
+        console.log('Storing trades with user_id:', user.id);
 
         const { error } = await supabase
           .from('user_trades')
