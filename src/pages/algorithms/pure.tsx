@@ -16,10 +16,20 @@ interface ArbitrageSettings {
   notifications_enabled: boolean;
 }
 
+// Default settings to use when none exist
+const DEFAULT_SETTINGS: ArbitrageSettings = {
+  symbols: ["BTC/USDT"],
+  min_spread_percentage: 0.1,
+  min_profit_amount: 10.0,
+  exchanges: ["Binance", "Kraken", "Bybit", "Kucoin", "OKX"],
+  refresh_interval: 30,
+  notifications_enabled: true,
+};
+
 export default function PureArbitrage() {
   const [opportunities, setOpportunities] = useState<ArbitrageOpportunityType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [settings, setSettings] = useState<ArbitrageSettings | null>(null);
+  const [settings, setSettings] = useState<ArbitrageSettings>(DEFAULT_SETTINGS);
   const { toast } = useToast();
 
   // Fetch user settings
@@ -33,10 +43,12 @@ export default function PureArbitrage() {
           .from("arbitrage_settings")
           .select("*")
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
-        if (data) setSettings(data);
+        if (data) {
+          setSettings(data);
+        }
       } catch (error) {
         console.error("Error fetching arbitrage settings:", error);
       }
@@ -47,8 +59,6 @@ export default function PureArbitrage() {
 
   // Monitor arbitrage opportunities based on settings
   useEffect(() => {
-    if (!settings) return;
-
     const fetchOpportunities = async () => {
       try {
         setIsLoading(true);
