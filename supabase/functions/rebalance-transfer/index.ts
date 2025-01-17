@@ -32,21 +32,29 @@ serve(async (req) => {
       throw new Error(`Failed to update transaction status: ${updateError.message}`)
     }
 
-    // Initialize source exchange
+    // Initialize source exchange with proper configuration
     const sourceExchange = new ccxt[fromExchange]({
       apiKey: Deno.env.get(`${fromExchange.toUpperCase()}_API_KEY`),
       secret: Deno.env.get(`${fromExchange.toUpperCase()}_SECRET`),
+      password: fromExchange === 'kucoin' ? Deno.env.get('KUCOIN_PASSPHRASE') : undefined,
       enableRateLimit: true,
     })
 
-    // Initialize destination exchange
+    // Initialize destination exchange with proper configuration
     const destExchange = new ccxt[toExchange]({
       apiKey: Deno.env.get(`${toExchange.toUpperCase()}_API_KEY`),
       secret: Deno.env.get(`${toExchange.toUpperCase()}_SECRET`),
+      password: toExchange === 'kucoin' ? Deno.env.get('KUCOIN_PASSPHRASE') : undefined,
       enableRateLimit: true,
     })
 
     try {
+      console.log(`Configuring ${fromExchange} with credentials:`, {
+        hasApiKey: !!sourceExchange.apiKey,
+        hasSecret: !!sourceExchange.secret,
+        hasPassphrase: !!sourceExchange.password,
+      })
+
       // Step 1: Withdraw from source exchange
       console.log(`Initiating withdrawal from ${fromExchange}`)
       const withdrawalAddress = await destExchange.fetchDepositAddress(token)
@@ -54,6 +62,8 @@ serve(async (req) => {
       if (!withdrawalAddress?.address) {
         throw new Error(`Could not get deposit address for ${token} on ${toExchange}`)
       }
+
+      console.log('Got deposit address:', withdrawalAddress.address)
 
       const withdrawal = await sourceExchange.withdraw(
         token,
