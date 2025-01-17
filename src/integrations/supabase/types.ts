@@ -129,6 +129,42 @@ export type Database = {
         }
         Relationships: []
       }
+      package_dependencies: {
+        Row: {
+          conflicts_with: Json | null
+          created_at: string
+          current_version: string
+          id: string
+          notes: string | null
+          package_name: string
+          required_by: string[] | null
+          resolution_strategy: string | null
+          updated_at: string
+        }
+        Insert: {
+          conflicts_with?: Json | null
+          created_at?: string
+          current_version: string
+          id?: string
+          notes?: string | null
+          package_name: string
+          required_by?: string[] | null
+          resolution_strategy?: string | null
+          updated_at?: string
+        }
+        Update: {
+          conflicts_with?: Json | null
+          created_at?: string
+          current_version?: string
+          id?: string
+          notes?: string | null
+          package_name?: string
+          required_by?: string[] | null
+          resolution_strategy?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       price_discrepancies: {
         Row: {
           created_at: string
