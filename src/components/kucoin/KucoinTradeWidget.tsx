@@ -55,7 +55,7 @@ export function KucoinTradeWidget() {
   const { data: balanceData, isLoading: isLoadingBalance } = useQuery({
     queryKey: ['balance', 'kucoin'],
     queryFn: () => fetchBalance('kucoin') as Promise<Balance>,
-    refetchInterval: 10000,
+    refetchInterval: 30000, // Increased from 10000 to 30000 (30 seconds)
   });
 
   const addTradeLog = (message: string, type: 'info' | 'success' | 'error') => {
@@ -133,7 +133,8 @@ export function KucoinTradeWidget() {
     };
 
     fetchPrice();
-    const interval = setInterval(fetchPrice, 10000);
+    // Increased interval from 10000 to 30000 (30 seconds)
+    const interval = setInterval(fetchPrice, 30000);
 
     return () => {
       isMounted = false;
