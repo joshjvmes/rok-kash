@@ -29,7 +29,7 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
         .eq('exchange', exchange)
         .eq('symbol', symbol)
         .order('timestamp', { ascending: false })
-        .limit(6);  // Limit to 6 most recent trades
+        .limit(5);  // Changed to limit 5 most recent trades
 
       if (error) {
         console.error('Error fetching trades:', error);
