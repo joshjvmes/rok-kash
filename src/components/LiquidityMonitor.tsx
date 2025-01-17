@@ -56,8 +56,8 @@ export function LiquidityMonitor({ exchange, symbol }: LiquidityMonitorProps) {
 
   if (isLoading) {
     return (
-      <Card className="p-4 bg-trading-gray">
-        <p className="text-sm text-gray-400">Loading liquidity data...</p>
+      <Card className="p-4 bg-serenity-white bg-opacity-90">
+        <p className="text-sm text-serenity-mountain">Loading liquidity data...</p>
       </Card>
     );
   }
@@ -65,27 +65,27 @@ export function LiquidityMonitor({ exchange, symbol }: LiquidityMonitorProps) {
   const metrics = calculateLiquidityMetrics(orderBook);
 
   return (
-    <Card className="p-4 bg-trading-gray">
-      <h3 className="text-lg font-semibold mb-4">Liquidity Analysis - {symbol}</h3>
+    <Card className="p-4 bg-serenity-white bg-opacity-90">
+      <h3 className="text-lg font-semibold mb-4 text-serenity-mountain">Liquidity Analysis - {symbol}</h3>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-3 bg-black/10 rounded">
-            <p className="text-sm text-gray-400">Bid Liquidity (USD)</p>
-            <p className="text-lg font-semibold">${metrics.bidLiquidity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+          <div className="p-3 bg-serenity-sky-light bg-opacity-50 rounded">
+            <p className="text-sm text-serenity-mountain">Bid Liquidity (USD)</p>
+            <p className="text-lg font-semibold text-serenity-mountain">${metrics.bidLiquidity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
           </div>
-          <div className="p-3 bg-black/10 rounded">
-            <p className="text-sm text-gray-400">Ask Liquidity (USD)</p>
-            <p className="text-lg font-semibold">${metrics.askLiquidity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+          <div className="p-3 bg-serenity-sky-light bg-opacity-50 rounded">
+            <p className="text-sm text-serenity-mountain">Ask Liquidity (USD)</p>
+            <p className="text-lg font-semibold text-serenity-mountain">${metrics.askLiquidity.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-3 bg-black/10 rounded">
-            <p className="text-sm text-gray-400">Bid/Ask Ratio</p>
-            <p className="text-lg font-semibold">{metrics.bidAskRatio.toFixed(3)}</p>
+          <div className="p-3 bg-serenity-sky-light bg-opacity-50 rounded">
+            <p className="text-sm text-serenity-mountain">Bid/Ask Ratio</p>
+            <p className="text-lg font-semibold text-serenity-mountain">{metrics.bidAskRatio.toFixed(3)}</p>
           </div>
-          <div className="p-3 bg-black/10 rounded">
-            <p className="text-sm text-gray-400">Spread</p>
-            <p className="text-lg font-semibold">{metrics.spreadPercentage.toFixed(3)}%</p>
+          <div className="p-3 bg-serenity-sky-light bg-opacity-50 rounded">
+            <p className="text-sm text-serenity-mountain">Spread</p>
+            <p className="text-lg font-semibold text-serenity-mountain">{metrics.spreadPercentage.toFixed(3)}%</p>
           </div>
         </div>
       </div>
