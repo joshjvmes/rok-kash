@@ -1,35 +1,16 @@
-import { Card } from "@/components/ui/card";
 import { KucoinAccountInfo } from "@/components/KucoinAccountInfo";
-import { TradingHistory } from "@/components/TradingHistory";
-import { TradingPairsTable } from "@/components/kucoin/TradingPairsTable";
-import { useKucoinTradingPairs } from "@/hooks/useKucoinTradingPairs";
-import { MarketStructure } from "@/components/MarketStructure";
+import { KucoinTransfer } from "@/components/KucoinTransfer";
+import { PhantomWallet } from "@/components/PhantomWallet";
 
 export default function KucoinTest() {
-  const { pairs, isLoading, selectedPair, setSelectedPair } = useKucoinTradingPairs();
-
   return (
-    <div className="p-4 space-y-6">
-      <h1 className="text-2xl font-bold mb-4">Kucoin API Testing</h1>
-      
-      <div className="space-y-6">
+    <div className="container mx-auto p-4 space-y-4">
+      <div className="flex justify-end mb-4">
+        <PhantomWallet />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <KucoinAccountInfo />
-        
-        {selectedPair && (
-          <>
-            <MarketStructure exchange="kucoin" symbol={selectedPair} />
-            <TradingHistory exchange="kucoin" symbol={selectedPair} />
-          </>
-        )}
-        
-        <Card className="p-4">
-          <h2 className="text-xl font-semibold mb-4">Available Trading Pairs</h2>
-          <TradingPairsTable 
-            pairs={pairs}
-            isLoading={isLoading}
-            onPairSelect={setSelectedPair}
-          />
-        </Card>
+        <KucoinTransfer />
       </div>
     </div>
   );
