@@ -20,6 +20,7 @@ interface SymbolSelectorProps {
   selectedSymbol: string;
   onSymbolChange: (value: string) => void;
   fromExchange: string;
+  navigateOnChange?: boolean; // Added this optional prop
 }
 
 interface BalanceData {
@@ -31,7 +32,8 @@ interface BalanceData {
 export function SymbolSelector({ 
   selectedSymbol, 
   onSymbolChange,
-  fromExchange
+  fromExchange,
+  navigateOnChange = true // Default value if not provided
 }: SymbolSelectorProps) {
   const { data: balance, isLoading } = useQuery<BalanceData>({
     queryKey: ['balance', fromExchange],
