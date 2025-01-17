@@ -1,4 +1,5 @@
 import { ArbitrageOpportunity } from "@/components/ArbitrageOpportunity";
+import { ArbitrageSettings } from "@/components/trading/ArbitrageSettings";
 import { Card } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { findArbitrageOpportunities } from "@/utils/exchanges/arbitrage";
@@ -29,7 +30,10 @@ export default function PureArbitrage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold mb-6">Pure Arbitrage</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Pure Arbitrage</h1>
+        <ArbitrageSettings />
+      </div>
       <Card className="p-6">
         <div className="space-y-4">
           <h2 className="text-xl font-semibold mb-4">Live Opportunities</h2>

@@ -84,6 +84,45 @@ export type Database = {
         }
         Relationships: []
       }
+      arbitrage_settings: {
+        Row: {
+          created_at: string
+          exchanges: string[]
+          id: string
+          min_profit_amount: number
+          min_spread_percentage: number
+          notifications_enabled: boolean
+          refresh_interval: number
+          symbols: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exchanges?: string[]
+          id?: string
+          min_profit_amount?: number
+          min_spread_percentage?: number
+          notifications_enabled?: boolean
+          refresh_interval?: number
+          symbols?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exchanges?: string[]
+          id?: string
+          min_profit_amount?: number
+          min_spread_percentage?: number
+          notifications_enabled?: boolean
+          refresh_interval?: number
+          symbols?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       Articles: {
         Row: {
           author: string | null
