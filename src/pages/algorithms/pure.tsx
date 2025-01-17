@@ -16,7 +16,7 @@ interface ArbitrageSettings {
   notifications_enabled: boolean;
 }
 
-// Default settings to use when none exist
+// Default settings updated to remove Coinbase
 const DEFAULT_SETTINGS: ArbitrageSettings = {
   symbols: ["BTC/USDT"],
   min_spread_percentage: 0.1,
