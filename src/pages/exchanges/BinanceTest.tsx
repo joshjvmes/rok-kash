@@ -1,13 +1,14 @@
 import { Card } from "@/components/ui/card";
 import { BinanceAccountInfo } from "@/components/BinanceAccountInfo";
 import { TradingHistory } from "@/components/TradingHistory";
+import { TradingPairsTable } from "@/components/binance/TradingPairsTable";
+import { useBinanceTradingPairs } from "@/hooks/useBinanceTradingPairs";
 import { MarketStructure } from "@/components/MarketStructure";
-import { OrderBook } from "@/components/OrderBook";
 import { BinanceTradeWidget } from "@/components/binance/BinanceTradeWidget";
-import { useState } from "react";
+import { OrderBook } from "@/components/OrderBook";
 
 export default function BinanceTest() {
-  const [selectedSymbol, setSelectedSymbol] = useState("BTC/USDT");
+  const { pairs, isLoading, selectedPair, setSelectedPair } = useBinanceTradingPairs();
 
   return (
     <div className="p-4 space-y-6">
@@ -16,18 +17,39 @@ export default function BinanceTest() {
       <div className="space-y-6">
         <BinanceAccountInfo />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <MarketStructure exchange="binance" symbol={selectedSymbol} />
-            <TradingHistory exchange="binance" symbol={selectedSymbol} />
-          </div>
-          
-          <div className="space-y-6">
-            <OrderBook exchange="binance" symbol={selectedSymbol} />
-          </div>
-        </div>
+        {selectedPair && (
+          <>
+            <MarketStructure exchange="binance" symbol={selectedPair} />
+            <TradingHistory exchange="binance" symbol={selectedPair} />
+            
+            <Card className="p-4">
+              <h2 className="text-xl font-semibold mb-4">Available Trading Pairs</h2>
+              <TradingPairsTable 
+                pairs={pairs}
+                isLoading={isLoading}
+                onPairSelect={setSelectedPair}
+              />
+            </Card>
+          </>
+        )}
 
-        <BinanceTradeWidget />
+        {!selectedPair && (
+          <Card className="p-4">
+            <h2 className="text-xl font-semibold mb-4">Available Trading Pairs</h2>
+            <TradingPairsTable 
+              pairs={pairs}
+              isLoading={isLoading}
+              onPairSelect={setSelectedPair}
+            />
+          </Card>
+        )}
+
+        {selectedPair && (
+          <>
+            <OrderBook exchange="binance" symbol={selectedPair} />
+            <BinanceTradeWidget />
+          </>
+        )}
       </div>
     </div>
   );
