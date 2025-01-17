@@ -231,6 +231,48 @@ export type Database = {
         }
         Relationships: []
       }
+      rebalance_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          error_message: string | null
+          from_exchange: string
+          id: string
+          status: string
+          to_exchange: string
+          token_symbol: string
+          transaction_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          error_message?: string | null
+          from_exchange: string
+          id?: string
+          status?: string
+          to_exchange: string
+          token_symbol: string
+          transaction_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          error_message?: string | null
+          from_exchange?: string
+          id?: string
+          status?: string
+          to_exchange?: string
+          token_symbol?: string
+          transaction_hash?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trading_settings: {
         Row: {
           created_at: string
