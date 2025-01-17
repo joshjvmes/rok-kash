@@ -5,22 +5,6 @@ import type { ArbitrageOpportunity } from "../types/exchange";
 
 const EXCHANGES = ['kraken', 'bybit', 'binance', 'kucoin', 'okx'];
 
-// Updated fixed fee rates for the specified exchanges
-const FIXED_FEES = {
-  kraken: 0.26,    // 0.26% maker/taker fee
-  bybit: 0.1,      // 0.1% spot trading fee
-  binance: 0.1,    // 0.1% spot trading fee
-  kucoin: 0.1,     // 0.1% spot trading fee
-  okx: 0.1         // 0.1% spot trading fee
-};
-
-async function getExchangeFee(exchangeName: string): Promise<number> {
-  // Return hardcoded fees directly
-  const fixedFee = FIXED_FEES[exchangeName as keyof typeof FIXED_FEES];
-  console.log(`Using fixed fee for ${exchangeName}: ${fixedFee}%`);
-  return fixedFee || 0.1; // Default to 0.1% if exchange not found
-}
-
 async function getPriceForExchange(exchange: string, symbol: string): Promise<number | null> {
   try {
     console.log(`Fetching price for ${exchange} - ${symbol}`);
@@ -61,25 +45,19 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
   const opportunities: ArbitrageOpportunity[] = [];
   console.log(`Finding arbitrage opportunities for ${symbol}`);
   
-  // Get all exchange prices and fees in parallel
+  // Get all exchange prices in parallel
   const pricesPromises = EXCHANGES.map(exchange => getPriceForExchange(exchange, symbol));
-  const feesPromises = EXCHANGES.map(exchange => getExchangeFee(exchange));
-  
-  const [prices, fees] = await Promise.all([
-    Promise.all(pricesPromises),
-    Promise.all(feesPromises)
-  ]);
+  const prices = await Promise.all(pricesPromises);
 
-  // Create a map of exchange prices and fees
+  // Create a map of exchange prices
   const exchangeData = EXCHANGES.reduce((acc, exchange, index) => {
     if (prices[index] !== null) {
       acc[exchange] = {
-        price: prices[index],
-        fee: fees[index]
+        price: prices[index]
       };
     }
     return acc;
-  }, {} as Record<string, { price: number | null; fee: number }>);
+  }, {} as Record<string, { price: number | null }>);
 
   // Log the collected data
   console.log('Exchange data collected:', exchangeData);
@@ -98,9 +76,8 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
         continue;
       }
 
-      // Calculate spread considering fees
-      const buyPrice = buyData.price * (1 + buyData.fee / 100);
-      const sellPrice = sellData.price * (1 - sellData.fee / 100);
+      const buyPrice = buyData.price;
+      const sellPrice = sellData.price;
       
       console.log(`Comparing ${buyExchange} (${buyPrice}) -> ${sellExchange} (${sellPrice})`);
 
@@ -123,14 +100,9 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
       }
 
       // Check reverse direction
-      const reverseBuyPrice = sellData.price * (1 + sellData.fee / 100);
-      const reverseSellPrice = buyData.price * (1 - buyData.fee / 100);
-
-      console.log(`Comparing reverse ${sellExchange} (${reverseBuyPrice}) -> ${buyExchange} (${reverseSellPrice})`);
-
-      if (reverseSellPrice > reverseBuyPrice) {
-        const spread = ((reverseSellPrice - reverseBuyPrice) / reverseBuyPrice) * 100;
-        const potential = (reverseSellPrice - reverseBuyPrice) * 1000; // Assuming 1000 units traded
+      if (buyPrice > sellPrice) {
+        const spread = ((buyPrice - sellPrice) / sellPrice) * 100;
+        const potential = (buyPrice - sellPrice) * 1000; // Assuming 1000 units traded
 
         console.log(`Found reverse opportunity: ${sellExchange} -> ${buyExchange}, spread: ${spread}%, potential: $${potential}`);
 
