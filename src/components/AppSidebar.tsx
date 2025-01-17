@@ -1,4 +1,4 @@
-import { Home, TestTube2, LogOut, Database, Link2, ArrowDown, XOctagon, Brain, Triangle, Code, ChartLine, Infinity } from "lucide-react";
+import { Home, TestTube2, LogOut, Database, Link2, ArrowDown, XOctagon, Brain, Triangle, Code, ChartLine, Infinity, ChevronDown } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +15,12 @@ import { ThemeSwitcher } from "./ThemeSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const exchangePages = [
   { title: "Bybit", path: "/exchanges/bybit" },
@@ -61,6 +67,8 @@ export function AppSidebar() {
     }
   };
 
+  const currentExchange = exchangePages.find(page => location.pathname === page.path);
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -84,19 +92,36 @@ export function AppSidebar() {
           <SidebarGroupLabel>Exchange Testing</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {exchangePages.map((page) => (
-                <SidebarMenuItem key={page.path}>
-                  <SidebarMenuButton asChild>
-                    <Link
-                      to={page.path}
-                      className={location.pathname === page.path ? "text-rokcat-purple" : ""}
+              <SidebarMenuItem>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start gap-2 px-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     >
-                      <TestTube2 />
-                      <span>{page.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                      <TestTube2 className="h-4 w-4" />
+                      <span>{currentExchange?.title || "Select Exchange"}</span>
+                      <ChevronDown className="h-4 w-4 ml-auto" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    className="w-56" 
+                    align="start" 
+                    sideOffset={8}
+                  >
+                    {exchangePages.map((page) => (
+                      <DropdownMenuItem key={page.path} asChild>
+                        <Link
+                          to={page.path}
+                          className={location.pathname === page.path ? "text-rokcat-purple" : ""}
+                        >
+                          {page.title}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
