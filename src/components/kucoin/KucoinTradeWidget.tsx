@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { fetchBalance, createOrder, fetchCCXTPrice } from "@/utils/exchanges/ccxt";
+import { fetchBalance, createOrder, fetchCCXTPrice, cancelOrder } from "@/utils/exchanges/ccxt";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TradingPairSelector } from "./TradingPairSelector";
 import { TradeAmountInput } from "./TradeAmountInput";
 import { TradeButtons } from "./TradeButtons";
 import { TradeStatusLogs } from "./TradeStatusLogs";
+import { Button } from "@/components/ui/button";
 
 interface Balance {
   total: {
@@ -27,6 +28,14 @@ interface TradeLog {
   type: 'info' | 'success' | 'error';
 }
 
+interface ActiveOrder {
+  id: string;
+  symbol: string;
+  side: 'buy' | 'sell';
+  amount: number;
+  status: string;
+}
+
 export function KucoinTradeWidget() {
   const [availablePairs, setAvailablePairs] = useState<TradingPair[]>([]);
   const [selectedPair, setSelectedPair] = useState<string>("");
@@ -34,9 +43,10 @@ export function KucoinTradeWidget() {
   const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
   const [estimatedReceiveAmount, setEstimatedReceiveAmount] = useState<string>("");
   const [tradeLogs, setTradeLogs] = useState<TradeLog[]>([]);
+  const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
   const { toast } = useToast();
 
-  const { data: balanceData, isLoading: isLoadingBalance } = useQuery<Balance>({
+  const { data: balanceData, isLoading: isLoadingBalance } = useQuery({
     queryKey: ['balance', 'kucoin'],
     queryFn: () => fetchBalance('kucoin'),
     refetchInterval: 10000,
@@ -125,6 +135,35 @@ export function KucoinTradeWidget() {
     };
   }, [selectedPair]);
 
+  const handleCancelOrder = async () => {
+    if (!activeOrder) {
+      addTradeLog('No active order to cancel', 'error');
+      return;
+    }
+
+    try {
+      addTradeLog(`Attempting to cancel order ${activeOrder.id}...`, 'info');
+      await cancelOrder('kucoin', activeOrder.id, activeOrder.symbol);
+      
+      addTradeLog(`Successfully cancelled order ${activeOrder.id}`, 'success');
+      toast({
+        title: "Order Cancelled",
+        description: `Successfully cancelled ${activeOrder.side} order for ${activeOrder.amount} ${activeOrder.symbol}`,
+      });
+      
+      setActiveOrder(null);
+      setAmount("");
+    } catch (error: any) {
+      const errorMessage = `Failed to cancel order: ${error.message}`;
+      addTradeLog(errorMessage, 'error');
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleTrade = async (side: 'buy' | 'sell') => {
     if (!selectedPair || !amount) {
       toast({
@@ -140,6 +179,18 @@ export function KucoinTradeWidget() {
     try {
       const order = await createOrder('kucoin', selectedPair, 'market', side, parseFloat(amount));
       
+      if (!order || !order.id) {
+        throw new Error('Order creation failed - no order ID received');
+      }
+
+      setActiveOrder({
+        id: order.id,
+        symbol: selectedPair,
+        side,
+        amount: parseFloat(amount),
+        status: order.status || 'pending'
+      });
+      
       const successMessage = `${side.toUpperCase()} order placed successfully for ${amount} ${selectedPair}`;
       toast({
         title: "Success",
@@ -148,7 +199,6 @@ export function KucoinTradeWidget() {
       addTradeLog(successMessage, 'success');
       addTradeLog(`Order details: ${JSON.stringify(order)}`, 'info');
       
-      setAmount("");
     } catch (error: any) {
       const errorMessage = `Failed to place ${side} order: ${error.message}`;
       toast({
@@ -194,6 +244,21 @@ export function KucoinTradeWidget() {
             onBuy={() => handleTrade('buy')}
             onSell={() => handleTrade('sell')}
           />
+
+          {activeOrder && (
+            <div className="mt-4">
+              <div className="text-sm text-gray-500 mb-2">
+                Active Order: {activeOrder.side.toUpperCase()} {activeOrder.amount} {activeOrder.symbol}
+              </div>
+              <Button 
+                variant="destructive" 
+                onClick={handleCancelOrder}
+                className="w-full"
+              >
+                Cancel Order
+              </Button>
+            </div>
+          )}
         </div>
       </Card>
 

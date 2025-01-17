@@ -114,6 +114,42 @@ export async function executeExchangeMethod(
         return market;
       }
 
+      case 'createOrder': {
+        if (!formattedSymbol) throw new Error('Symbol required for createOrder');
+        const result = await safeExecuteMethod(
+          exchange, 
+          'createOrder', 
+          formattedSymbol,
+          params.type,
+          params.side,
+          params.amount,
+          params.price,
+          params.extra || {}
+        );
+        if (!result.success) {
+          console.error(`Failed to create order for ${formattedSymbol} on ${exchange.id}:`, result.error);
+          return null;
+        }
+        return result.data;
+      }
+
+      case 'cancelOrder': {
+        if (!formattedSymbol) throw new Error('Symbol required for cancelOrder');
+        if (!params.id) throw new Error('Order ID required for cancelOrder');
+        
+        const result = await safeExecuteMethod(
+          exchange,
+          'cancelOrder',
+          params.id,
+          formattedSymbol
+        );
+        if (!result.success) {
+          console.error(`Failed to cancel order ${params.id} on ${exchange.id}:`, result.error);
+          return null;
+        }
+        return result.data;
+      }
+
       default:
         throw new Error(`Unsupported method: ${method}`);
     }

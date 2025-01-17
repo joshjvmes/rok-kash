@@ -89,10 +89,42 @@ export async function createOrder(
       throw error;
     }
 
+    if (!data || !data.id) {
+      throw new Error('Order creation failed - no order ID received');
+    }
+
     console.log(`Successfully created order on ${exchange}:`, data);
     return data;
   } catch (error) {
     console.error(`Error creating order on ${exchange}:`, error);
+    throw error;
+  }
+}
+
+export async function cancelOrder(exchange: string, orderId: string, symbol: string) {
+  try {
+    console.log(`Cancelling order ${orderId} on ${exchange}`);
+    
+    const { data, error } = await supabase.functions.invoke('ccxt-proxy', {
+      body: {
+        exchange,
+        method: 'cancelOrder',
+        params: {
+          id: orderId,
+          symbol: symbol
+        }
+      }
+    });
+
+    if (error) {
+      console.error(`Error cancelling order on ${exchange}:`, error);
+      throw error;
+    }
+
+    console.log(`Successfully cancelled order on ${exchange}:`, data);
+    return data;
+  } catch (error) {
+    console.error(`Error cancelling order on ${exchange}:`, error);
     throw error;
   }
 }
