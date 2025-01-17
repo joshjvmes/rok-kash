@@ -34,21 +34,19 @@ export function KucoinTradeWidget() {
     refetchInterval: 10000,
   });
 
-  // Filter non-zero balances
-  const nonZeroBalances: { [key: string]: number } = {};
-  if (balanceData?.total) {
+  // Filter non-zero balances and generate trading pairs
+  useEffect(() => {
+    if (!balanceData?.total) return;
+
+    const nonZeroBalances: { [key: string]: number } = {};
     Object.entries(balanceData.total).forEach(([coin, amount]) => {
       if (amount > 0) {
         nonZeroBalances[coin] = amount;
       }
     });
-  }
 
-  // Generate available trading pairs from balances
-  useEffect(() => {
     const pairs: TradingPair[] = [];
     Object.keys(nonZeroBalances).forEach(baseAsset => {
-      // Common quote assets in KuCoin
       const quoteAssets = ['USDT', 'USDC', 'BTC', 'ETH'];
       quoteAssets.forEach(quoteAsset => {
         if (baseAsset !== quoteAsset) {
@@ -60,22 +58,35 @@ export function KucoinTradeWidget() {
         }
       });
     });
+
     setAvailablePairs(pairs);
-  }, [nonZeroBalances]);
+    if (pairs.length > 0 && !selectedPair) {
+      setSelectedPair(pairs[0].symbol);
+    }
+  }, [balanceData, selectedPair]);
 
   // Fetch estimated price when pair changes
   useEffect(() => {
+    let isMounted = true;
+
     const fetchPrice = async () => {
       if (selectedPair) {
         try {
           const price = await fetchCCXTPrice('kucoin', selectedPair);
-          setEstimatedPrice(price);
+          if (isMounted) {
+            setEstimatedPrice(price);
+          }
         } catch (error) {
           console.error('Error fetching price:', error);
         }
       }
     };
+
     fetchPrice();
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedPair]);
 
   const handleTrade = async (side: 'buy' | 'sell') => {
