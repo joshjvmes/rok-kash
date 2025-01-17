@@ -1,4 +1,4 @@
-import { Home, TestTube2, LogOut } from "lucide-react";
+import { Home, TestTube2, LogOut, Database, Link2, ArrowDown, XOctagon, Brain, Triangle, Code, ChartLine, Infinity } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +22,21 @@ const exchangePages = [
   { title: "Binance", path: "/exchanges/binance" },
   { title: "Kucoin", path: "/exchanges/kucoin" },
   { title: "OKX", path: "/exchanges/okx" },
+];
+
+const protocolPages = [
+  { title: "Rebalance", path: "/protocols/rebalance", icon: ArrowDown },
+  { title: "Close Positions", path: "/protocols/close-positions", icon: XOctagon },
+  { title: "Withdraw", path: "/protocols/withdraw", icon: Link2 },
+];
+
+const algorithmPages = [
+  { title: "Pure", path: "/algorithms/pure", icon: Code },
+  { title: "Triangle", path: "/algorithms/triangle", icon: Triangle },
+  { title: "Pools", path: "/algorithms/pools", icon: Database },
+  { title: "Statistical", path: "/algorithms/statistical", icon: ChartLine },
+  { title: "Counter", path: "/algorithms/counter", icon: Brain },
+  { title: "Semi-Automatic", path: "/algorithms/semi-automatic", icon: Infinity },
 ];
 
 export function AppSidebar() {
@@ -64,6 +79,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel>Exchange Testing</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -76,6 +92,48 @@ export function AppSidebar() {
                       className={location.pathname === page.path ? "text-rokcat-purple" : ""}
                     >
                       <TestTube2 />
+                      <span>{page.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Protocols</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {protocolPages.map((page) => (
+                <SidebarMenuItem key={page.path}>
+                  <SidebarMenuButton asChild>
+                    <Link
+                      to={page.path}
+                      className={location.pathname === page.path ? "text-rokcat-purple" : ""}
+                    >
+                      <page.icon />
+                      <span>{page.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Algorithms</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {algorithmPages.map((page) => (
+                <SidebarMenuItem key={page.path}>
+                  <SidebarMenuButton asChild>
+                    <Link
+                      to={page.path}
+                      className={location.pathname === page.path ? "text-rokcat-purple" : ""}
+                    >
+                      <page.icon />
                       <span>{page.title}</span>
                     </Link>
                   </SidebarMenuButton>
