@@ -42,6 +42,48 @@ export type Database = {
         }
         Relationships: []
       }
+      arbitrage_opportunities: {
+        Row: {
+          buy_exchange: string
+          created_at: string
+          executed_at: string | null
+          execution_error: string | null
+          id: string
+          potential_profit: number
+          sell_exchange: string
+          spread: number
+          status: string
+          symbol: string
+          user_id: string | null
+        }
+        Insert: {
+          buy_exchange: string
+          created_at?: string
+          executed_at?: string | null
+          execution_error?: string | null
+          id?: string
+          potential_profit: number
+          sell_exchange: string
+          spread: number
+          status?: string
+          symbol: string
+          user_id?: string | null
+        }
+        Update: {
+          buy_exchange?: string
+          created_at?: string
+          executed_at?: string | null
+          execution_error?: string | null
+          id?: string
+          potential_profit?: number
+          sell_exchange?: string
+          spread?: number
+          status?: string
+          symbol?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       Articles: {
         Row: {
           author: string | null
