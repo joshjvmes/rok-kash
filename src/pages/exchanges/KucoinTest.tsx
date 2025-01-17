@@ -18,8 +18,10 @@ export default function KucoinTest() {
         <KucoinAccountInfo />
 
         {selectedPair && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <>
             <MarketStructure exchange="kucoin" symbol={selectedPair} />
+            <TradingHistory exchange="kucoin" symbol={selectedPair} />
+            
             <Card className="p-4">
               <h2 className="text-xl font-semibold mb-4">Available Trading Pairs</h2>
               <TradingPairsTable 
@@ -28,7 +30,7 @@ export default function KucoinTest() {
                 onPairSelect={setSelectedPair}
               />
             </Card>
-          </div>
+          </>
         )}
 
         {!selectedPair && (
@@ -44,10 +46,7 @@ export default function KucoinTest() {
 
         {selectedPair && (
           <>
-            <TradingHistory exchange="kucoin" symbol={selectedPair} />
-            
             <OrderBook exchange="kucoin" symbol={selectedPair} />
-            
             <KucoinTradeWidget />
           </>
         )}
