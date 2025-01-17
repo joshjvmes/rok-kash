@@ -1,15 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TokenSelector } from './TokenSelector';
 import { TransferDirectionSelector } from './TransferDirectionSelector';
 import { ExchangeSelector } from './ExchangeSelector';
 import { DepositAddressDisplay } from './DepositAddressDisplay';
-import { AvailableBalance } from './AvailableBalance';
+import { TransferValidation } from './TransferValidation';
+import { useSolanaTokens } from '@/hooks/useSolanaTokens';
 
 interface TransferFormProps {
   onTransferSubmit: (transferData: {
@@ -30,63 +29,9 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
   const [amount, setAmount] = useState<string>('');
   const [tokenMint, setTokenMint] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   const [depositAddress, setDepositAddress] = useState<string>('');
-  const [error, setError] = useState<string>('');
 
-  useEffect(() => {
-    const fetchAddress = async () => {
-      if (!selectedExchange || !fromType || !toType || !tokenMint) {
-        setDepositAddress('');
-        setError('');
-        return;
-      }
-
-      console.log(`Fetching deposit address for transfer:`, {
-        fromType,
-        toType,
-        exchange: selectedExchange,
-        tokenMint
-      });
-
-      setIsFetchingAddress(true);
-      setError('');
-
-      try {
-        if (fromType === 'wallet' && toType === 'exchange') {
-          const { data, error } = await supabase.functions.invoke('solana-transfer', {
-            body: { 
-              action: 'getDepositAddress', 
-              exchange: selectedExchange,
-              tokenMint 
-            }
-          });
-
-          if (error) throw error;
-          if (data?.address) {
-            console.info(`Successfully retrieved deposit address: ${data.address}`);
-            setDepositAddress(data.address);
-          }
-        } else if (fromType === 'exchange' && toType === 'wallet' && publicKey) {
-          console.info(`Using wallet address as deposit address: ${publicKey.toString()}`);
-          setDepositAddress(publicKey.toString());
-        }
-      } catch (err) {
-        const errorMessage = 'Failed to fetch deposit address. Please try again.';
-        console.error('Error fetching deposit address:', err);
-        setError(errorMessage);
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      } finally {
-        setIsFetchingAddress(false);
-      }
-    };
-
-    fetchAddress();
-  }, [selectedExchange, fromType, toType, publicKey, tokenMint, toast]);
+  const { balance } = useSolanaTokens(tokenMint);
 
   const handleSwapDirection = () => {
     console.log(`Swapping transfer direction from ${fromType} to ${toType === 'wallet' ? 'exchange' : 'wallet'}`);
@@ -95,39 +40,6 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
   };
 
   const handleSubmit = async () => {
-    if (!connected || !publicKey) {
-      const message = "Please connect your Phantom wallet first";
-      console.error(message);
-      toast({
-        title: "Wallet not connected",
-        description: message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!amount || !tokenMint || !depositAddress || 
-        (fromType === 'exchange' && !selectedExchange) || 
-        (toType === 'exchange' && !selectedExchange)) {
-      const message = "Please fill in all required fields";
-      console.error('Transfer validation failed:', message);
-      toast({
-        title: "Missing information",
-        description: message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    console.log(`Initiating transfer:`, {
-      fromType,
-      toType,
-      selectedExchange,
-      amount,
-      tokenMint,
-      depositAddress
-    });
-
     setIsLoading(true);
     try {
       await onTransferSubmit({
@@ -140,6 +52,11 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
       console.info('Transfer submitted successfully');
     } catch (error) {
       console.error('Transfer submission failed:', error);
+      toast({
+        title: "Transfer failed",
+        description: error.message || "An error occurred during transfer",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -153,7 +70,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         onFromTypeChange={setFromType}
         onToTypeChange={setToType}
         onSwapDirection={handleSwapDirection}
-        isDisabled={isLoading || isFetchingAddress}
+        isDisabled={isLoading}
       />
 
       {(fromType === 'exchange' || toType === 'exchange') && (
@@ -166,26 +83,29 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
       <TokenSelector
         value={tokenMint}
         onValueChange={setTokenMint}
-        isLoading={isLoading || isFetchingAddress}
+        isLoading={isLoading}
       />
 
-      {fromType === 'wallet' && (
-        <AvailableBalance
-          tokenMint={tokenMint}
-          onBalanceClick={setAmount}
-        />
+      {fromType === 'wallet' && balance && (
+        <div className="text-sm text-gray-500">
+          Available balance: {balance}
+        </div>
       )}
 
       <DepositAddressDisplay
         address={depositAddress}
-        isLoading={isFetchingAddress}
+        isLoading={isLoading}
       />
 
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      <TransferValidation
+        connected={connected}
+        fromType={fromType}
+        toType={toType}
+        selectedExchange={selectedExchange}
+        amount={amount}
+        tokenMint={tokenMint}
+        depositAddress={depositAddress}
+      />
 
       <Input
         type="number"
@@ -199,7 +119,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
       <Button
         className="w-full"
         onClick={handleSubmit}
-        disabled={isLoading || isFetchingAddress || !connected}
+        disabled={isLoading || !connected}
       >
         {isLoading ? "Processing..." : "Transfer"}
       </Button>
