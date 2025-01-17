@@ -70,6 +70,8 @@ serve(async (req) => {
     } else {
       console.log(`No API credentials found for ${exchangeId}`)
       if (['fetchBalance', 'createOrder', 'cancelOrder'].includes(method)) {
+        console.error(`${exchangeId} requires API credentials for ${method}`)
+        console.log('Available environment variables:', Object.keys(Deno.env.toObject()))
         return new Response(
           JSON.stringify({ 
             error: `${exchangeId} requires API credentials for ${method}`,
