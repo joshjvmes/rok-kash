@@ -11,6 +11,7 @@ import { ActiveOrderDisplay } from "./ActiveOrderDisplay";
 export function KucoinTradeWidget() {
   const [amount, setAmount] = useState("");
   const [selectedPair, setSelectedPair] = useState("BTC/USDC");
+  const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
   
   const {
     balanceData,
@@ -20,6 +21,11 @@ export function KucoinTradeWidget() {
     handleTrade,
     handleCancelOrder,
   } = useKucoinTrade(selectedPair);
+
+  // Calculate estimated receive amount
+  const estimatedReceiveAmount = estimatedPrice && amount 
+    ? (parseFloat(amount) * estimatedPrice).toFixed(2)
+    : "0.00";
 
   if (!balanceData) {
     return (
@@ -65,6 +71,8 @@ export function KucoinTradeWidget() {
           <TradeAmountInput
             amount={amount}
             onAmountChange={setAmount}
+            estimatedPrice={estimatedPrice}
+            estimatedReceiveAmount={estimatedReceiveAmount}
           />
 
           <TradeButtons
