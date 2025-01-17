@@ -57,8 +57,8 @@ serve(async (req) => {
 
       case 'getTokenMetadata':
         const { mint } = params
-        const tokenList = await tokenListProvider.resolve()
-        const tokenInfo = tokenList
+        const resolvedTokenList = await tokenListProvider.resolve()
+        const tokenInfo = resolvedTokenList
           .filterByClusterSlug('devnet')
           .getList()
           .find(t => t.address === mint)
