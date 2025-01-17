@@ -53,19 +53,45 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // First check if we have a session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        // If there's no session, just redirect to login
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      if (!session) {
+        // No active session, just redirect to login
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      // We have a session, try to sign out
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Logout error:", error);
+        throw error;
+      }
+
       toast({
         title: "Logged out successfully",
         duration: 2000,
       });
+      
       navigate("/login", { replace: true });
     } catch (error) {
       console.error("Logout error:", error);
+      
+      // Even if logout fails, redirect to login page for safety
+      navigate("/login", { replace: true });
+      
       toast({
-        title: "Error logging out",
-        description: "Please try again",
+        title: "Error during logout",
+        description: "You have been redirected to the login page",
         variant: "destructive",
         duration: 3000,
       });
