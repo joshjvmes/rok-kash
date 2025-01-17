@@ -48,14 +48,12 @@ export const ThemeSwitcher = () => {
 
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className={`${
-        theme === 'serenity' ? 'bg-serenity-sky-light text-serenity-mountain' : ''
-      }`}
+      className="hover:bg-rokcat-purple/10"
     >
-      <Paintbrush className="h-4 w-4" />
+      <Paintbrush className="h-5 w-5" />
     </Button>
   );
 };
