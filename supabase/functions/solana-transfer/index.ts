@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { Binance } from 'https://esm.sh/ccxt@4.2.1'
+import * as ccxt from 'https://esm.sh/ccxt@4.2.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,12 +20,13 @@ serve(async (req) => {
       console.log('Fetching deposit address for:', { exchange, tokenMint })
       
       if (exchange === 'binance') {
-        const binance = new Binance({
+        const binance = new ccxt.binance({
           apiKey: Deno.env.get('BINANCE_API_KEY'),
           secret: Deno.env.get('BINANCE_SECRET'),
         })
 
         try {
+          console.log('Initializing Binance client...')
           const depositAddress = await binance.fetchDepositAddress(tokenMint)
           console.log('Binance deposit address:', depositAddress)
 
@@ -55,7 +56,7 @@ serve(async (req) => {
     let binanceClient
     if (fromType === 'exchange' && fromAddress === 'binance' || 
         toType === 'exchange' && toAddress === 'binance') {
-      binanceClient = new Binance({
+      binanceClient = new ccxt.binance({
         apiKey: Deno.env.get('BINANCE_API_KEY'),
         secret: Deno.env.get('BINANCE_SECRET'),
       })
