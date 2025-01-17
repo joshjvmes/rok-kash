@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TokenSelector } from './TokenSelector';
 import { TransferDirectionSelector } from './TransferDirectionSelector';
-import { ExchangeSelector, EXCHANGES } from './ExchangeSelector';
+import { ExchangeSelector } from './ExchangeSelector';
 import { DepositAddressDisplay } from './DepositAddressDisplay';
+import { AvailableBalance } from './AvailableBalance';
 
 interface TransferFormProps {
   onTransferSubmit: (transferData: {
@@ -140,6 +141,13 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         onValueChange={setTokenMint}
         isLoading={isLoading || isFetchingAddress}
       />
+
+      {fromType === 'wallet' && (
+        <AvailableBalance
+          tokenMint={tokenMint}
+          onBalanceClick={setAmount}
+        />
+      )}
 
       <DepositAddressDisplay
         address={depositAddress}
