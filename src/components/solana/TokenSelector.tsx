@@ -45,7 +45,7 @@ export function TokenSelector({ value, onValueChange, isLoading }: TokenSelector
         onValueChange={onValueChange}
         disabled={isLoading}
       >
-        <SelectTrigger className="bg-trading-gray-light border-trading-gray-light">
+        <SelectTrigger className="bg-[#F1F0FB] border-0 text-gray-700">
           <SelectValue placeholder="Select a token" />
         </SelectTrigger>
         <SelectContent className="bg-[#F1F0FB] border-0">
