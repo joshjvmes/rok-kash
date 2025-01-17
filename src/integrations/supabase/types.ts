@@ -261,6 +261,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_trades: {
+        Row: {
+          amount: number
+          exchange: string
+          id: string
+          price: number
+          side: string
+          symbol: string
+          timestamp: string
+          trade_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          exchange: string
+          id?: string
+          price: number
+          side: string
+          symbol: string
+          timestamp?: string
+          trade_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          exchange?: string
+          id?: string
+          price?: number
+          side?: string
+          symbol?: string
+          timestamp?: string
+          trade_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       Users: {
         Row: {
           created_at: string
