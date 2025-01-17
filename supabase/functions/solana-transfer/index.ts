@@ -24,9 +24,9 @@ serve(async (req) => {
     const { action, exchange, fromType, toType, fromAddress, toAddress, amount, tokenMint } = await req.json()
     console.log('Received transfer request:', { action, exchange, fromType, toType, fromAddress, toAddress, amount, tokenMint });
 
-    // Handle deposit address request
-    if (action === 'getDepositAddress') {
-      console.log('Fetching deposit address for:', { exchange, tokenMint });
+    // Handle withdrawal from Binance to Phantom wallet
+    if (fromType === 'exchange' && toType === 'wallet' && exchange === 'binance') {
+      console.log('Processing Binance withdrawal to Phantom wallet');
       
       const currencyCode = TOKEN_MINT_TO_CURRENCY[tokenMint];
       if (!currencyCode) {
@@ -34,39 +34,37 @@ serve(async (req) => {
         throw new Error(`Unsupported token mint address: ${tokenMint}`);
       }
 
-      if (exchange === 'binance') {
-        console.log('Initializing Binance client...');
-        const binance = new ccxt.binance({
-          apiKey: Deno.env.get('BINANCE_API_KEY'),
-          secret: Deno.env.get('BINANCE_SECRET'),
+      console.log('Initializing Binance client...');
+      const binance = new ccxt.binance({
+        apiKey: Deno.env.get('BINANCE_API_KEY'),
+        secret: Deno.env.get('BINANCE_SECRET'),
+      });
+
+      try {
+        console.log(`Initiating withdrawal of ${amount} ${currencyCode} to ${toAddress}...`);
+        const withdrawal = await binance.withdraw(currencyCode, amount, toAddress, {
+          network: 'SOL',
         });
-
-        try {
-          console.log(`Fetching Binance deposit address for ${currencyCode}...`);
-          const depositAddress = await binance.fetchDepositAddress(currencyCode);
-          console.log('Binance deposit address:', depositAddress);
-
-          return new Response(
-            JSON.stringify({ 
-              status: 'success',
-              address: depositAddress.address,
-              tag: depositAddress.tag,
-              network: 'SOL'
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        } catch (error) {
-          console.error('Error fetching Binance deposit address:', error);
-          throw new Error(`Failed to fetch Binance deposit address: ${error.message}`);
-        }
+        
+        console.log('Withdrawal initiated successfully:', withdrawal);
+        return new Response(
+          JSON.stringify({ 
+            status: 'success',
+            message: `Successfully initiated withdrawal of ${amount} ${currencyCode} to ${toAddress}`,
+            withdrawalId: withdrawal.id,
+            txid: withdrawal.txid
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (error) {
+        console.error('Error processing Binance withdrawal:', error);
+        throw new Error(`Failed to process Binance withdrawal: ${error.message}`);
       }
-
-      throw new Error('Unsupported exchange for deposit address');
     }
 
-    // Handle withdrawal request
-    if (action === 'withdraw' && fromType === 'exchange') {
-      console.log('Processing withdrawal from exchange:', { exchange, toAddress, amount, tokenMint });
+    // Handle deposit address request for Binance
+    if (action === 'getDepositAddress' && exchange === 'binance') {
+      console.log('Fetching Binance deposit address for:', { tokenMint });
       
       const currencyCode = TOKEN_MINT_TO_CURRENCY[tokenMint];
       if (!currencyCode) {
@@ -74,41 +72,36 @@ serve(async (req) => {
         throw new Error(`Unsupported token mint address: ${tokenMint}`);
       }
 
-      if (exchange === 'binance') {
-        console.log('Initializing Binance client for withdrawal...');
-        const binance = new ccxt.binance({
-          apiKey: Deno.env.get('BINANCE_API_KEY'),
-          secret: Deno.env.get('BINANCE_SECRET'),
-        });
+      console.log('Initializing Binance client...');
+      const binance = new ccxt.binance({
+        apiKey: Deno.env.get('BINANCE_API_KEY'),
+        secret: Deno.env.get('BINANCE_SECRET'),
+      });
 
-        try {
-          console.log(`Initiating withdrawal of ${amount} ${currencyCode} to ${toAddress}...`);
-          const withdrawal = await binance.withdraw(currencyCode, amount, toAddress, {
-            network: 'SOL',
-          });
-          
-          console.log('Withdrawal initiated successfully:', withdrawal);
-          return new Response(
-            JSON.stringify({ 
-              status: 'success',
-              withdrawalId: withdrawal.id,
-              txid: withdrawal.txid
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        } catch (error) {
-          console.error('Error processing withdrawal:', error);
-          throw new Error(`Failed to process withdrawal: ${error.message}`);
-        }
+      try {
+        console.log(`Fetching Binance deposit address for ${currencyCode}...`);
+        const depositAddress = await binance.fetchDepositAddress(currencyCode);
+        console.log('Binance deposit address:', depositAddress);
+
+        return new Response(
+          JSON.stringify({ 
+            status: 'success',
+            address: depositAddress.address,
+            tag: depositAddress.tag,
+            network: 'SOL'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (error) {
+        console.error('Error fetching Binance deposit address:', error);
+        throw new Error(`Failed to fetch Binance deposit address: ${error.message}`);
       }
-
-      throw new Error('Unsupported exchange for withdrawal');
     }
 
     return new Response(
       JSON.stringify({ 
         status: 'error',
-        message: 'Invalid action specified'
+        message: 'Invalid action or transfer type specified'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
