@@ -42,6 +42,13 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         return;
       }
 
+      console.log(`Fetching deposit address for transfer:`, {
+        fromType,
+        toType,
+        exchange: selectedExchange,
+        tokenMint
+      });
+
       setIsFetchingAddress(true);
       setError('');
 
@@ -57,17 +64,20 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
 
           if (error) throw error;
           if (data?.address) {
+            console.info(`Successfully retrieved deposit address: ${data.address}`);
             setDepositAddress(data.address);
           }
         } else if (fromType === 'exchange' && toType === 'wallet' && publicKey) {
+          console.info(`Using wallet address as deposit address: ${publicKey.toString()}`);
           setDepositAddress(publicKey.toString());
         }
       } catch (err) {
+        const errorMessage = 'Failed to fetch deposit address. Please try again.';
         console.error('Error fetching deposit address:', err);
-        setError('Failed to fetch deposit address. Please try again.');
+        setError(errorMessage);
         toast({
           title: "Error",
-          description: "Failed to fetch deposit address",
+          description: errorMessage,
           variant: "destructive",
         });
       } finally {
@@ -79,15 +89,18 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
   }, [selectedExchange, fromType, toType, publicKey, tokenMint, toast]);
 
   const handleSwapDirection = () => {
+    console.log(`Swapping transfer direction from ${fromType} to ${toType === 'wallet' ? 'exchange' : 'wallet'}`);
     setFromType(fromType === 'wallet' ? 'exchange' : 'wallet');
     setToType(toType === 'wallet' ? 'exchange' : 'wallet');
   };
 
   const handleSubmit = async () => {
     if (!connected || !publicKey) {
+      const message = "Please connect your Phantom wallet first";
+      console.error(message);
       toast({
         title: "Wallet not connected",
-        description: "Please connect your Phantom wallet first",
+        description: message,
         variant: "destructive",
       });
       return;
@@ -96,13 +109,24 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
     if (!amount || !tokenMint || !depositAddress || 
         (fromType === 'exchange' && !selectedExchange) || 
         (toType === 'exchange' && !selectedExchange)) {
+      const message = "Please fill in all required fields";
+      console.error('Transfer validation failed:', message);
       toast({
         title: "Missing information",
-        description: "Please fill in all required fields",
+        description: message,
         variant: "destructive",
       });
       return;
     }
+
+    console.log(`Initiating transfer:`, {
+      fromType,
+      toType,
+      selectedExchange,
+      amount,
+      tokenMint,
+      depositAddress
+    });
 
     setIsLoading(true);
     try {
@@ -113,6 +137,9 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         amount,
         tokenMint,
       });
+      console.info('Transfer submitted successfully');
+    } catch (error) {
+      console.error('Transfer submission failed:', error);
     } finally {
       setIsLoading(false);
     }
