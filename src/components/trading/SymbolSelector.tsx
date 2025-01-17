@@ -19,13 +19,15 @@ interface SymbolSelectorProps {
   onSymbolChange: (value: string) => void;
   availableSymbols?: string[];
   isLoading?: boolean;
+  navigateOnChange?: boolean; // Added this prop
 }
 
 export function SymbolSelector({ 
   selectedSymbol, 
   onSymbolChange,
   availableSymbols = [],
-  isLoading = false
+  isLoading = false,
+  navigateOnChange = true // Added with default value
 }: SymbolSelectorProps) {
   const estimatedTimes: { [key: string]: string } = {
     "BTC/USDC": "10-60 minutes",
@@ -68,9 +70,9 @@ export function SymbolSelector({
                 </SelectItem>
               ))
             ) : (
-              <div className="p-2 text-sm text-gray-500">
+              <SelectItem value="no-tokens">
                 No tokens available for transfer
-              </div>
+              </SelectItem>
             )}
           </SelectContent>
         </Select>
