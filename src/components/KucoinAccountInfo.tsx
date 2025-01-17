@@ -78,8 +78,11 @@ export function KucoinAccountInfo() {
           <h3 className="text-sm font-medium text-serenity-mountain mb-2">Asset Distribution</h3>
           <ScrollArea className="h-[200px]">
             <div className="space-y-2">
-              {nonZeroBalances.map(([coin, amount]) => (
-                <div key={coin} className="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+              {nonZeroBalances.map(([coin, amount], index) => (
+                <div 
+                  key={`${coin}-${index}`} 
+                  className="flex justify-between items-center p-2 hover:bg-gray-50 rounded"
+                >
                   <span className="text-sm font-medium text-serenity-mountain">{coin}</span>
                   <span className="text-sm text-serenity-mountain">{Number(amount).toFixed(8)}</span>
                 </div>
