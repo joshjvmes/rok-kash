@@ -5,6 +5,7 @@ import { fetchCCXTPrice } from "@/utils/exchanges/ccxt";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { KucoinAccountInfo } from "@/components/KucoinAccountInfo";
+import { TradingHistory } from "@/components/TradingHistory";
 
 interface TradingPair {
   symbol: string;
@@ -17,6 +18,7 @@ export default function KucoinTest() {
   const [pairs, setPairs] = useState<TradingPair[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
+  const [selectedPair, setSelectedPair] = useState<string>("");
   const UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minutes in milliseconds
 
   useEffect(() => {
@@ -60,6 +62,7 @@ export default function KucoinTest() {
 
         console.log('First 10 available pairs:', spotPairs);
         setPairs(spotPairs);
+        setSelectedPair(spotPairs[0].symbol); // Set the first pair as selected
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching Kucoin pairs:', error);
@@ -121,11 +124,15 @@ export default function KucoinTest() {
   }, [currentPairIndex, pairs.length, isLoading]);
 
   return (
-    <div className="p-4">
+    <div className="p-4 space-y-6">
       <h1 className="text-2xl font-bold mb-4">Kucoin API Testing</h1>
       
       <div className="space-y-6">
         <KucoinAccountInfo />
+        
+        {selectedPair && (
+          <TradingHistory exchange="kucoin" symbol={selectedPair} />
+        )}
         
         <Card className="p-4">
           <h2 className="text-xl font-semibold mb-4">Available Trading Pairs</h2>
@@ -145,7 +152,11 @@ export default function KucoinTest() {
                 </TableHeader>
                 <TableBody>
                   {pairs.map((pair, index) => (
-                    <TableRow key={pair.symbol}>
+                    <TableRow 
+                      key={pair.symbol}
+                      className="cursor-pointer hover:bg-gray-100"
+                      onClick={() => setSelectedPair(pair.symbol)}
+                    >
                       <TableCell>{pair.symbol}</TableCell>
                       <TableCell>{pair.price}</TableCell>
                       <TableCell>
