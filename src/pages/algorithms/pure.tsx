@@ -6,6 +6,7 @@ import { findArbitrageOpportunities } from "@/utils/exchanges/arbitrage";
 import type { ArbitrageOpportunity as ArbitrageOpportunityType } from "@/utils/types/exchange";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface ArbitrageSettings {
   symbols: string[];
@@ -30,39 +31,60 @@ export default function PureArbitrage() {
   const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState<ArbitrageSettings>(DEFAULT_SETTINGS);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error || !session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to access arbitrage monitoring",
+          variant: "destructive",
+        });
+        navigate("/login");
+      }
+    };
+
+    checkAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        navigate("/login");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, toast]);
 
   // Fetch user settings
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          toast({
-            title: "Authentication required",
-            description: "Please log in to access arbitrage settings",
-            variant: "destructive",
-          });
-          return;
-        }
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
 
-        // First try to get existing settings
         const { data, error } = await supabase
           .from("arbitrage_settings")
           .select("*")
-          .eq('user_id', user.id)
+          .eq('user_id', session.user.id)
           .maybeSingle();
 
         if (error) throw error;
 
         if (data) {
-          // Use existing settings if found
           setSettings(data);
         } else {
           // If no settings exist, create default settings for the user
           const { error: insertError } = await supabase
             .from("arbitrage_settings")
             .insert({
-              user_id: user.id,
+              user_id: session.user.id,
               ...DEFAULT_SETTINGS
             });
 
@@ -88,18 +110,16 @@ export default function PureArbitrage() {
     fetchSettings();
   }, [toast]);
 
-  // Monitor arbitrage opportunities based on settings
+  // Monitor arbitrage opportunities
   useEffect(() => {
     const fetchOpportunities = async () => {
       try {
         setIsLoading(true);
         
-        // Fetch opportunities for each symbol in settings
         const allOpportunities: ArbitrageOpportunityType[] = [];
         for (const symbol of settings.symbols) {
           const opportunities = await findArbitrageOpportunities(symbol);
           
-          // Filter opportunities based on settings
           const filteredOpportunities = opportunities.filter(opp => 
             opp.spread >= settings.min_spread_percentage &&
             opp.potential >= settings.min_profit_amount &&
@@ -112,7 +132,6 @@ export default function PureArbitrage() {
 
         setOpportunities(allOpportunities);
 
-        // Show notification if enabled and opportunities found
         if (settings.notifications_enabled && allOpportunities.length > 0) {
           toast({
             title: "New Arbitrage Opportunities",
