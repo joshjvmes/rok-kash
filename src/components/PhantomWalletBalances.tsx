@@ -1,16 +1,39 @@
 import { useEffect, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { getSolanaBalance } from '@/utils/solana';
-import { getTokenBalance, getTokenList, TokenInfo, TokenBalance } from '@/utils/solana/tokens';
+import { getTokenBalance, TokenInfo } from '@/utils/solana/tokens';
 import { Skeleton } from './ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Card } from './ui/card';
 
+// Define the tokens we want to display
+const DISPLAY_TOKENS = [
+  {
+    symbol: 'USDC',
+    address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    decimals: 6,
+    logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png'
+  },
+  {
+    symbol: 'USDT',
+    address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+    decimals: 6,
+    logoURI: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.png'
+  }
+];
+
+interface TokenBalance {
+  symbol: string;
+  balance: string;
+  decimals: number;
+  logoURI?: string;
+}
+
 export const PhantomWalletBalances = () => {
-  const { connected, publicKey, connecting } = useWallet();
+  const { connected, publicKey } = useWallet();
   const { toast } = useToast();
   const [solBalance, setSolBalance] = useState<number | null>(null);
-  const [tokenBalances, setTokenBalances] = useState<Array<TokenBalance & TokenInfo>>([]);
+  const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -20,42 +43,36 @@ export const PhantomWalletBalances = () => {
         return;
       }
 
-      console.log('Fetching balances for wallet:', publicKey.toString());
       setIsLoading(true);
-      
       try {
-        // Get SOL balance
+        // Fetch SOL balance
         console.log('Fetching SOL balance...');
         const balance = await getSolanaBalance(publicKey.toString());
-        console.info('SOL balance fetched successfully:', balance);
         setSolBalance(balance);
 
-        // Get token list and balances
-        console.log('Fetching token list...');
-        const tokens = await getTokenList();
-        console.info('Retrieved token list:', tokens.length, 'tokens');
-        
-        const balancePromises = tokens.map(async (token) => {
+        // Fetch token balances
+        const balancePromises = DISPLAY_TOKENS.map(async (token) => {
           try {
-            console.log(`Fetching balance for token ${token.symbol} (${token.address})...`);
-            const balance = await getTokenBalance(token.address, publicKey.toString());
-            console.info(`Balance for ${token.symbol}:`, balance);
+            console.log(`Fetching balance for ${token.symbol}...`);
+            const tokenBalance = await getTokenBalance(token.address, publicKey.toString());
             return {
-              ...token,
-              ...balance,
+              symbol: token.symbol,
+              balance: tokenBalance.balance,
+              decimals: token.decimals,
+              logoURI: token.logoURI
             };
           } catch (error) {
-            console.error(`Error fetching balance for token ${token.symbol}:`, error);
-            return null;
+            console.error(`Error fetching ${token.symbol} balance:`, error);
+            return {
+              symbol: token.symbol,
+              balance: '0',
+              decimals: token.decimals,
+              logoURI: token.logoURI
+            };
           }
         });
 
-        const balances = (await Promise.all(balancePromises))
-          .filter((balance): balance is TokenBalance & TokenInfo => 
-            balance !== null && Number(balance.balance) > 0
-          );
-
-        console.info('Final token balances:', balances);
+        const balances = await Promise.all(balancePromises);
         setTokenBalances(balances);
       } catch (error) {
         console.error('Error fetching wallet balances:', error);
@@ -70,17 +87,12 @@ export const PhantomWalletBalances = () => {
     };
 
     if (connected && publicKey) {
-      console.log('Wallet connected, initiating balance fetch...');
       fetchBalances();
     } else {
-      // Reset balances when wallet is disconnected
       setSolBalance(null);
       setTokenBalances([]);
-      if (!connecting) {
-        console.log('Wallet disconnected, balances reset');
-      }
     }
-  }, [connected, publicKey, toast, connecting]);
+  }, [connected, publicKey, toast]);
 
   if (!connected) {
     return null;
@@ -97,37 +109,35 @@ export const PhantomWalletBalances = () => {
         )}
       </Card>
 
-      {tokenBalances.length > 0 && (
-        <Card className="p-4 bg-white/50 backdrop-blur-sm">
-          <h3 className="text-lg font-semibold mb-2">Token Balances</h3>
-          <div className="space-y-2">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-6 w-full" />
-              </>
-            ) : (
-              tokenBalances.map((token) => (
-                <div key={token.address} className="flex items-center justify-between p-2 hover:bg-white/30 rounded-lg transition-colors">
-                  <div className="flex items-center gap-2">
-                    {token.logoURI && (
-                      <img
-                        src={token.logoURI}
-                        alt={token.symbol}
-                        className="w-6 h-6 rounded-full"
-                      />
-                    )}
-                    <span>{token.symbol}</span>
-                  </div>
-                  <span className="font-medium">
-                    {(Number(token.balance) / Math.pow(10, token.decimals)).toFixed(4)}
-                  </span>
+      <Card className="p-4 bg-white/50 backdrop-blur-sm">
+        <h3 className="text-lg font-semibold mb-2">Token Balances</h3>
+        <div className="space-y-2">
+          {isLoading ? (
+            <>
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-full" />
+            </>
+          ) : (
+            tokenBalances.map((token) => (
+              <div key={token.symbol} className="flex items-center justify-between p-2 hover:bg-white/30 rounded-lg transition-colors">
+                <div className="flex items-center gap-2">
+                  {token.logoURI && (
+                    <img
+                      src={token.logoURI}
+                      alt={token.symbol}
+                      className="w-6 h-6 rounded-full"
+                    />
+                  )}
+                  <span>{token.symbol}</span>
                 </div>
-              ))
-            )}
-          </div>
-        </Card>
-      )}
+                <span className="font-medium">
+                  {(Number(token.balance) / Math.pow(10, token.decimals)).toFixed(4)}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
     </div>
   );
 };
