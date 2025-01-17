@@ -29,11 +29,13 @@ export default function KucoinTest() {
         {selectedPair && (
           <>
             <MarketStructure exchange="kucoin" symbol={selectedPair} />
+            
+            <OrderBook exchange="kucoin" symbol={selectedPair} />
+            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <KucoinTradeWidget />
               <TradingHistory exchange="kucoin" symbol={selectedPair} />
             </div>
-            <OrderBook exchange="kucoin" symbol={selectedPair} />
           </>
         )}
       </div>
