@@ -29,18 +29,81 @@ export default function PureArbitrage() {
   const [opportunities, setOpportunities] = useState<ArbitrageOpportunityType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState<ArbitrageSettings>(DEFAULT_SETTINGS);
+  const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const { toast } = useToast();
 
-  // Fetch active trading pairs and monitor them
   useEffect(() => {
-    const monitorTradingPairs = async () => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
+    const monitorTradingPair = async (tradingPair: any) => {
+      try {
+        console.log(`Checking pair: ${tradingPair.symbol}`);
+        const pairOpportunities = await findArbitrageOpportunities(tradingPair.symbol);
+        
+        if (!isMounted) return;
+
+        const filteredOpportunities = pairOpportunities.filter(opp => 
+          opp.spread >= settings.min_spread_percentage &&
+          opp.potential >= settings.min_profit_amount &&
+          settings.exchanges.includes(opp.buyExchange) &&
+          settings.exchanges.includes(opp.sellExchange)
+        );
+
+        if (filteredOpportunities.length > 0) {
+          setOpportunities(prev => [...prev, ...filteredOpportunities]);
+
+          if (settings.notifications_enabled) {
+            toast({
+              title: "New Arbitrage Opportunities",
+              description: `Found ${filteredOpportunities.length} opportunities for ${tradingPair.symbol}`,
+            });
+          }
+        }
+      } catch (error: any) {
+        console.error(`Error monitoring ${tradingPair.symbol}:`, error);
+        toast({
+          title: "Error",
+          description: error.message || `Failed to monitor ${tradingPair.symbol}`,
+          variant: "destructive",
+        });
+      }
+    };
+
+    const fetchStoredOpportunities = async () => {
+      try {
+        const { data: storedOpportunities, error: fetchError } = await supabase
+          .from('arbitrage_opportunities')
+          .select('*')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
+
+        if (fetchError) throw fetchError;
+
+        const formattedOpportunities = storedOpportunities?.map(opp => ({
+          buyExchange: opp.buy_exchange,
+          sellExchange: opp.sell_exchange,
+          symbol: opp.symbol,
+          spread: Number(opp.spread),
+          potential: Number(opp.potential_profit)
+        })) || [];
+
+        if (isMounted) {
+          setOpportunities(formattedOpportunities);
+        }
+      } catch (error) {
+        console.error("Error fetching stored opportunities:", error);
+      }
+    };
+
+    const startMonitoring = async () => {
       try {
         setIsLoading(true);
-        
-        // Fetch active trading pairs from the database
+        await fetchStoredOpportunities();
+
         const { data: tradingPairs, error } = await supabase
           .from('matching_trading_pairs')
-          .select('symbol')
+          .select('*')
           .eq('is_active', true);
 
         if (error) throw error;
@@ -51,60 +114,27 @@ export default function PureArbitrage() {
           return;
         }
 
-        // Check for arbitrage opportunities for each pair
-        const allOpportunities: ArbitrageOpportunityType[] = [];
-        for (const pair of tradingPairs) {
-          const pairOpportunities = await findArbitrageOpportunities(pair.symbol);
-          allOpportunities.push(...pairOpportunities.filter(opp => 
-            opp.spread >= settings.min_spread_percentage &&
-            opp.potential >= settings.min_profit_amount &&
-            settings.exchanges.includes(opp.buyExchange) &&
-            settings.exchanges.includes(opp.sellExchange)
-          ));
-        }
+        const checkNextPair = () => {
+          if (!isMounted) return;
 
-        // Fetch stored opportunities from the database
-        const { data: storedOpportunities, error: fetchError } = await supabase
-          .from('arbitrage_opportunities')
-          .select('*')
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false });
+          const currentPair = tradingPairs[currentPairIndex];
+          if (currentPair) {
+            monitorTradingPair(currentPair);
+            setCurrentPairIndex(prevIndex => 
+              (prevIndex + 1) % tradingPairs.length
+            );
+          }
 
-        if (fetchError) throw fetchError;
+          // Schedule next pair check after 10 seconds
+          timeoutId = setTimeout(checkNextPair, 10000);
+        };
 
-        // Convert stored opportunities to the correct format
-        const formattedOpportunities = storedOpportunities?.map(opp => ({
-          buyExchange: opp.buy_exchange,
-          sellExchange: opp.sell_exchange,
-          symbol: opp.symbol,
-          spread: Number(opp.spread), // Convert to number explicitly
-          potential: Number(opp.potential_profit) // Convert to number explicitly
-        })) || [];
-
-        // Combine new and stored opportunities, removing duplicates
-        const uniqueOpportunities = [...allOpportunities, ...formattedOpportunities]
-          .filter((opp, index, self) => 
-            index === self.findIndex((o) => 
-              o.buyExchange === opp.buyExchange && 
-              o.sellExchange === opp.sellExchange && 
-              o.symbol === opp.symbol
-            )
-          );
-
-        setOpportunities(uniqueOpportunities);
-
-        // Show notification if enabled and opportunities found
-        if (settings.notifications_enabled && uniqueOpportunities.length > 0) {
-          toast({
-            title: "New Arbitrage Opportunities",
-            description: `Found ${uniqueOpportunities.length} opportunities matching your criteria.`,
-          });
-        }
+        checkNextPair();
       } catch (error: any) {
-        console.error("Error monitoring trading pairs:", error);
+        console.error("Error starting monitoring:", error);
         toast({
           title: "Error",
-          description: error.message || "Failed to monitor trading pairs",
+          description: error.message || "Failed to start monitoring",
           variant: "destructive",
         });
       } finally {
@@ -112,14 +142,15 @@ export default function PureArbitrage() {
       }
     };
 
-    // Initial monitoring
-    monitorTradingPairs();
+    startMonitoring();
 
-    // Set up interval based on settings
-    const interval = setInterval(monitorTradingPairs, settings.refresh_interval * 1000);
-
-    return () => clearInterval(interval);
-  }, [settings, toast]);
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [settings, toast, currentPairIndex]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
