@@ -21,6 +21,7 @@ interface ArbitrageSettings {
   exchanges: string[];
   refresh_interval: number;
   notifications_enabled: boolean;
+  user_id?: string;
 }
 
 export function ArbitrageSettings() {
@@ -41,9 +42,13 @@ export function ArbitrageSettings() {
 
   const fetchSettings = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
         .from("arbitrage_settings")
         .select("*")
+        .eq('user_id', user.id)
         .single();
 
       if (error) throw error;
@@ -55,9 +60,24 @@ export function ArbitrageSettings() {
 
   const saveSettings = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to save settings.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from("arbitrage_settings")
-        .upsert(settings, { onConflict: "user_id" });
+        .upsert({
+          ...settings,
+          user_id: user.id
+        }, { 
+          onConflict: "user_id"
+        });
 
       if (error) throw error;
 
