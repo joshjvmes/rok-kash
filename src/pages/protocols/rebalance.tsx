@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { fetchBalance } from "@/utils/exchanges/ccxt";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { ExchangeSelector } from "@/components/trading/ExchangeSelector";
 import { TradeAmount } from "@/components/trading/TradeAmount";
@@ -37,13 +37,13 @@ export default function RebalancePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch balances for both exchanges
-  const { data: fromBalance, isLoading: isLoadingFromBalance } = useQuery<BalanceData>({
+  const { data: fromBalance, isLoading: isLoadingFromBalance } = useQuery({
     queryKey: ['balance', fromExchange],
     queryFn: () => fetchBalance(fromExchange),
     enabled: !!fromExchange,
   });
 
-  const { data: toBalance, isLoading: isLoadingToBalance } = useQuery<BalanceData>({
+  const { data: toBalance, isLoading: isLoadingToBalance } = useQuery({
     queryKey: ['balance', toExchange],
     queryFn: () => fetchBalance(toExchange),
     enabled: !!toExchange,
@@ -62,13 +62,6 @@ export default function RebalancePage() {
       return data as RebalanceTransaction[];
     },
   });
-
-  // Get available tokens from the source exchange
-  const availableTokens = fromBalance?.total
-    ? Object.entries(fromBalance.total)
-        .filter(([_, amount]) => amount > 0)
-        .map(([token]) => token)
-    : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
