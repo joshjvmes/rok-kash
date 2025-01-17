@@ -9,6 +9,11 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import CommandTerminal from "@/components/CommandTerminal";
 import { PhantomWallet } from "@/components/PhantomWallet";
+import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+import { clusterApiUrl } from '@solana/web3.js';
+import { useMemo } from 'react';
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import BybitTest from "./pages/exchanges/BybitTest";
@@ -51,62 +56,75 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <SidebarProvider>
-                  <div className="min-h-screen flex w-full">
-                    <AppSidebar />
-                    <main className="flex-1 overflow-y-auto">
-                      <div className="p-4 space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
-                            KASH $ROK
-                          </h1>
-                          <PhantomWallet />
-                        </div>
-                        <CommandTerminal />
-                        <Routes>
-                          <Route path="/" element={<Index />} />
-                          <Route path="/exchanges/bybit" element={<BybitTest />} />
-                          <Route path="/exchanges/coinbase" element={<CoinbaseTest />} />
-                          <Route path="/exchanges/kraken" element={<KrakenTest />} />
-                          <Route path="/exchanges/binance" element={<BinanceTest />} />
-                          <Route path="/exchanges/kucoin" element={<KucoinTest />} />
-                          <Route path="/exchanges/okx" element={<OkxTest />} />
-                          <Route path="/protocols/rebalance" element={<Rebalance />} />
-                          <Route path="/protocols/close-positions" element={<ClosePositions />} />
-                          <Route path="/protocols/withdraw" element={<Withdraw />} />
-                          <Route path="/algorithms/pure" element={<Pure />} />
-                          <Route path="/algorithms/triangle" element={<Triangle />} />
-                          <Route path="/algorithms/pools" element={<Pools />} />
-                          <Route path="/algorithms/statistical" element={<Statistical />} />
-                          <Route path="/algorithms/counter" element={<Counter />} />
-                          <Route path="/algorithms/semi-automatic" element={<SemiAutomatic />} />
-                          <Route path="/balances" element={<Balances />} />
-                          <Route path="/profit-loss" element={<ProfitLoss />} />
-                          <Route path="/trade-history" element={<TradeHistory />} />
-                        </Routes>
-                      </div>
-                    </main>
-                  </div>
-                </SidebarProvider>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Set up Solana wallet configuration
+  const network = 'devnet';
+  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route
+                    path="/*"
+                    element={
+                      <ProtectedRoute>
+                        <SidebarProvider>
+                          <div className="min-h-screen flex w-full">
+                            <AppSidebar />
+                            <main className="flex-1 overflow-y-auto">
+                              <div className="p-4 space-y-4">
+                                <div className="flex justify-between items-center">
+                                  <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rokcat-purple to-rokcat-purple-light bg-clip-text text-transparent">
+                                    KASH $ROK
+                                  </h1>
+                                  <PhantomWallet />
+                                </div>
+                                <CommandTerminal />
+                                <Routes>
+                                  <Route path="/" element={<Index />} />
+                                  <Route path="/exchanges/bybit" element={<BybitTest />} />
+                                  <Route path="/exchanges/coinbase" element={<CoinbaseTest />} />
+                                  <Route path="/exchanges/kraken" element={<KrakenTest />} />
+                                  <Route path="/exchanges/binance" element={<BinanceTest />} />
+                                  <Route path="/exchanges/kucoin" element={<KucoinTest />} />
+                                  <Route path="/exchanges/okx" element={<OkxTest />} />
+                                  <Route path="/protocols/rebalance" element={<Rebalance />} />
+                                  <Route path="/protocols/close-positions" element={<ClosePositions />} />
+                                  <Route path="/protocols/withdraw" element={<Withdraw />} />
+                                  <Route path="/algorithms/pure" element={<Pure />} />
+                                  <Route path="/algorithms/triangle" element={<Triangle />} />
+                                  <Route path="/algorithms/pools" element={<Pools />} />
+                                  <Route path="/algorithms/statistical" element={<Statistical />} />
+                                  <Route path="/algorithms/counter" element={<Counter />} />
+                                  <Route path="/algorithms/semi-automatic" element={<SemiAutomatic />} />
+                                  <Route path="/balances" element={<Balances />} />
+                                  <Route path="/profit-loss" element={<ProfitLoss />} />
+                                  <Route path="/trade-history" element={<TradeHistory />} />
+                                </Routes>
+                              </div>
+                            </main>
+                          </div>
+                        </SidebarProvider>
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
