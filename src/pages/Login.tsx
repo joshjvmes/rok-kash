@@ -83,6 +83,8 @@ export default function Login() {
                 fontSize: '13px',
                 backgroundColor: 'rgba(255, 255, 255, 0.9)',
                 color: '#4A6670',
+                WebkitTextFillColor: '#4A6670',
+                transition: 'background-color 0.2s ease, border-color 0.2s ease',
               },
               label: {
                 color: '#4A6670',
@@ -97,11 +99,23 @@ export default function Login() {
                 letterSpacing: '0.05em',
               },
             },
+            className: {
+              input: 'autofill-fix',
+            },
           }}
           providers={[]}
           view="sign_in"
         />
       </Card>
+      <style>{`
+        .autofill-fix:-webkit-autofill,
+        .autofill-fix:-webkit-autofill:hover,
+        .autofill-fix:-webkit-autofill:focus {
+          -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.9) inset;
+          -webkit-text-fill-color: #4A6670;
+          transition: background-color 5000s ease-in-out 0s;
+        }
+      `}</style>
     </div>
   );
 }
