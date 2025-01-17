@@ -1,10 +1,5 @@
-/**
- * IMPORTANT NOTICE:
- * This file contains Solana Web3 integration utilities.
- * Make sure to handle errors appropriately in production.
- */
-
-import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
+import { Connection, PublicKey, clusterApiUrl, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 // Initialize connection to Solana devnet
 export const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
@@ -16,12 +11,36 @@ export const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
  */
 export async function getSolanaBalance(walletAddress: string): Promise<number> {
   try {
+    console.log('Fetching SOL balance for wallet:', walletAddress);
     const publicKey = new PublicKey(walletAddress);
     const balance = await connection.getBalance(publicKey);
-    return balance / 1e9; // Convert lamports to SOL
+    const solBalance = balance / LAMPORTS_PER_SOL;
+    console.log('SOL balance:', solBalance);
+    return solBalance;
   } catch (error) {
     console.error('Error getting Solana balance:', error);
     throw new Error('Failed to get Solana balance');
+  }
+}
+
+/**
+ * Get all token accounts for a wallet
+ * @param walletAddress Wallet address to check
+ * @returns Array of token account info
+ */
+export async function getTokenAccounts(walletAddress: string) {
+  try {
+    console.log('Fetching token accounts for wallet:', walletAddress);
+    const publicKey = new PublicKey(walletAddress);
+    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, {
+      programId: TOKEN_PROGRAM_ID,
+    });
+
+    console.log('Found token accounts:', tokenAccounts.value);
+    return tokenAccounts.value;
+  } catch (error) {
+    console.error('Error fetching token accounts:', error);
+    throw new Error('Failed to fetch token accounts');
   }
 }
 
