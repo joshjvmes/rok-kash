@@ -210,6 +210,51 @@ export type Database = {
         }
         Relationships: []
       }
+      matching_trading_pairs: {
+        Row: {
+          average_execution_time_ms: number | null
+          average_price_difference: number | null
+          binance_liquidity: number | null
+          binance_symbol: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          kucoin_liquidity: number | null
+          kucoin_symbol: string
+          last_price_check: string | null
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          average_execution_time_ms?: number | null
+          average_price_difference?: number | null
+          binance_liquidity?: number | null
+          binance_symbol: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          kucoin_liquidity?: number | null
+          kucoin_symbol: string
+          last_price_check?: string | null
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          average_execution_time_ms?: number | null
+          average_price_difference?: number | null
+          binance_liquidity?: number | null
+          binance_symbol?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          kucoin_liquidity?: number | null
+          kucoin_symbol?: string
+          last_price_check?: string | null
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       package_dependencies: {
         Row: {
           conflicts_with: Json | null

@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS: ArbitrageSettings = {
   symbols: ["BTC/USDT"],
   min_spread_percentage: 0.1,
   min_profit_amount: 10.0,
-  exchanges: ["Binance", "Kraken", "Bybit", "Kucoin", "OKX"],
+  exchanges: ["Binance", "Kucoin"],
   refresh_interval: 30,
   notifications_enabled: true,
 };
@@ -31,83 +31,36 @@ export default function PureArbitrage() {
   const [settings, setSettings] = useState<ArbitrageSettings>(DEFAULT_SETTINGS);
   const { toast } = useToast();
 
-  // Fetch user settings
+  // Fetch active trading pairs and monitor them
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          toast({
-            title: "Authentication required",
-            description: "Please log in to access arbitrage settings",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // First try to get existing settings
-        const { data, error } = await supabase
-          .from("arbitrage_settings")
-          .select("*")
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (error) throw error;
-
-        if (data) {
-          // Use existing settings if found
-          setSettings(data);
-        } else {
-          // If no settings exist, create default settings for the user
-          const { error: insertError } = await supabase
-            .from("arbitrage_settings")
-            .insert({
-              user_id: user.id,
-              ...DEFAULT_SETTINGS
-            });
-
-          if (insertError) {
-            console.error("Error creating default settings:", insertError);
-            toast({
-              title: "Error",
-              description: "Failed to create default settings",
-              variant: "destructive",
-            });
-          }
-        }
-      } catch (error: any) {
-        console.error("Error fetching arbitrage settings:", error);
-        toast({
-          title: "Error",
-          description: error.message || "Failed to fetch settings",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchSettings();
-  }, [toast]);
-
-  // Monitor arbitrage opportunities based on settings
-  useEffect(() => {
-    const fetchOpportunities = async () => {
+    const monitorTradingPairs = async () => {
       try {
         setIsLoading(true);
         
-        // Fetch opportunities for each symbol in settings
+        // Fetch active trading pairs from the database
+        const { data: tradingPairs, error } = await supabase
+          .from('matching_trading_pairs')
+          .select('symbol')
+          .eq('is_active', true);
+
+        if (error) throw error;
+
+        if (!tradingPairs || tradingPairs.length === 0) {
+          console.log('No active trading pairs found');
+          setOpportunities([]);
+          return;
+        }
+
+        // Check for arbitrage opportunities for each pair
         const allOpportunities: ArbitrageOpportunityType[] = [];
-        for (const symbol of settings.symbols) {
-          const opportunities = await findArbitrageOpportunities(symbol);
-          
-          // Filter opportunities based on settings
-          const filteredOpportunities = opportunities.filter(opp => 
+        for (const pair of tradingPairs) {
+          const pairOpportunities = await findArbitrageOpportunities(pair.symbol);
+          allOpportunities.push(...pairOpportunities.filter(opp => 
             opp.spread >= settings.min_spread_percentage &&
             opp.potential >= settings.min_profit_amount &&
             settings.exchanges.includes(opp.buyExchange) &&
             settings.exchanges.includes(opp.sellExchange)
-          );
-
-          allOpportunities.push(...filteredOpportunities);
+          ));
         }
 
         setOpportunities(allOpportunities);
@@ -120,10 +73,10 @@ export default function PureArbitrage() {
           });
         }
       } catch (error: any) {
-        console.error("Error fetching arbitrage opportunities:", error);
+        console.error("Error monitoring trading pairs:", error);
         toast({
           title: "Error",
-          description: error.message || "Failed to fetch opportunities",
+          description: error.message || "Failed to monitor trading pairs",
           variant: "destructive",
         });
       } finally {
@@ -131,11 +84,11 @@ export default function PureArbitrage() {
       }
     };
 
-    // Initial fetch
-    fetchOpportunities();
+    // Initial monitoring
+    monitorTradingPairs();
 
     // Set up interval based on settings
-    const interval = setInterval(fetchOpportunities, settings.refresh_interval * 1000);
+    const interval = setInterval(monitorTradingPairs, settings.refresh_interval * 1000);
 
     return () => clearInterval(interval);
   }, [settings, toast]);
