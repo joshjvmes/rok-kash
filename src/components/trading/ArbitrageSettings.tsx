@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, RefreshCw, Plus, Minus } from "lucide-react";
+import { Settings, RefreshCw, Plus, Minus, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,14 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
+
+interface TradingPair {
+  id: string;
+  symbol: string;
+  is_active: boolean;
+}
 
 interface ArbitrageSettings {
   symbols: string[];
@@ -33,12 +40,64 @@ export function ArbitrageSettings() {
     refresh_interval: 30,
     notifications_enabled: true,
   });
+  const [tradingPairs, setTradingPairs] = useState<TradingPair[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSettings();
+    fetchTradingPairs();
   }, []);
+
+  const fetchTradingPairs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("matching_trading_pairs")
+        .select("*")
+        .order("symbol");
+
+      if (error) throw error;
+      setTradingPairs(data || []);
+    } catch (error) {
+      console.error("Error fetching trading pairs:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch trading pairs",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleTradingPair = async (pairId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("matching_trading_pairs")
+        .update({ is_active: !currentStatus })
+        .eq("id", pairId);
+
+      if (error) throw error;
+
+      setTradingPairs(pairs =>
+        pairs.map(pair =>
+          pair.id === pairId
+            ? { ...pair, is_active: !currentStatus }
+            : pair
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: `Trading pair ${currentStatus ? "disabled" : "enabled"}`,
+      });
+    } catch (error) {
+      console.error("Error toggling trading pair:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update trading pair status",
+        variant: "destructive",
+      });
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -96,27 +155,6 @@ export function ArbitrageSettings() {
     }
   };
 
-  const addSymbol = () => {
-    setSettings(prev => ({
-      ...prev,
-      symbols: [...prev.symbols, ""]
-    }));
-  };
-
-  const removeSymbol = (index: number) => {
-    setSettings(prev => ({
-      ...prev,
-      symbols: prev.symbols.filter((_, i) => i !== index)
-    }));
-  };
-
-  const updateSymbol = (index: number, value: string) => {
-    setSettings(prev => ({
-      ...prev,
-      symbols: prev.symbols.map((s, i) => i === index ? value : s)
-    }));
-  };
-
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
@@ -130,32 +168,29 @@ export function ArbitrageSettings() {
         </SheetHeader>
         <div className="py-4 space-y-6">
           <div className="space-y-4">
-            <Label>Trading Pairs</Label>
-            {settings.symbols.map((symbol, index) => (
-              <div key={index} className="flex gap-2">
-                <Input
-                  value={symbol}
-                  onChange={(e) => updateSymbol(index, e.target.value)}
-                  placeholder="e.g. BTC/USDT"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => removeSymbol(index)}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={addSymbol}
-              className="w-full"
-            >
-              <Plus className="h-4 w-4 mr-2" /> Add Trading Pair
-            </Button>
+            <Label>Active Trading Pairs</Label>
+            <div className="space-y-2">
+              {tradingPairs.map((pair) => (
+                <div key={pair.id} className="flex items-center justify-between p-2 bg-background rounded-lg border">
+                  <span>{pair.symbol}</span>
+                  <Button
+                    variant={pair.is_active ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleTradingPair(pair.id, pair.is_active)}
+                  >
+                    {pair.is_active ? (
+                      <Check className="h-4 w-4 mr-1" />
+                    ) : (
+                      <X className="h-4 w-4 mr-1" />
+                    )}
+                    {pair.is_active ? "Active" : "Inactive"}
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
+
+          <Separator />
 
           <div className="space-y-4">
             <div className="grid gap-2">

@@ -11,7 +11,7 @@ interface ArbitrageMonitorProps {
 }
 
 export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMonitorProps) {
-  const [currentPairIndex, setCurrentPairIndex] = useState(0);
+  const [isMonitoring, setIsMonitoring] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -19,6 +19,8 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
     let timeoutId: NodeJS.Timeout;
 
     const monitorTradingPair = async (tradingPair: any) => {
+      if (!isMounted || !isMonitoring) return;
+
       try {
         console.log(`Checking pair: ${tradingPair.symbol}`);
         const pairOpportunities = await findArbitrageOpportunities(tradingPair.symbol);
@@ -42,6 +44,14 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
             });
           }
         }
+
+        // Wait for 30 seconds before checking the next pair
+        timeoutId = setTimeout(() => {
+          if (isMounted && isMonitoring) {
+            monitorTradingPair(tradingPair);
+          }
+        }, 30000);
+
       } catch (error: any) {
         console.error(`Error monitoring ${tradingPair.symbol}:`, error);
         toast({
@@ -49,6 +59,13 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
           description: error.message || `Failed to monitor ${tradingPair.symbol}`,
           variant: "destructive",
         });
+
+        // Even on error, wait 30 seconds before retrying
+        timeoutId = setTimeout(() => {
+          if (isMounted && isMonitoring) {
+            monitorTradingPair(tradingPair);
+          }
+        }, 30000);
       }
     };
 
@@ -66,22 +83,11 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
           return;
         }
 
-        const checkNextPair = () => {
-          if (!isMounted) return;
+        setIsMonitoring(true);
+        tradingPairs.forEach(pair => {
+          monitorTradingPair(pair);
+        });
 
-          const currentPair = tradingPairs[currentPairIndex];
-          if (currentPair) {
-            monitorTradingPair(currentPair);
-            setCurrentPairIndex(prevIndex => 
-              (prevIndex + 1) % tradingPairs.length
-            );
-          }
-
-          // Increased the timeout to 30 seconds (30000 milliseconds)
-          timeoutId = setTimeout(checkNextPair, 30000);
-        };
-
-        checkNextPair();
       } catch (error: any) {
         console.error("Error starting monitoring:", error);
         toast({
@@ -96,11 +102,12 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
 
     return () => {
       isMounted = false;
+      setIsMonitoring(false);
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
     };
-  }, [settings, toast, currentPairIndex, onOpportunitiesFound]);
+  }, [settings, toast, onOpportunitiesFound]);
 
   return null;
 }
