@@ -4,6 +4,8 @@ import { TradingHistory } from "@/components/TradingHistory";
 import { TradingPairsTable } from "@/components/kucoin/TradingPairsTable";
 import { useKucoinTradingPairs } from "@/hooks/useKucoinTradingPairs";
 import { MarketStructure } from "@/components/MarketStructure";
+import { QuickTrade } from "@/components/QuickTrade";
+import { OrderBook } from "@/components/OrderBook";
 
 export default function KucoinTest() {
   const { pairs, isLoading, selectedPair, setSelectedPair } = useKucoinTradingPairs();
@@ -30,6 +32,16 @@ export default function KucoinTest() {
             onPairSelect={setSelectedPair}
           />
         </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <QuickTrade />
+          {selectedPair && (
+            <OrderBook 
+              exchange="kucoin" 
+              symbol={selectedPair}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
