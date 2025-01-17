@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRightLeft, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TokenSelector, AVAILABLE_TOKENS } from './TokenSelector';
 
 const EXCHANGES = ['binance', 'kraken', 'kucoin', 'okx'];
 
@@ -41,7 +42,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
 
   useEffect(() => {
     const fetchAddress = async () => {
-      if (!selectedExchange || !fromType || !toType) {
+      if (!selectedExchange || !fromType || !toType || !tokenMint) {
         setDepositAddress('');
         setError('');
         return;
@@ -81,7 +82,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
     };
 
     fetchAddress();
-  }, [selectedExchange, fromType, toType, publicKey, tokenMint]);
+  }, [selectedExchange, fromType, toType, publicKey, tokenMint, toast]);
 
   const handleSwapDirection = () => {
     setFromType(fromType === 'wallet' ? 'exchange' : 'wallet');
@@ -185,11 +186,10 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         </Select>
       )}
 
-      <Input
-        type="text"
-        placeholder="Token mint address"
+      <TokenSelector
         value={tokenMint}
-        onChange={(e) => setTokenMint(e.target.value)}
+        onValueChange={setTokenMint}
+        isLoading={isLoading || isFetchingAddress}
       />
 
       <div className="relative">
