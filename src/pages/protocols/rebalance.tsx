@@ -2,19 +2,13 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { fetchBalance } from "@/utils/exchanges/ccxt";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { ExchangeSelector } from "@/components/trading/ExchangeSelector";
 import { TradeAmount } from "@/components/trading/TradeAmount";
+import { SymbolSelector } from "@/components/trading/SymbolSelector";
 
 interface BalanceData {
   total: {
@@ -149,7 +143,7 @@ export default function RebalancePage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-2xl font-bold text-serenity-mountain mb-6">Rebalance Assets</h1>
+      <h1 className="text-2xl font-bold mb-6">Rebalance Assets</h1>
       
       <div className="grid md:grid-cols-2 gap-6">
         {/* Rebalance Form */}
@@ -165,21 +159,10 @@ export default function RebalancePage() {
               onExchangeChange={setToExchange}
             />
 
-            <div className="space-y-2">
-              <label className="text-sm text-gray-400">Token</label>
-              <Select value={selectedToken} onValueChange={setSelectedToken}>
-                <SelectTrigger className="bg-trading-gray-light border-trading-gray-light">
-                  <SelectValue placeholder="Select token" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTokens.map((token) => (
-                    <SelectItem key={token} value={token}>
-                      {token}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SymbolSelector
+              selectedSymbol={selectedToken}
+              onSymbolChange={setSelectedToken}
+            />
 
             <TradeAmount
               amount={amount}
@@ -206,19 +189,19 @@ export default function RebalancePage() {
 
         {/* Transaction History */}
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-serenity-mountain mb-4">Transaction History</h2>
+          <h2 className="text-lg font-semibold mb-4">Transaction History</h2>
           <div className="space-y-4">
             {transactions?.map((tx) => (
               <div
                 key={tx.id}
-                className="p-4 border rounded-lg border-serenity-sky-light"
+                className="p-4 border rounded-lg"
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm font-medium text-serenity-mountain">
+                    <p className="text-sm font-medium">
                       {tx.from_exchange} → {tx.to_exchange}
                     </p>
-                    <p className="text-sm text-serenity-mountain">
+                    <p className="text-sm">
                       {tx.amount} {tx.token_symbol}
                     </p>
                   </div>
@@ -237,13 +220,13 @@ export default function RebalancePage() {
                 {tx.error_message && (
                   <p className="text-xs text-red-500 mt-2">{tx.error_message}</p>
                 )}
-                <p className="text-xs text-serenity-mountain mt-2">
+                <p className="text-xs text-gray-500 mt-2">
                   {new Date(tx.created_at).toLocaleString()}
                 </p>
               </div>
             ))}
             {!transactions?.length && (
-              <p className="text-sm text-serenity-mountain text-center">
+              <p className="text-sm text-gray-500 text-center">
                 No transactions yet
               </p>
             )}
