@@ -3,8 +3,8 @@ import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -85,16 +85,18 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 flex items-center gap-2 justify-end">
-        <ThemeSwitcher />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleLogout}
-          className="hover:bg-rokcat-purple/10"
-        >
-          <LogOut className="h-5 w-5" />
-        </Button>
+      <SidebarFooter className="p-4 flex flex-row items-center gap-2 justify-end">
+        <div className="flex items-center space-x-2">
+          <ThemeSwitcher />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            className="hover:bg-rokcat-purple/10"
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
