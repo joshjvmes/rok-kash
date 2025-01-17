@@ -1,33 +1,57 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { fetchTrades } from "@/utils/exchanges/ccxt";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 interface TradingHistoryProps {
   exchange: string;
   symbol: string;
 }
 
+interface Trade {
+  id: string;
+  exchange: string;
+  symbol: string;
+  side: string;
+  price: number;
+  amount: number;
+  timestamp: string;
+}
+
 export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
-  // Query for live trades
   const { data: trades = [], isLoading } = useQuery({
-    queryKey: ['trades', exchange, symbol],
+    queryKey: ['user-trades', exchange, symbol],
     queryFn: async () => {
-      const fetchedTrades = await fetchTrades(exchange, symbol);
-      return Array.isArray(fetchedTrades) ? fetchedTrades : [];
+      const { data, error } = await supabase
+        .from('user_trades')
+        .select('*')
+        .eq('exchange', exchange)
+        .eq('symbol', symbol)
+        .order('timestamp', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching trades:', error);
+        throw error;
+      }
+
+      return data as Trade[];
     },
-    refetchInterval: 10000, // Fetch every 10 seconds
   });
 
   if (isLoading) {
     return (
       <Card className="p-4 bg-serenity-sky-dark/10 border-serenity-sky-light/30">
-        <p className="text-sm text-serenity-mountain">Loading trading history...</p>
+        <div className="flex items-center justify-center">
+          <Loader2 className="h-4 w-4 animate-spin text-serenity-sky-dark" />
+          <p className="text-sm text-serenity-mountain ml-2">Loading trading history...</p>
+        </div>
       </Card>
     );
   }
 
-  const formatDateTime = (timestamp: number) => {
+  const formatDateTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return {
       date: date.toLocaleDateString(),
@@ -37,14 +61,14 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
 
   return (
     <Card className="p-4 bg-serenity-sky-dark/10 border-serenity-sky-light/30 backdrop-blur-sm">
-      <h3 className="text-lg font-semibold mb-4 text-serenity-mountain">{symbol} Recent Trades</h3>
+      <h3 className="text-lg font-semibold mb-4 text-serenity-mountain">Your {symbol} Trade History</h3>
       <ScrollArea className="h-[300px] pr-4">
         <div className="space-y-2">
-          {trades.map((trade: any) => {
+          {trades.map((trade) => {
             const { date, time } = formatDateTime(trade.timestamp);
             return (
               <div
-                key={trade.id || `${trade.timestamp}-${trade.price}-${trade.amount}`}
+                key={trade.id}
                 className="flex justify-between text-sm border-b border-serenity-sky-light/20 pb-2 hover:bg-serenity-sky-light/10 rounded-sm px-2 py-1 transition-colors"
               >
                 <span className={trade.side === 'buy' ? 'text-serenity-grass-light font-medium' : 'text-trading-red font-medium'}>
@@ -60,7 +84,7 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
             );
           })}
           {trades.length === 0 && (
-            <p className="text-sm text-serenity-mountain/70 text-center py-4">No trades available</p>
+            <p className="text-sm text-serenity-mountain/70 text-center py-4">No trade history available</p>
           )}
         </div>
       </ScrollArea>
