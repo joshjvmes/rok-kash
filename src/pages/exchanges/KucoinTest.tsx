@@ -17,14 +17,20 @@ export default function KucoinTest() {
       <div className="space-y-6">
         <KucoinAccountInfo />
         
-        <Card className="p-4">
-          <h2 className="text-xl font-semibold mb-4">Available Trading Pairs</h2>
-          <TradingPairsTable 
-            pairs={pairs}
-            isLoading={isLoading}
-            onPairSelect={setSelectedPair}
-          />
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="p-4">
+            <h2 className="text-xl font-semibold mb-4">Available Trading Pairs</h2>
+            <TradingPairsTable 
+              pairs={pairs}
+              isLoading={isLoading}
+              onPairSelect={setSelectedPair}
+            />
+          </Card>
+
+          {selectedPair && (
+            <TradingHistory exchange="kucoin" symbol={selectedPair} />
+          )}
+        </div>
 
         {selectedPair && (
           <>
@@ -34,7 +40,9 @@ export default function KucoinTest() {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <KucoinTradeWidget />
-              <TradingHistory exchange="kucoin" symbol={selectedPair} />
+              <div className="hidden lg:block">
+                {/* Placeholder div to maintain grid layout */}
+              </div>
             </div>
           </>
         )}
