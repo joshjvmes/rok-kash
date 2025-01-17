@@ -17,15 +17,15 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
 
   if (isLoading) {
     return (
-      <Card className="p-4 bg-rokcat-purple-darker border-rokcat-purple/20">
-        <p className="text-sm text-rokcat-purple-light">Loading trading history...</p>
+      <Card className="p-4 bg-serenity-sky-dark/10 border-serenity-sky-light/30">
+        <p className="text-sm text-serenity-mountain">Loading trading history...</p>
       </Card>
     );
   }
 
   if (error) {
     return (
-      <Card className="p-4 bg-rokcat-purple-darker border-rokcat-purple/20">
+      <Card className="p-4 bg-serenity-sky-dark/10 border-serenity-sky-light/30">
         <p className="text-sm text-trading-red">Error loading trades</p>
       </Card>
     );
@@ -34,27 +34,27 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
   const validTrades = Array.isArray(trades) ? trades : [];
 
   return (
-    <Card className="p-4 bg-rokcat-purple-darker border-rokcat-purple/20">
-      <h3 className="text-lg font-semibold mb-4 text-rokcat-purple-light">{symbol} Recent Trades</h3>
+    <Card className="p-4 bg-serenity-sky-dark/10 border-serenity-sky-light/30 backdrop-blur-sm">
+      <h3 className="text-lg font-semibold mb-4 text-serenity-mountain">{symbol} Recent Trades</h3>
       <ScrollArea className="h-[300px] pr-4">
         <div className="space-y-2">
           {validTrades.slice(0, 20).map((trade: any) => (
             <div
               key={trade.id || `${trade.timestamp}-${trade.price}`}
-              className="flex justify-between text-sm border-b border-rokcat-purple/20 pb-2 hover:bg-rokcat-purple-darker/50 rounded-sm px-2 py-1 transition-colors"
+              className="flex justify-between text-sm border-b border-serenity-sky-light/20 pb-2 hover:bg-serenity-sky-light/10 rounded-sm px-2 py-1 transition-colors"
             >
-              <span className={trade.side === 'buy' ? 'text-trading-green font-medium' : 'text-trading-red font-medium'}>
+              <span className={trade.side === 'buy' ? 'text-serenity-grass-light font-medium' : 'text-trading-red font-medium'}>
                 {trade.side.toUpperCase()}
               </span>
-              <span className="text-rokcat-purple-light">${Number(trade.price).toFixed(2)}</span>
-              <span className="text-rokcat-purple-light">{Number(trade.amount).toFixed(4)}</span>
-              <span className="text-rokcat-gray">
+              <span className="text-serenity-mountain">${Number(trade.price).toFixed(2)}</span>
+              <span className="text-serenity-mountain">{Number(trade.amount).toFixed(4)}</span>
+              <span className="text-serenity-mountain/70">
                 {new Date(trade.timestamp).toLocaleTimeString()}
               </span>
             </div>
           ))}
           {validTrades.length === 0 && (
-            <p className="text-sm text-rokcat-gray text-center py-4">No trades available</p>
+            <p className="text-sm text-serenity-mountain/70 text-center py-4">No trades available</p>
           )}
         </div>
       </ScrollArea>
