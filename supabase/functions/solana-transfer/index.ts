@@ -7,6 +7,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Common Solana token mint addresses to currency code mapping
+const TOKEN_MINT_TO_CURRENCY: { [key: string]: string } = {
+  'So11111111111111111111111111111111111111112': 'SOL',
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',
+  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
+  // Add more token mappings as needed
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -20,6 +28,14 @@ serve(async (req) => {
       console.log('Fetching deposit address for:', { exchange, tokenMint })
       
       if (exchange === 'binance') {
+        // Convert token mint to currency code
+        const currencyCode = TOKEN_MINT_TO_CURRENCY[tokenMint]
+        if (!currencyCode) {
+          throw new Error(`Unsupported token mint address: ${tokenMint}`)
+        }
+
+        console.log('Converting token mint to currency code:', { tokenMint, currencyCode })
+        
         const binance = new ccxt.binance({
           apiKey: Deno.env.get('BINANCE_API_KEY'),
           secret: Deno.env.get('BINANCE_SECRET'),
@@ -27,7 +43,7 @@ serve(async (req) => {
 
         try {
           console.log('Initializing Binance client...')
-          const depositAddress = await binance.fetchDepositAddress(tokenMint)
+          const depositAddress = await binance.fetchDepositAddress(currencyCode)
           console.log('Binance deposit address:', depositAddress)
 
           return new Response(
@@ -113,8 +129,14 @@ async function handleWalletToBinance(
   })
 
   try {
+    // Convert token mint to currency code for Binance
+    const currencyCode = TOKEN_MINT_TO_CURRENCY[tokenMint]
+    if (!currencyCode) {
+      throw new Error(`Unsupported token mint address: ${tokenMint}`)
+    }
+
     // 1. Generate a Binance deposit address for the token
-    const depositAddress = await binance.fetchDepositAddress(tokenMint)
+    const depositAddress = await binance.fetchDepositAddress(currencyCode)
     console.log('Generated Binance deposit address:', depositAddress)
 
     if (!depositAddress || !depositAddress.address) {
@@ -153,12 +175,18 @@ async function handleBinanceToWallet(
   })
 
   try {
+    // Convert token mint to currency code for Binance
+    const currencyCode = TOKEN_MINT_TO_CURRENCY[tokenMint]
+    if (!currencyCode) {
+      throw new Error(`Unsupported token mint address: ${tokenMint}`)
+    }
+
     // 1. Verify the withdrawal is possible
-    const withdrawalFees = await binance.fetchWithdrawalFees([tokenMint])
+    const withdrawalFees = await binance.fetchWithdrawalFees([currencyCode])
     console.log('Withdrawal fees:', withdrawalFees)
 
     // 2. Initiate the withdrawal
-    const withdrawal = await binance.withdraw(tokenMint, amount, toAddress, {
+    const withdrawal = await binance.withdraw(currencyCode, amount, toAddress, {
       network: 'SOL', // Specify Solana network
     })
     console.log('Withdrawal initiated:', withdrawal)
