@@ -30,6 +30,7 @@ serve(async (req) => {
       
       const currencyCode = TOKEN_MINT_TO_CURRENCY[tokenMint];
       if (!currencyCode) {
+        console.error('Unsupported token mint:', tokenMint);
         throw new Error(`Unsupported token mint address: ${tokenMint}`);
       }
 
@@ -41,6 +42,7 @@ serve(async (req) => {
         });
 
         try {
+          console.log(`Fetching Binance deposit address for ${currencyCode}...`);
           const depositAddress = await binance.fetchDepositAddress(currencyCode);
           console.log('Binance deposit address:', depositAddress);
 
@@ -68,21 +70,24 @@ serve(async (req) => {
       
       const currencyCode = TOKEN_MINT_TO_CURRENCY[tokenMint];
       if (!currencyCode) {
+        console.error('Unsupported token mint:', tokenMint);
         throw new Error(`Unsupported token mint address: ${tokenMint}`);
       }
 
       if (exchange === 'binance') {
+        console.log('Initializing Binance client for withdrawal...');
         const binance = new ccxt.binance({
           apiKey: Deno.env.get('BINANCE_API_KEY'),
           secret: Deno.env.get('BINANCE_SECRET'),
         });
 
         try {
+          console.log(`Initiating withdrawal of ${amount} ${currencyCode} to ${toAddress}...`);
           const withdrawal = await binance.withdraw(currencyCode, amount, toAddress, {
             network: 'SOL',
           });
           
-          console.log('Withdrawal initiated:', withdrawal);
+          console.log('Withdrawal initiated successfully:', withdrawal);
           return new Response(
             JSON.stringify({ 
               status: 'success',

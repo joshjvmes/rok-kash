@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card } from './ui/card';
 
 export const PhantomWalletBalances = () => {
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey, connecting } = useWallet();
   const { toast } = useToast();
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [tokenBalances, setTokenBalances] = useState<Array<TokenBalance & TokenInfo>>([]);
@@ -27,19 +27,19 @@ export const PhantomWalletBalances = () => {
         // Get SOL balance
         console.log('Fetching SOL balance...');
         const balance = await getSolanaBalance(publicKey.toString());
-        console.log('SOL balance:', balance);
+        console.info('SOL balance fetched successfully:', balance);
         setSolBalance(balance);
 
         // Get token list and balances
         console.log('Fetching token list...');
         const tokens = await getTokenList();
-        console.log('Retrieved token list:', tokens.length, 'tokens');
+        console.info('Retrieved token list:', tokens.length, 'tokens');
         
         const balancePromises = tokens.map(async (token) => {
           try {
-            console.log(`Fetching balance for token ${token.symbol}...`);
+            console.log(`Fetching balance for token ${token.symbol} (${token.address})...`);
             const balance = await getTokenBalance(token.address, publicKey.toString());
-            console.log(`Balance for ${token.symbol}:`, balance);
+            console.info(`Balance for ${token.symbol}:`, balance);
             return {
               ...token,
               ...balance,
@@ -55,13 +55,13 @@ export const PhantomWalletBalances = () => {
             balance !== null && Number(balance.balance) > 0
           );
 
-        console.log('Final token balances:', balances);
+        console.info('Final token balances:', balances);
         setTokenBalances(balances);
       } catch (error) {
         console.error('Error fetching wallet balances:', error);
         toast({
           title: "Error",
-          description: "Failed to fetch wallet balances. Please make sure your wallet is properly connected.",
+          description: "Failed to fetch wallet balances. Please try reconnecting your wallet.",
           variant: "destructive",
         });
       } finally {
@@ -69,15 +69,18 @@ export const PhantomWalletBalances = () => {
       }
     };
 
-    // Fetch balances immediately when wallet is connected
     if (connected && publicKey) {
+      console.log('Wallet connected, initiating balance fetch...');
       fetchBalances();
     } else {
       // Reset balances when wallet is disconnected
       setSolBalance(null);
       setTokenBalances([]);
+      if (!connecting) {
+        console.log('Wallet disconnected, balances reset');
+      }
     }
-  }, [connected, publicKey, toast]);
+  }, [connected, publicKey, toast, connecting]);
 
   if (!connected) {
     return null;
