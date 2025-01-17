@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ export function KucoinTransfer() {
   const [operation, setOperation] = useState('deposit');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleTransfer = async () => {
+  const handleTransfer = useCallback(async () => {
     if (!publicKey) {
       toast({
         title: "Wallet not connected",
@@ -61,8 +61,7 @@ export function KucoinTransfer() {
           : "Deposit address has been generated",
       });
 
-      if (operation === 'deposit') {
-        // For deposits, show the deposit address to the user
+      if (operation === 'deposit' && data?.address) {
         toast({
           title: "Deposit Address",
           description: `Send ${currency} to: ${data.address}`,
@@ -78,7 +77,7 @@ export function KucoinTransfer() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [publicKey, operation, currency, amount, toast]);
 
   return (
     <Card className="p-6 bg-serenity-white shadow-lg border border-serenity-sky-light">
