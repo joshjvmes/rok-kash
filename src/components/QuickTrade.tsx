@@ -112,7 +112,7 @@ export function QuickTrade() {
         <SymbolSelector
           selectedSymbol={selectedSymbol}
           onSymbolChange={setSelectedSymbol}
-          fromExchange={selectedExchange}
+          navigateOnChange={false}
         />
         <TradeType
           type={orderType}
