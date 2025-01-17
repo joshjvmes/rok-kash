@@ -35,10 +35,10 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
 
   return (
     <Card className="p-4 bg-serenity-sky-dark/10 border-serenity-sky-light/30 backdrop-blur-sm">
-      <h3 className="text-lg font-semibold mb-4 text-serenity-mountain">{symbol} Last 10 Trades</h3>
+      <h3 className="text-lg font-semibold mb-4 text-serenity-mountain">{symbol} Recent Trades</h3>
       <ScrollArea className="h-[300px] pr-4">
         <div className="space-y-2">
-          {validTrades.slice(0, 10).map((trade: any) => (
+          {validTrades.slice(0, 20).map((trade: any) => (
             <div
               key={trade.id || `${trade.timestamp}-${trade.price}`}
               className="flex justify-between text-sm border-b border-serenity-sky-light/20 pb-2 hover:bg-serenity-sky-light/10 rounded-sm px-2 py-1 transition-colors"
