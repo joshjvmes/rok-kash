@@ -1,4 +1,4 @@
-import { FC, useEffect, useMemo } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import { ConnectionProvider, WalletProvider, useWallet } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
@@ -13,7 +13,9 @@ import '@solana/wallet-adapter-react-ui/styles.css';
 const WalletConnection: FC = () => {
   const { connected, wallet, connecting, disconnect } = useWallet();
   const { toast } = useToast();
+  const [connectionAttempt, setConnectionAttempt] = useState<NodeJS.Timeout | null>(null);
 
+  // Clear any stuck connecting state after 15 seconds
   useEffect(() => {
     if (connecting) {
       console.info('Wallet connecting...');
@@ -21,8 +23,33 @@ const WalletConnection: FC = () => {
         title: "Connecting Wallet",
         description: "Please approve the connection in Phantom",
       });
+
+      // Set a timeout to clear a stuck connecting state
+      const timeout = setTimeout(() => {
+        if (connecting && !connected) {
+          console.error('Wallet connection timed out');
+          disconnect();
+          toast({
+            title: "Connection Failed",
+            description: "Wallet connection timed out. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }, 15000); // 15 second timeout
+
+      setConnectionAttempt(timeout);
+      
+      return () => {
+        if (timeout) clearTimeout(timeout);
+      };
+    } else {
+      // Clear timeout if connecting state changes
+      if (connectionAttempt) {
+        clearTimeout(connectionAttempt);
+        setConnectionAttempt(null);
+      }
     }
-  }, [connecting, toast]);
+  }, [connecting, connected, disconnect, toast, connectionAttempt]);
 
   useEffect(() => {
     if (connected && wallet) {
