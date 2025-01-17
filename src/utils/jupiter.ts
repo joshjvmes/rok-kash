@@ -52,13 +52,13 @@ export async function getRoutes(
 ) {
   try {
     const jupiter = await initializeJupiter();
-    // Convert number to JSBI to fix type error
-    const amountBigInt = JSBI.BigInt(Math.floor(amount));
+    // Convert number to BigInt string first, then create JSBI instance
+    const amountBigInt = JSBI.BigInt(amount.toString());
     
     const routes = await jupiter.computeRoutes({
       inputMint: new PublicKey(inputMint),
       outputMint: new PublicKey(outputMint),
-      amount: amountBigInt,
+      inputAmount: amountBigInt, // Use inputAmount instead of amount
       slippageBps: slippage * 100, // Convert percentage to basis points
     });
     return routes.routesInfos;
