@@ -17,6 +17,7 @@ import KrakenTest from "./pages/exchanges/KrakenTest";
 import BinanceTest from "./pages/exchanges/BinanceTest";
 import KucoinTest from "./pages/exchanges/KucoinTest";
 import OkxTest from "./pages/exchanges/OkxTest";
+import Rebalance from "./pages/protocols/rebalance";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,7 @@ const App = () => (
                           <Route path="/exchanges/binance" element={<BinanceTest />} />
                           <Route path="/exchanges/kucoin" element={<KucoinTest />} />
                           <Route path="/exchanges/okx" element={<OkxTest />} />
+                          <Route path="/protocols/rebalance" element={<Rebalance />} />
                         </Routes>
                       </div>
                     </main>
