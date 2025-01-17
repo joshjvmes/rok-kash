@@ -15,19 +15,31 @@ export const PhantomWalletBalances = () => {
 
   useEffect(() => {
     const fetchBalances = async () => {
-      if (!connected || !publicKey) return;
+      if (!connected || !publicKey) {
+        console.log('Wallet not connected or no public key available');
+        return;
+      }
 
+      console.log('Fetching balances for wallet:', publicKey.toString());
       setIsLoading(true);
+      
       try {
         // Get SOL balance
+        console.log('Fetching SOL balance...');
         const balance = await getSolanaBalance(publicKey.toString());
+        console.log('SOL balance:', balance);
         setSolBalance(balance);
 
         // Get token list and balances
+        console.log('Fetching token list...');
         const tokens = await getTokenList();
+        console.log('Retrieved token list:', tokens.length, 'tokens');
+        
         const balancePromises = tokens.map(async (token) => {
           try {
+            console.log(`Fetching balance for token ${token.symbol}...`);
             const balance = await getTokenBalance(token.address, publicKey.toString());
+            console.log(`Balance for ${token.symbol}:`, balance);
             return {
               ...token,
               ...balance,
@@ -43,12 +55,13 @@ export const PhantomWalletBalances = () => {
             balance !== null && Number(balance.balance) > 0
           );
 
+        console.log('Final token balances:', balances);
         setTokenBalances(balances);
       } catch (error) {
         console.error('Error fetching wallet balances:', error);
         toast({
           title: "Error",
-          description: "Failed to fetch wallet balances",
+          description: "Failed to fetch wallet balances. Please make sure your wallet is properly connected.",
           variant: "destructive",
         });
       } finally {
@@ -56,7 +69,14 @@ export const PhantomWalletBalances = () => {
       }
     };
 
-    fetchBalances();
+    // Fetch balances immediately when wallet is connected
+    if (connected && publicKey) {
+      fetchBalances();
+    } else {
+      // Reset balances when wallet is disconnected
+      setSolBalance(null);
+      setTokenBalances([]);
+    }
   }, [connected, publicKey, toast]);
 
   if (!connected) {
@@ -65,7 +85,7 @@ export const PhantomWalletBalances = () => {
 
   return (
     <div className="space-y-4">
-      <Card className="p-4">
+      <Card className="p-4 bg-white/50 backdrop-blur-sm">
         <h3 className="text-lg font-semibold mb-2">SOL Balance</h3>
         {isLoading ? (
           <Skeleton className="h-6 w-24" />
@@ -75,7 +95,7 @@ export const PhantomWalletBalances = () => {
       </Card>
 
       {tokenBalances.length > 0 && (
-        <Card className="p-4">
+        <Card className="p-4 bg-white/50 backdrop-blur-sm">
           <h3 className="text-lg font-semibold mb-2">Token Balances</h3>
           <div className="space-y-2">
             {isLoading ? (
@@ -85,7 +105,7 @@ export const PhantomWalletBalances = () => {
               </>
             ) : (
               tokenBalances.map((token) => (
-                <div key={token.address} className="flex items-center justify-between p-2 hover:bg-accent rounded-lg transition-colors">
+                <div key={token.address} className="flex items-center justify-between p-2 hover:bg-white/30 rounded-lg transition-colors">
                   <div className="flex items-center gap-2">
                     {token.logoURI && (
                       <img
