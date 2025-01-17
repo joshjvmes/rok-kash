@@ -85,7 +85,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 flex items-center justify-between">
+      <SidebarFooter className="p-4 flex items-center gap-2 justify-end">
         <ThemeSwitcher />
         <Button
           variant="ghost"
