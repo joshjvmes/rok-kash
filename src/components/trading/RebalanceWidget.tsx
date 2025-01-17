@@ -6,8 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { ExchangeSelector } from "@/components/trading/ExchangeSelector";
-import { TradeAmount } from "@/components/trading/TradeAmount";
 import { SymbolSelector } from "@/components/trading/SymbolSelector";
+import { TradeAmount } from "@/components/trading/TradeAmount";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface RebalanceTransaction {
   id: string;
@@ -105,6 +106,19 @@ export function RebalanceWidget() {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return 'text-serenity-grass';
+      case 'failed':
+        return 'text-red-500';
+      case 'pending':
+        return 'text-serenity-mountain';
+      default:
+        return 'text-serenity-mountain';
+    }
+  };
+
   return (
     <div className="grid md:grid-cols-2 gap-6">
       <Card className="p-6 bg-gradient-to-b from-serenity-white to-serenity-sky-light border-serenity-sky-dark">
@@ -122,6 +136,7 @@ export function RebalanceWidget() {
           <SymbolSelector
             selectedSymbol={selectedToken}
             onSymbolChange={setSelectedToken}
+            fromExchange={fromExchange}
           />
 
           <TradeAmount
@@ -148,48 +163,49 @@ export function RebalanceWidget() {
       </Card>
 
       <Card className="p-6 bg-serenity-white border-serenity-sky-dark">
-        <h2 className="text-lg font-semibold mb-4 text-serenity-mountain">Transaction History</h2>
-        <div className="space-y-4 max-h-[500px] overflow-y-auto">
-          {transactions?.map((tx) => (
-            <div
-              key={tx.id}
-              className="p-4 rounded-lg border border-serenity-sky-dark bg-gradient-to-r from-serenity-sky-light to-serenity-white"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-serenity-mountain">
-                    {tx.from_exchange} → {tx.to_exchange}
-                  </p>
-                  <p className="text-sm text-serenity-grass">
-                    {tx.amount} {tx.token_symbol}
-                  </p>
+        <h2 className="text-lg font-semibold mb-4 text-serenity-mountain">Transaction Status</h2>
+        <ScrollArea className="h-[400px] pr-4">
+          <div className="space-y-2">
+            {transactions?.map((tx) => (
+              <div
+                key={tx.id}
+                className="text-sm p-4 rounded-lg border border-serenity-sky-light bg-gradient-to-r from-serenity-sky-light/20 to-serenity-white"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="font-medium text-serenity-mountain">
+                      {tx.from_exchange} → {tx.to_exchange}
+                    </p>
+                    <p className="text-serenity-grass">
+                      {tx.amount} {tx.token_symbol}
+                    </p>
+                  </div>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(tx.status)} bg-opacity-10`}
+                  >
+                    {tx.status}
+                  </span>
                 </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    tx.status === 'completed'
-                      ? 'bg-serenity-grass-light text-serenity-grass'
-                      : tx.status === 'pending'
-                      ? 'bg-serenity-sky-light text-serenity-mountain'
-                      : 'bg-red-100 text-red-800'
-                  }`}
-                >
-                  {tx.status}
-                </span>
+                {tx.error_message && (
+                  <p className="text-xs text-red-500 mt-2">{tx.error_message}</p>
+                )}
+                <p className="text-xs text-serenity-mountain/60 mt-2">
+                  {new Date(tx.created_at).toLocaleString()}
+                </p>
+                {tx.transaction_hash && (
+                  <p className="text-xs text-serenity-mountain/60 mt-1">
+                    TX: {tx.transaction_hash}
+                  </p>
+                )}
               </div>
-              {tx.error_message && (
-                <p className="text-xs text-red-500 mt-2">{tx.error_message}</p>
-              )}
-              <p className="text-xs text-serenity-mountain/60 mt-2">
-                {new Date(tx.created_at).toLocaleString()}
+            ))}
+            {!transactions?.length && (
+              <p className="text-sm text-serenity-mountain/60 text-center py-4">
+                No transactions yet
               </p>
-            </div>
-          ))}
-          {!transactions?.length && (
-            <p className="text-sm text-serenity-mountain/60 text-center">
-              No transactions yet
-            </p>
-          )}
-        </div>
+            )}
+          </div>
+        </ScrollArea>
       </Card>
     </div>
   );
