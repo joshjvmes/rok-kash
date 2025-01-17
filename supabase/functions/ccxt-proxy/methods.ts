@@ -10,7 +10,7 @@ function formatExchangeSymbol(exchange: string, symbol: string): string {
     case 'binance':
       return symbol.replace('/', '');
     case 'kucoin':
-      return symbol; // Kucoin accepts standard format
+      return symbol; // KuCoin accepts standard format with '/'
     default:
       return symbol;
   }
@@ -18,8 +18,10 @@ function formatExchangeSymbol(exchange: string, symbol: string): string {
 
 async function safeExecuteMethod(exchange: Exchange, method: string, ...args: any[]) {
   try {
+    console.log(`Executing ${method} on ${exchange.id} with args:`, args);
     // @ts-ignore - dynamic method call
     const result = await exchange[method](...args);
+    console.log(`${method} result:`, result);
     return { success: true, data: result };
   } catch (error: any) {
     console.error(`Error executing ${method} on ${exchange.id}:`, error.message);
@@ -37,15 +39,22 @@ export async function executeExchangeMethod(
   symbol?: string,
   params: Record<string, any> = {}
 ) {
-  const formattedSymbol = symbol ? formatExchangeSymbol(exchange.id, symbol) : symbol;
-
   try {
+    const formattedSymbol = symbol ? formatExchangeSymbol(exchange.id, symbol) : symbol;
+    console.log(`Executing ${method} for ${exchange.id} with symbol: ${formattedSymbol}`);
+
     switch (method) {
       case 'fetchTicker': {
         if (!formattedSymbol) throw new Error('Symbol required for fetchTicker');
+        
+        // For KuCoin, ensure the exchange is properly loaded before fetching
+        if (exchange.id === 'kucoin') {
+          await exchange.loadMarkets();
+        }
+        
         const result = await safeExecuteMethod(exchange, 'fetchTicker', formattedSymbol);
         if (!result.success) {
-          console.log(`Failed to fetch ticker for ${formattedSymbol} on ${exchange.id}`);
+          console.error(`Failed to fetch ticker for ${formattedSymbol} on ${exchange.id}:`, result.error);
           return null;
         }
         return result.data;
@@ -54,7 +63,7 @@ export async function executeExchangeMethod(
       case 'fetchMarkets': {
         const result = await safeExecuteMethod(exchange, 'fetchMarkets');
         if (!result.success) {
-          console.log(`Failed to fetch markets on ${exchange.id}`);
+          console.error(`Failed to fetch markets on ${exchange.id}:`, result.error);
           return [];
         }
         return result.data;
@@ -63,7 +72,7 @@ export async function executeExchangeMethod(
       case 'fetchBalance': {
         const result = await safeExecuteMethod(exchange, 'fetchBalance');
         if (!result.success) {
-          console.log(`Failed to fetch balance on ${exchange.id}`);
+          console.error(`Failed to fetch balance on ${exchange.id}:`, result.error);
           return null;
         }
         return result.data;
@@ -73,7 +82,7 @@ export async function executeExchangeMethod(
         if (!formattedSymbol) throw new Error('Symbol required for fetchOrderBook');
         const result = await safeExecuteMethod(exchange, 'fetchOrderBook', formattedSymbol, params.limit || 20);
         if (!result.success) {
-          console.log(`Failed to fetch order book for ${formattedSymbol} on ${exchange.id}`);
+          console.error(`Failed to fetch order book for ${formattedSymbol} on ${exchange.id}:`, result.error);
           return null;
         }
         return result.data;
@@ -83,7 +92,7 @@ export async function executeExchangeMethod(
         if (!formattedSymbol) throw new Error('Symbol required for fetchTrades');
         const result = await safeExecuteMethod(exchange, 'fetchTrades', formattedSymbol, undefined, params.limit || 50);
         if (!result.success) {
-          console.log(`Failed to fetch trades for ${formattedSymbol} on ${exchange.id}`);
+          console.error(`Failed to fetch trades for ${formattedSymbol} on ${exchange.id}:`, result.error);
           return null;
         }
         return result.data;
@@ -94,12 +103,12 @@ export async function executeExchangeMethod(
         // For KuCoin, we need to fetch all markets and find the specific one
         const result = await safeExecuteMethod(exchange, 'fetchMarkets');
         if (!result.success) {
-          console.log(`Failed to fetch markets on ${exchange.id}`);
+          console.error(`Failed to fetch markets on ${exchange.id}:`, result.error);
           return null;
         }
         const market = result.data.find((m: any) => m.symbol === formattedSymbol);
         if (!market) {
-          console.log(`Market ${formattedSymbol} not found on ${exchange.id}`);
+          console.error(`Market ${formattedSymbol} not found on ${exchange.id}`);
           return null;
         }
         return market;
