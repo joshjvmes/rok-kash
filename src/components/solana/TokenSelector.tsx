@@ -48,9 +48,13 @@ export function TokenSelector({ value, onValueChange, isLoading }: TokenSelector
         <SelectTrigger className="bg-trading-gray-light border-trading-gray-light">
           <SelectValue placeholder="Select a token" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-[#F1F0FB] border-0">
           {AVAILABLE_TOKENS.map((token) => (
-            <SelectItem key={token.mint} value={token.mint}>
+            <SelectItem 
+              key={token.mint} 
+              value={token.mint}
+              className="hover:bg-[#E5DEFF] focus:bg-[#E5DEFF]"
+            >
               <div className="flex items-center gap-2">
                 {token.logoURI && (
                   <img
