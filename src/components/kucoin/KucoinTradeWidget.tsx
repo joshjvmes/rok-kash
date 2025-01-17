@@ -33,6 +33,7 @@ export function KucoinTradeWidget() {
   const [amount, setAmount] = useState<string>("");
   const [estimatedPrice, setEstimatedPrice] = useState<number | null>(null);
   const [tradeLogs, setTradeLogs] = useState<TradeLog[]>([]);
+  const [estimatedReceiveAmount, setEstimatedReceiveAmount] = useState<string>("");
   const { toast } = useToast();
 
   // Fetch user's balance
@@ -55,16 +56,27 @@ export function KucoinTradeWidget() {
     }
   };
 
+  // Calculate estimated receive amount when amount or price changes
+  useEffect(() => {
+    if (amount && estimatedPrice) {
+      const numericAmount = parseFloat(amount);
+      const total = numericAmount * estimatedPrice;
+      setEstimatedReceiveAmount(total.toFixed(8));
+    } else {
+      setEstimatedReceiveAmount("");
+    }
+  }, [amount, estimatedPrice]);
+
   // Filter non-zero balances and generate trading pairs
   useEffect(() => {
     if (!balanceData?.total) return;
 
-    const nonZeroBalances: { [key: string]: number } = {};
-    Object.entries(balanceData.total).forEach(([coin, amount]) => {
-      if (amount > 0) {
-        nonZeroBalances[coin] = amount;
-      }
-    });
+    const nonZeroBalances = Object.entries(balanceData.total)
+      .filter(([_, amount]) => amount > 0)
+      .reduce((acc, [coin, amount]) => {
+        acc[coin] = amount;
+        return acc;
+      }, {} as { [key: string]: number });
 
     const pairs: TradingPair[] = [];
     Object.keys(nonZeroBalances).forEach(baseAsset => {
@@ -110,9 +122,11 @@ export function KucoinTradeWidget() {
     };
 
     fetchPrice();
+    const interval = setInterval(fetchPrice, 10000); // Update price every 10 seconds
 
     return () => {
       isMounted = false;
+      clearInterval(interval);
     };
   }, [selectedPair]);
 
@@ -199,8 +213,15 @@ export function KucoinTradeWidget() {
           </div>
 
           {estimatedPrice && (
-            <div className="text-sm text-gray-500">
-              Estimated Price: ${estimatedPrice}
+            <div className="space-y-2">
+              <div className="text-sm text-gray-500">
+                Current Price: ${estimatedPrice.toFixed(8)}
+              </div>
+              {amount && (
+                <div className="text-sm text-gray-500">
+                  Estimated Value: ${estimatedReceiveAmount}
+                </div>
+              )}
             </div>
           )}
 
