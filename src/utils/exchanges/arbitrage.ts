@@ -1,14 +1,12 @@
 import { fetchCCXTPrice } from "./ccxt";
-import { fetchCoinbasePrice } from "./coinbase";
 import { fetchKrakenPrice } from "./kraken";
 import { supabase } from "@/integrations/supabase/client";
 import type { ArbitrageOpportunity } from "../types/exchange";
 
-const EXCHANGES = ['coinbase', 'kraken', 'bybit'];
+const EXCHANGES = ['kraken', 'bybit'];
 
 // Hardcoded fixed fee rates
 const FIXED_FEES = {
-  coinbase: 0.6, // 0.6% trading fee
   kraken: 0.4,   // 0.4% trading fee
   bybit: 0.2     // 0.2% trading fee
 };
@@ -26,9 +24,6 @@ async function getPriceForExchange(exchange: string, symbol: string): Promise<nu
     let price: number | null = null;
     
     switch (exchange) {
-      case 'coinbase':
-        price = await fetchCoinbasePrice(symbol);
-        break;
       case 'kraken':
         price = await fetchKrakenPrice(symbol);
         break;
