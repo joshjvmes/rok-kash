@@ -65,28 +65,46 @@ export function SolanaTokenTransfer() {
         throw new Error('User not authenticated');
       }
 
+      // Prepare transfer data
+      const transferData = {
+        fromType,
+        toType,
+        fromAddress: fromType === 'wallet' ? publicKey.toString() : selectedExchange,
+        toAddress: toType === 'wallet' ? publicKey.toString() : selectedExchange,
+        tokenMint,
+        amount: parseFloat(amount),
+      };
+
+      // Call the transfer edge function
+      const { data, error: functionError } = await supabase.functions.invoke('solana-transfer', {
+        body: transferData
+      });
+
+      if (functionError) throw functionError;
+
       // Record the transfer in the database
-      const { error } = await supabase.from('solana_transfers').insert({
+      const { error: dbError } = await supabase.from('solana_transfers').insert({
         user_id: user.id,
         from_type: fromType,
         to_type: toType,
-        from_address: fromType === 'wallet' ? publicKey.toString() : selectedExchange,
-        to_address: toType === 'wallet' ? publicKey.toString() : selectedExchange,
+        from_address: transferData.fromAddress,
+        to_address: transferData.toAddress,
         token_mint: tokenMint,
         amount: parseFloat(amount),
+        status: data.status,
       });
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
       toast({
         title: "Transfer initiated",
-        description: "Your transfer request has been recorded",
+        description: data.message || "Your transfer request has been recorded",
       });
     } catch (error) {
       console.error('Transfer error:', error);
       toast({
         title: "Transfer failed",
-        description: "There was an error initiating the transfer",
+        description: error.message || "There was an error initiating the transfer",
         variant: "destructive",
       });
     } finally {
