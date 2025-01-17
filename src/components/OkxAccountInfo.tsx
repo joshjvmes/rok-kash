@@ -3,8 +3,14 @@ import { Card } from "@/components/ui/card";
 import { fetchBalance } from "@/utils/exchanges/ccxt";
 import { Loader2 } from "lucide-react";
 
+interface BalanceData {
+  total: {
+    [key: string]: number;
+  };
+}
+
 export function OkxAccountInfo() {
-  const { data: balance, isLoading } = useQuery({
+  const { data: balance, isLoading } = useQuery<BalanceData>({
     queryKey: ['balance', 'okx'],
     queryFn: () => fetchBalance('okx'),
     refetchInterval: 360000, // 6 minutes
@@ -12,7 +18,7 @@ export function OkxAccountInfo() {
 
   if (isLoading) {
     return (
-      <Card className="p-4 bg-serenity-white shadow-lg border border-serenity-sky-light">
+      <Card className="prenity-white shadow-lg border border-serenity-sky-light">
         <div className="flex items-center justify-center">
           <Loader2 className="h-4 w-4 animate-spin text-serenity-sky-dark" />
           <p className="text-sm text-serenity-mountain ml-2">Loading balance...</p>

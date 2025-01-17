@@ -10,6 +10,12 @@ interface TradingPair {
   lastUpdated?: Date;
 }
 
+interface BalanceData {
+  total: {
+    [key: string]: number;
+  };
+}
+
 export function useOkxTradingPairs() {
   const { toast } = useToast();
   const [pairs, setPairs] = useState<TradingPair[]>([]);
@@ -18,7 +24,7 @@ export function useOkxTradingPairs() {
   const [selectedPair, setSelectedPair] = useState<string>("");
   const UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minutes in milliseconds
 
-  const { data: balanceData } = useQuery({
+  const { data: balanceData } = useQuery<BalanceData>({
     queryKey: ['balance', 'okx'],
     queryFn: () => fetchBalance('okx'),
     refetchInterval: 360000, // 6 minutes
