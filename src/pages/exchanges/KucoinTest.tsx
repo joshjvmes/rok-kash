@@ -6,11 +6,19 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { KucoinAccountInfo } from "@/components/KucoinAccountInfo";
 import { TradingHistory } from "@/components/TradingHistory";
+import { useQuery } from "@tanstack/react-query";
+import { fetchBalance } from "@/utils/exchanges/ccxt";
 
 interface TradingPair {
   symbol: string;
   price: string;
   lastUpdated?: Date;
+}
+
+interface BalanceData {
+  total: {
+    [key: string]: number;
+  };
 }
 
 export default function KucoinTest() {
@@ -20,6 +28,13 @@ export default function KucoinTest() {
   const [currentPairIndex, setCurrentPairIndex] = useState(0);
   const [selectedPair, setSelectedPair] = useState<string>("");
   const UPDATE_INTERVAL = 15 * 60 * 1000; // 15 minutes in milliseconds
+
+  // Fetch balance data
+  const { data: balanceData } = useQuery<BalanceData>({
+    queryKey: ['balance', 'kucoin'],
+    queryFn: () => fetchBalance('kucoin'),
+    refetchInterval: 360000, // 6 minutes
+  });
 
   useEffect(() => {
     async function fetchInitialPairs() {
@@ -38,18 +53,28 @@ export default function KucoinTest() {
           throw new Error('Invalid data format received from API');
         }
 
-        // Simplified filtering: just get first 10 spot trading pairs
+        // Get coins we have balance for
+        const nonZeroBalances = balanceData?.total ? 
+          Object.entries(balanceData.total)
+            .filter(([_, amount]) => amount > 0)
+            .map(([coin]) => coin) : [];
+
+        // Filter spot pairs that include our balance coins
         const spotPairs = data
           .filter((market: any) => {
-            return (
-              market && 
+            if (!(market && 
               typeof market === 'object' && 
               market.type === 'spot' && 
               market.symbol && 
-              typeof market.symbol === 'string'
-            );
+              typeof market.symbol === 'string')) {
+              return false;
+            }
+            
+            // Split the symbol to get base and quote currencies
+            const [base, quote] = market.symbol.split('/');
+            // Keep pair if we have balance in either base or quote currency
+            return nonZeroBalances.includes(base) || nonZeroBalances.includes(quote);
           })
-          .slice(0, 10) // Take first 10 pairs
           .map((market: any) => ({
             symbol: market.symbol,
             price: 'Loading...',
@@ -57,12 +82,15 @@ export default function KucoinTest() {
           }));
 
         if (spotPairs.length === 0) {
-          throw new Error('No valid trading pairs found');
+          console.log('No trading pairs found for coins with balance');
+          setPairs([]);
+          setIsLoading(false);
+          return;
         }
 
-        console.log('First 10 available pairs:', spotPairs);
+        console.log('Available pairs with balance:', spotPairs);
         setPairs(spotPairs);
-        setSelectedPair(spotPairs[0].symbol); // Set the first pair as selected
+        setSelectedPair(spotPairs[0].symbol);
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching Kucoin pairs:', error);
@@ -76,7 +104,7 @@ export default function KucoinTest() {
     }
 
     fetchInitialPairs();
-  }, [toast]);
+  }, [toast, balanceData]); // Added balanceData as dependency
 
   useEffect(() => {
     if (pairs.length === 0 || isLoading) return;
@@ -105,7 +133,6 @@ export default function KucoinTest() {
           return newPairs;
         });
 
-        // Move to next pair or reset to first pair
         setCurrentPairIndex(current => 
           current === pairs.length - 1 ? 0 : current + 1
         );
@@ -114,12 +141,8 @@ export default function KucoinTest() {
       }
     };
 
-    // Update current pair immediately
     updatePrice();
-
-    // Set up interval for the current pair
     const interval = setInterval(updatePrice, UPDATE_INTERVAL);
-
     return () => clearInterval(interval);
   }, [currentPairIndex, pairs.length, isLoading]);
 
@@ -139,7 +162,7 @@ export default function KucoinTest() {
           {isLoading ? (
             <p className="text-gray-400">Loading trading pairs...</p>
           ) : pairs.length === 0 ? (
-            <p className="text-gray-400">No trading pairs available</p>
+            <p className="text-gray-400">No trading pairs available for your balance</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
