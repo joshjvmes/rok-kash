@@ -324,48 +324,6 @@ export type Database = {
         }
         Relationships: []
       }
-      wallet_transactions: {
-        Row: {
-          amount: number
-          created_at: string
-          from_address: string
-          id: string
-          status: string
-          to_address: string
-          token_symbol: string
-          transaction_hash: string | null
-          transaction_type: string
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          from_address: string
-          id?: string
-          status?: string
-          to_address: string
-          token_symbol: string
-          transaction_hash?: string | null
-          transaction_type: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          from_address?: string
-          id?: string
-          status?: string
-          to_address?: string
-          token_symbol?: string
-          transaction_hash?: string | null
-          transaction_type?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
