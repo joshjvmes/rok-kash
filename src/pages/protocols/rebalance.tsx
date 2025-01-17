@@ -14,6 +14,8 @@ import { fetchBalance } from "@/utils/exchanges/ccxt";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { ExchangeSelector } from "@/components/trading/ExchangeSelector";
+import { TradeAmount } from "@/components/trading/TradeAmount";
 
 const EXCHANGES = ['bybit', 'kraken', 'binance', 'kucoin', 'okx'];
 
@@ -136,42 +138,20 @@ export default function RebalancePage() {
         {/* Rebalance Form */}
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm text-serenity-mountain">From Exchange</label>
-              <Select value={fromExchange} onValueChange={setFromExchange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select source exchange" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXCHANGES.map((exchange) => (
-                    <SelectItem key={exchange} value={exchange}>
-                      {exchange.charAt(0).toUpperCase() + exchange.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <ExchangeSelector
+              selectedExchange={fromExchange}
+              onExchangeChange={setFromExchange}
+            />
+
+            <ExchangeSelector
+              selectedExchange={toExchange}
+              onExchangeChange={setToExchange}
+            />
 
             <div className="space-y-2">
-              <label className="text-sm text-serenity-mountain">To Exchange</label>
-              <Select value={toExchange} onValueChange={setToExchange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select destination exchange" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXCHANGES.filter(e => e !== fromExchange).map((exchange) => (
-                    <SelectItem key={exchange} value={exchange}>
-                      {exchange.charAt(0).toUpperCase() + exchange.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm text-serenity-mountain">Token</label>
+              <label className="text-sm text-gray-400">Token</label>
               <Select value={selectedToken} onValueChange={setSelectedToken}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-trading-gray-light border-trading-gray-light">
                   <SelectValue placeholder="Select token" />
                 </SelectTrigger>
                 <SelectContent>
@@ -184,16 +164,11 @@ export default function RebalancePage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm text-serenity-mountain">Amount</label>
-              <Input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Enter amount"
-                step="any"
-              />
-            </div>
+            <TradeAmount
+              amount={amount}
+              onAmountChange={setAmount}
+              isLoading={isSubmitting}
+            />
 
             <Button 
               type="submit" 
