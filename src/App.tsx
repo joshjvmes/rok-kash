@@ -16,7 +16,6 @@ import CoinbaseTest from "./pages/exchanges/CoinbaseTest";
 import KrakenTest from "./pages/exchanges/KrakenTest";
 import BinanceTest from "./pages/exchanges/BinanceTest";
 import KucoinTest from "./pages/exchanges/KucoinTest";
-import KucoinWallet from "./pages/exchanges/KucoinWallet";
 import OkxTest from "./pages/exchanges/OkxTest";
 
 const queryClient = new QueryClient();
@@ -71,7 +70,6 @@ const App = () => (
                           <Route path="/exchanges/kraken" element={<KrakenTest />} />
                           <Route path="/exchanges/binance" element={<BinanceTest />} />
                           <Route path="/exchanges/kucoin" element={<KucoinTest />} />
-                          <Route path="/exchanges/kucoin/wallet" element={<KucoinWallet />} />
                           <Route path="/exchanges/okx" element={<OkxTest />} />
                         </Routes>
                       </div>
