@@ -17,15 +17,14 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ['react', 'react-dom', '@solana/web3.js'],
   },
   build: {
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       external: [
-        'http',
-        'https',
-        'http-proxy-agent',
-        'https-proxy-agent',
-        'socks-proxy-agent',
         'net',
         'tls',
         'events',
@@ -42,6 +41,11 @@ export default defineConfig(({ mode }) => ({
         'node:assert',
         'node:tls'
       ]
+    }
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'esnext'
     }
   }
 }));
