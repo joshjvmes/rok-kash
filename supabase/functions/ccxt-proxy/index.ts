@@ -7,8 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const TIMEOUT = 30000; // 30 seconds timeout
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -47,60 +45,30 @@ serve(async (req) => {
 
     const exchange = new exchangeClass({
       enableRateLimit: true,
-      timeout: TIMEOUT,
+      timeout: 60000,
       options: {
         defaultType: 'spot',
         adjustForTimeDifference: true,
-        recvWindow: TIMEOUT,
+        recvWindow: 60000,
       }
     })
 
-    // Configure exchange with API credentials if available
-    const apiKey = Deno.env.get(`${exchangeId.toUpperCase()}_API_KEY`)
-    const secret = Deno.env.get(`${exchangeId.toUpperCase()}_SECRET`)
-    const passphrase = Deno.env.get(`${exchangeId.toUpperCase()}_PASSPHRASE`)
-
-    if (apiKey && secret) {
-      console.log(`Configuring ${exchangeId} with API credentials`)
-      exchange.apiKey = apiKey
-      exchange.secret = secret
-      if (passphrase) {
-        exchange.password = passphrase
-      }
-    } else {
-      console.log(`No API credentials found for ${exchangeId}`)
-      if (['fetchBalance', 'createOrder', 'cancelOrder'].includes(method)) {
-        console.error(`${exchangeId} requires API credentials for ${method}`)
-        console.log('Available environment variables:', Object.keys(Deno.env.toObject()))
-        return new Response(
-          JSON.stringify({ 
-            error: `${exchangeId} requires API credentials for ${method}`,
-            details: 'API credentials not configured'
-          }),
-          {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        )
-      }
-    }
-
-    // Execute the requested method with a timeout
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error(`Operation timed out after ${TIMEOUT}ms`)), TIMEOUT);
-    });
-
     try {
-      const result = await Promise.race([
-        executeExchangeMethod(exchange, method, symbol, params),
-        timeoutPromise
-      ]);
+      // Configure exchange with API credentials
+      const apiKey = Deno.env.get(`${exchangeId.toUpperCase()}_API_KEY`)
+      const secret = Deno.env.get(`${exchangeId.toUpperCase()}_SECRET`)
+      const passphrase = Deno.env.get(`${exchangeId.toUpperCase()}_PASSPHRASE`)
 
-      if (!result) {
-        throw new Error(`Failed to execute ${method} on ${exchangeId}: No result returned`);
+      if (apiKey && secret) {
+        exchange.apiKey = apiKey
+        exchange.secret = secret
+        if (passphrase) {
+          exchange.password = passphrase
+        }
       }
 
-      console.log(`Successfully executed ${method} on ${exchangeId}:`, result);
+      // Execute the requested method
+      const result = await executeExchangeMethod(exchange, method, symbol, params)
       
       return new Response(
         JSON.stringify(result),
@@ -108,43 +76,28 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       )
-    } catch (methodError) {
-      console.error(`Error executing ${method} on ${exchangeId}:`, methodError);
-      
-      // Check if it's an authentication error
-      if (methodError.message.includes('API-key') || methodError.message.includes('Invalid credentials')) {
-        return new Response(
-          JSON.stringify({
-            error: `Authentication failed for ${exchangeId}`,
-            details: methodError.message
-          }),
-          {
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        )
-      }
-
-      throw methodError; // Re-throw to be caught by outer try-catch
+    } catch (error) {
+      console.error(`Error executing method ${method} on ${exchangeId}:`, error)
+      return new Response(
+        JSON.stringify({ 
+          error: `Error executing ${method} on ${exchangeId}: ${error.message}`,
+          details: error.stack 
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
   } catch (error) {
-    console.error('Error in ccxt-proxy:', error);
-    
-    // Determine appropriate status code
-    let status = 500;
-    if (error.message.includes('timed out')) {
-      status = 504; // Gateway Timeout
-    } else if (error.message.includes('rate limit')) {
-      status = 429; // Too Many Requests
-    }
-
+    console.error('Error in ccxt-proxy:', error)
     return new Response(
       JSON.stringify({ 
         error: error.message,
         details: error.stack 
       }), 
       {
-        status,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
