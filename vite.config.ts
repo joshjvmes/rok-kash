@@ -33,6 +33,10 @@ export default defineConfig(({ mode }) => ({
     ],
     force: true
   },
+  define: {
+    'process.env': {},
+    'global': {},
+  },
   build: {
     commonjsOptions: {
       include: [/node_modules/],
