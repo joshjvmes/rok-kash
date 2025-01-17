@@ -20,7 +20,7 @@ interface SymbolSelectorProps {
   selectedSymbol: string;
   onSymbolChange: (value: string) => void;
   fromExchange: string;
-  navigateOnChange?: boolean; // Added this optional prop
+  navigateOnChange?: boolean;
 }
 
 interface BalanceData {
@@ -33,7 +33,7 @@ export function SymbolSelector({
   selectedSymbol, 
   onSymbolChange,
   fromExchange,
-  navigateOnChange = true // Default value if not provided
+  navigateOnChange = true
 }: SymbolSelectorProps) {
   const { data: balance, isLoading } = useQuery<BalanceData>({
     queryKey: ['balance', fromExchange],
@@ -63,7 +63,7 @@ export function SymbolSelector({
       <div>
         <label className="text-sm text-serenity-mountain mb-2 block">Symbol</label>
         <div className="flex items-center gap-2">
-          <Select disabled value="">
+          <Select disabled value={selectedSymbol || "loading"}>
             <SelectTrigger className="bg-white border-serenity-sky-dark">
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -81,7 +81,7 @@ export function SymbolSelector({
       <label className="text-sm text-serenity-mountain mb-2 block">Symbol</label>
       <div className="flex items-center gap-2">
         <Select
-          value={selectedSymbol}
+          value={selectedSymbol || undefined}
           onValueChange={onSymbolChange}
         >
           <SelectTrigger className="bg-white border-serenity-sky-dark flex-1">
@@ -93,7 +93,7 @@ export function SymbolSelector({
                 <SelectItem key={token} value={token}>{token}</SelectItem>
               ))
             ) : (
-              <SelectItem value="" disabled>No tokens available</SelectItem>
+              <SelectItem value="no-tokens" disabled>No tokens available</SelectItem>
             )}
           </SelectContent>
         </Select>
