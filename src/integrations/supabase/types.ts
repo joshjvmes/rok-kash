@@ -129,6 +129,42 @@ export type Database = {
         }
         Relationships: []
       }
+      package_dependencies: {
+        Row: {
+          conflicts_with: Json | null
+          created_at: string
+          current_version: string
+          id: string
+          notes: string | null
+          package_name: string
+          required_by: string[] | null
+          resolution_strategy: string | null
+          updated_at: string
+        }
+        Insert: {
+          conflicts_with?: Json | null
+          created_at?: string
+          current_version: string
+          id?: string
+          notes?: string | null
+          package_name: string
+          required_by?: string[] | null
+          resolution_strategy?: string | null
+          updated_at?: string
+        }
+        Update: {
+          conflicts_with?: Json | null
+          created_at?: string
+          current_version?: string
+          id?: string
+          notes?: string | null
+          package_name?: string
+          required_by?: string[] | null
+          resolution_strategy?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       price_discrepancies: {
         Row: {
           created_at: string
@@ -243,42 +279,6 @@ export type Database = {
           password?: string | null
           type?: string | null
           username?: string | null
-        }
-        Relationships: []
-      }
-      package_dependencies: {
-        Row: {
-          id: string
-          package_name: string
-          current_version: string
-          required_by: string[] | null
-          conflicts_with: Json | null
-          resolution_strategy: string | null
-          created_at: string
-          updated_at: string
-          notes: string | null
-        }
-        Insert: {
-          id?: string
-          package_name: string
-          current_version: string
-          required_by?: string[] | null
-          conflicts_with?: Json | null
-          resolution_strategy?: string | null
-          created_at?: string
-          updated_at?: string
-          notes?: string | null
-        }
-        Update: {
-          id?: string
-          package_name?: string
-          current_version?: string
-          required_by?: string[] | null
-          conflicts_with?: Json | null
-          resolution_strategy?: string | null
-          created_at?: string
-          updated_at?: string
-          notes?: string | null
         }
         Relationships: []
       }
