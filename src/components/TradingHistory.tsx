@@ -98,26 +98,38 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
     );
   }
 
+  const formatDateTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return {
+      date: date.toLocaleDateString(),
+      time: date.toLocaleTimeString()
+    };
+  };
+
   return (
     <Card className="p-4 bg-serenity-sky-dark/10 border-serenity-sky-light/30 backdrop-blur-sm">
       <h3 className="text-lg font-semibold mb-4 text-serenity-mountain">{symbol} Your Recent Trades</h3>
       <ScrollArea className="h-[300px] pr-4">
         <div className="space-y-2">
-          {userTrades.map((trade: any) => (
-            <div
-              key={trade.id}
-              className="flex justify-between text-sm border-b border-serenity-sky-light/20 pb-2 hover:bg-serenity-sky-light/10 rounded-sm px-2 py-1 transition-colors"
-            >
-              <span className={trade.side === 'buy' ? 'text-serenity-grass-light font-medium' : 'text-trading-red font-medium'}>
-                {trade.side.toUpperCase()}
-              </span>
-              <span className="text-serenity-mountain">${Number(trade.price).toFixed(2)}</span>
-              <span className="text-serenity-mountain">{Number(trade.amount).toFixed(4)}</span>
-              <span className="text-serenity-mountain/70">
-                {new Date(trade.timestamp).toLocaleTimeString()}
-              </span>
-            </div>
-          ))}
+          {userTrades.map((trade: any) => {
+            const { date, time } = formatDateTime(trade.timestamp);
+            return (
+              <div
+                key={trade.id}
+                className="flex justify-between text-sm border-b border-serenity-sky-light/20 pb-2 hover:bg-serenity-sky-light/10 rounded-sm px-2 py-1 transition-colors"
+              >
+                <span className={trade.side === 'buy' ? 'text-serenity-grass-light font-medium' : 'text-trading-red font-medium'}>
+                  {trade.side.toUpperCase()}
+                </span>
+                <span className="text-serenity-mountain">${Number(trade.price).toFixed(2)}</span>
+                <span className="text-serenity-mountain">{Number(trade.amount).toFixed(4)}</span>
+                <div className="text-serenity-mountain/70 text-right">
+                  <div>{date}</div>
+                  <div>{time}</div>
+                </div>
+              </div>
+            );
+          })}
           {userTrades.length === 0 && (
             <p className="text-sm text-serenity-mountain/70 text-center py-4">No trades available</p>
           )}
