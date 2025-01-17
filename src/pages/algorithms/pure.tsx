@@ -77,8 +77,8 @@ export default function PureArbitrage() {
           buyExchange: opp.buy_exchange,
           sellExchange: opp.sell_exchange,
           symbol: opp.symbol,
-          spread: parseFloat(opp.spread),
-          potential: parseFloat(opp.potential_profit)
+          spread: Number(opp.spread), // Convert to number explicitly
+          potential: Number(opp.potential_profit) // Convert to number explicitly
         })) || [];
 
         // Combine new and stored opportunities, removing duplicates
