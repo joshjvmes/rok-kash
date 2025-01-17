@@ -21,13 +21,13 @@ interface TokenValues {
   [key: string]: TokenValue;
 }
 
-export function OkxAccountInfo() {
+export function BybitAccountInfo() {
   const [tokenValues, setTokenValues] = useState<TokenValues>({});
   const [totalUSDValue, setTotalUSDValue] = useState<number>(0);
 
   const { data: balance, isLoading } = useQuery<BalanceData>({
-    queryKey: ['balance', 'okx'],
-    queryFn: () => fetchBalance('okx'),
+    queryKey: ['balance', 'bybit'],
+    queryFn: () => fetchBalance('bybit'),
     refetchInterval: 360000, // 6 minutes
   });
 
@@ -44,7 +44,7 @@ export function OkxAccountInfo() {
             // Skip price fetch for stablecoins
             let usdValue = amount;
             if (!['USDT', 'USDC', 'DAI'].includes(coin)) {
-              const price = await fetchCCXTPrice('okx', `${coin}/USDT`);
+              const price = await fetchCCXTPrice('bybit', `${coin}/USDT`);
               usdValue = price ? amount * price : 0;
             }
             
@@ -90,7 +90,7 @@ export function OkxAccountInfo() {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold text-serenity-mountain flex items-center gap-2">
             <Database className="h-5 w-5" />
-            OKX Account Overview
+            Bybit Account Overview
           </h2>
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-serenity-sky-dark" />
