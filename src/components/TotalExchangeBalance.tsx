@@ -18,7 +18,7 @@ export function TotalExchangeBalance() {
     useQuery<BalanceData>({
       queryKey: ['balance', exchange],
       queryFn: () => fetchBalance(exchange),
-      refetchInterval: 300000, // Changed to 5 minutes (300,000 ms)
+      refetchInterval: 30000,
     })
   );
 
