@@ -81,13 +81,31 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
       console.log(`Found opportunity: binance -> kucoin, spread: ${spread}%, potential: $${potential}`);
 
       if (spread >= 0.1) { // Only show opportunities with at least 0.1% spread
-        opportunities.push({
+        const opportunity = {
           buyExchange: 'Binance',
           sellExchange: 'Kucoin',
           symbol,
           spread: parseFloat(spread.toFixed(2)),
           potential: parseFloat(potential.toFixed(2))
-        });
+        };
+
+        opportunities.push(opportunity);
+
+        // Store the opportunity in the database
+        const { error } = await supabase
+          .from('arbitrage_opportunities')
+          .insert({
+            buy_exchange: opportunity.buyExchange,
+            sell_exchange: opportunity.sellExchange,
+            symbol: opportunity.symbol,
+            spread: opportunity.spread,
+            potential_profit: opportunity.potential,
+            status: 'pending'
+          });
+
+        if (error) {
+          console.error('Error storing arbitrage opportunity:', error);
+        }
 
         // Update average price difference in the database
         await supabase
@@ -107,13 +125,31 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
       console.log(`Found reverse opportunity: kucoin -> binance, spread: ${spread}%, potential: $${potential}`);
 
       if (spread >= 0.1) {
-        opportunities.push({
+        const opportunity = {
           buyExchange: 'Kucoin',
           sellExchange: 'Binance',
           symbol,
           spread: parseFloat(spread.toFixed(2)),
           potential: parseFloat(potential.toFixed(2))
-        });
+        };
+
+        opportunities.push(opportunity);
+
+        // Store the opportunity in the database
+        const { error } = await supabase
+          .from('arbitrage_opportunities')
+          .insert({
+            buy_exchange: opportunity.buyExchange,
+            sell_exchange: opportunity.sellExchange,
+            symbol: opportunity.symbol,
+            spread: opportunity.spread,
+            potential_profit: opportunity.potential,
+            status: 'pending'
+          });
+
+        if (error) {
+          console.error('Error storing arbitrage opportunity:', error);
+        }
 
         // Update average price difference in the database
         await supabase

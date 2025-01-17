@@ -63,13 +63,41 @@ export default function PureArbitrage() {
           ));
         }
 
-        setOpportunities(allOpportunities);
+        // Fetch stored opportunities from the database
+        const { data: storedOpportunities, error: fetchError } = await supabase
+          .from('arbitrage_opportunities')
+          .select('*')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
+
+        if (fetchError) throw fetchError;
+
+        // Convert stored opportunities to the correct format
+        const formattedOpportunities = storedOpportunities?.map(opp => ({
+          buyExchange: opp.buy_exchange,
+          sellExchange: opp.sell_exchange,
+          symbol: opp.symbol,
+          spread: parseFloat(opp.spread),
+          potential: parseFloat(opp.potential_profit)
+        })) || [];
+
+        // Combine new and stored opportunities, removing duplicates
+        const uniqueOpportunities = [...allOpportunities, ...formattedOpportunities]
+          .filter((opp, index, self) => 
+            index === self.findIndex((o) => 
+              o.buyExchange === opp.buyExchange && 
+              o.sellExchange === opp.sellExchange && 
+              o.symbol === opp.symbol
+            )
+          );
+
+        setOpportunities(uniqueOpportunities);
 
         // Show notification if enabled and opportunities found
-        if (settings.notifications_enabled && allOpportunities.length > 0) {
+        if (settings.notifications_enabled && uniqueOpportunities.length > 0) {
           toast({
             title: "New Arbitrage Opportunities",
-            description: `Found ${allOpportunities.length} opportunities matching your criteria.`,
+            description: `Found ${uniqueOpportunities.length} opportunities matching your criteria.`,
           });
         }
       } catch (error: any) {
