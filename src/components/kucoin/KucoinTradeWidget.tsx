@@ -54,7 +54,7 @@ export function KucoinTradeWidget() {
 
   const { data: balanceData, isLoading: isLoadingBalance } = useQuery({
     queryKey: ['balance', 'kucoin'],
-    queryFn: () => fetchBalance('kucoin'),
+    queryFn: () => fetchBalance('kucoin') as Promise<Balance>,
     refetchInterval: 10000,
   });
 
@@ -84,7 +84,7 @@ export function KucoinTradeWidget() {
     if (!balanceData?.total) return;
 
     const nonZeroBalances = Object.entries(balanceData.total)
-      .filter(([_, amount]) => amount > 0)
+      .filter(([_, amount]) => typeof amount === 'number' && amount > 0)
       .reduce((acc, [coin, amount]) => {
         acc[coin] = amount;
         return acc;
