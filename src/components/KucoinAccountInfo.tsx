@@ -5,8 +5,14 @@ import { Loader2, Database, CreditCard, User, DollarSign } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
+interface BalanceData {
+  total: {
+    [key: string]: number;
+  };
+}
+
 export function KucoinAccountInfo() {
-  const { data: balance, isLoading } = useQuery({
+  const { data: balance, isLoading } = useQuery<BalanceData>({
     queryKey: ['balance', 'kucoin'],
     queryFn: () => fetchBalance('kucoin'),
     refetchInterval: 360000, // 6 minutes
