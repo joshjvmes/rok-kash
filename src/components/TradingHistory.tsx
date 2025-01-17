@@ -36,16 +36,19 @@ export function TradingHistory({ exchange, symbol }: TradingHistoryProps) {
   });
 
   // Query for live trades to store in database
-  const { data: liveTrades = [], isLoading: isLoadingLiveTrades } = useQuery({
+  const { data: liveTrades = [] } = useQuery({
     queryKey: ['liveTrades', exchange, symbol],
-    queryFn: () => fetchTrades(exchange, symbol),
+    queryFn: async () => {
+      const trades = await fetchTrades(exchange, symbol);
+      return Array.isArray(trades) ? trades : [];
+    },
     refetchInterval: 10000, // Fetch every 10 seconds
   });
 
   // Store new trades in the database
   useEffect(() => {
     const storeTrades = async () => {
-      if (!Array.isArray(liveTrades) || liveTrades.length === 0) return;
+      if (liveTrades.length === 0) return;
 
       try {
         const { data: { user } } = await supabase.auth.getUser();
