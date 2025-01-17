@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchBalance, createOrder, fetchCCXTPrice } from "@/utils/exchanges/ccxt";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface Balance {
-  [key: string]: number;
+  total: {
+    [key: string]: number;
+  };
 }
 
 interface TradingPair {
@@ -26,14 +28,14 @@ export function KucoinTradeWidget() {
   const { toast } = useToast();
 
   // Fetch user's balance
-  const { data: balanceData, isLoading: isLoadingBalance } = useQuery({
+  const { data: balanceData, isLoading: isLoadingBalance } = useQuery<Balance>({
     queryKey: ['balance', 'kucoin'],
     queryFn: () => fetchBalance('kucoin'),
     refetchInterval: 10000,
   });
 
   // Filter non-zero balances
-  const nonZeroBalances: Balance = {};
+  const nonZeroBalances: { [key: string]: number } = {};
   if (balanceData?.total) {
     Object.entries(balanceData.total).forEach(([coin, amount]) => {
       if (amount > 0) {
@@ -93,7 +95,7 @@ export function KucoinTradeWidget() {
         description: `${side.toUpperCase()} order placed successfully`,
       });
       console.log('Order placed:', order);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: `Failed to place ${side} order: ${error.message}`,
