@@ -69,6 +69,18 @@ serve(async (req) => {
       }
     } else {
       console.log(`No API credentials found for ${exchangeId}`)
+      if (['fetchBalance', 'createOrder', 'cancelOrder'].includes(method)) {
+        return new Response(
+          JSON.stringify({ 
+            error: `${exchangeId} requires API credentials for ${method}`,
+            details: 'API credentials not configured'
+          }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
     }
 
     // Execute the requested method with a timeout

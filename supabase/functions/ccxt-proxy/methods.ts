@@ -40,8 +40,22 @@ export async function executeExchangeMethod(
   params: Record<string, any> = {}
 ) {
   try {
+    // Log exchange configuration for debugging
+    console.log(`Exchange ${exchange.id} configuration:`, {
+      hasApiKey: !!exchange.apiKey,
+      hasSecret: !!exchange.secret,
+      hasPassword: !!exchange.password,
+    });
+
     const formattedSymbol = symbol ? formatExchangeSymbol(exchange.id, symbol) : symbol;
     console.log(`Executing ${method} for ${exchange.id} with symbol: ${formattedSymbol}`);
+
+    // Verify credentials for authenticated endpoints
+    if (['fetchBalance', 'createOrder', 'cancelOrder'].includes(method)) {
+      if (!exchange.apiKey || !exchange.secret) {
+        throw new Error(`${exchange.id} requires API credentials for ${method}`);
+      }
+    }
 
     // Load markets before executing any method to ensure proper symbol mapping
     if (['fetchBalance', 'fetchTicker', 'fetchOrderBook', 'fetchTrades'].includes(method)) {
