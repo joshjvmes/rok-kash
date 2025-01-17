@@ -14,7 +14,7 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "./ui/button";
-import { useToast } from "./ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,17 +53,21 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
       toast({
         title: "Logged out successfully",
         duration: 2000,
       });
-      navigate("/login");
+      navigate("/login", { replace: true });
     } catch (error) {
+      console.error("Logout error:", error);
       toast({
         title: "Error logging out",
         description: "Please try again",
         variant: "destructive",
+        duration: 3000,
       });
     }
   };
@@ -168,6 +172,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
       </SidebarContent>
       <SidebarFooter className="p-4 flex flex-row items-center gap-2 justify-end">
         <div className="flex items-center space-x-2">
