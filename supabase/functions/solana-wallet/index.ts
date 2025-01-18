@@ -34,7 +34,7 @@ async function getSolBalance(walletAddress: string): Promise<number> {
     return solBalance
   } catch (error) {
     console.error('Error getting SOL balance:', error)
-    throw error
+    throw new Error('Failed to get Solana balance')
   }
 }
 
@@ -69,7 +69,76 @@ async function getTokenBalance(tokenMint: string, walletAddress: string) {
     }
   } catch (error) {
     console.error('Error fetching token balance:', error)
-    throw error
+    throw new Error('Failed to fetch token balance')
+  }
+}
+
+async function getDepositAddress(exchange: string, tokenMint: string) {
+  console.log(`Getting deposit address for ${exchange} and token ${tokenMint}`);
+  
+  try {
+    // Initialize CCXT exchange instance
+    const ccxt = await import('npm:ccxt');
+    const config = {
+      binance: {
+        apiKey: Deno.env.get('BINANCE_API_KEY'),
+        secret: Deno.env.get('BINANCE_SECRET')
+      },
+      kucoin: {
+        apiKey: Deno.env.get('KUCOIN_API_KEY'),
+        secret: Deno.env.get('KUCOIN_SECRET'),
+        password: Deno.env.get('KUCOIN_PASSPHRASE')
+      },
+      okx: {
+        apiKey: Deno.env.get('OKX_API_KEY'),
+        secret: Deno.env.get('OKX_SECRET'),
+        password: Deno.env.get('OKX_PASSPHRASE')
+      },
+      bybit: {
+        apiKey: Deno.env.get('BYBIT_API_KEY'),
+        secret: Deno.env.get('BYBIT_SECRET')
+      },
+      kraken: {
+        apiKey: Deno.env.get('KRAKEN_API_KEY'),
+        secret: Deno.env.get('KRAKEN_API_SECRET')
+      }
+    };
+
+    const exchangeConfig = config[exchange.toLowerCase()];
+    if (!exchangeConfig) {
+      throw new Error(`Unsupported exchange: ${exchange}`);
+    }
+
+    const exchangeInstance = new ccxt[exchange.toLowerCase()]({
+      ...exchangeConfig,
+      enableRateLimit: true
+    });
+
+    // Convert token mint to currency code
+    const currencyMap = {
+      'So11111111111111111111111111111111111111112': 'SOL',
+      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',
+      'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT'
+    };
+
+    const currency = currencyMap[tokenMint];
+    if (!currency) {
+      throw new Error(`Unsupported token mint: ${tokenMint}`);
+    }
+
+    // Fetch deposit address
+    const depositAddress = await exchangeInstance.fetchDepositAddress(currency, {
+      network: 'SOL'
+    });
+
+    console.log('Deposit address:', depositAddress);
+    return {
+      address: depositAddress.address,
+      tag: depositAddress.tag
+    };
+  } catch (error) {
+    console.error('Error getting deposit address:', error);
+    throw error;
   }
 }
 
@@ -208,8 +277,8 @@ serve(async (req) => {
   }
 
   try {
-    const { action, walletAddress, tokenMint, fromType, toType, fromAddress, toAddress, amount } = await req.json();
-    console.log('Processing request:', { action, walletAddress, tokenMint });
+    const { action, walletAddress, tokenMint, fromType, toType, fromAddress, toAddress, amount, exchange } = await req.json();
+    console.log('Processing request:', { action, walletAddress, tokenMint, exchange });
 
     let result;
     switch (action) {
@@ -221,21 +290,8 @@ serve(async (req) => {
         result = await getTokenBalance(tokenMint, walletAddress);
         break;
 
-      case 'getAllBalances':
-        const solBalance = await getSolBalance(walletAddress);
-        const tokenBalances = await Promise.all(
-          TRACKED_TOKENS.map(async (token) => {
-            const balance = await getTokenBalance(token.address, walletAddress);
-            return {
-              symbol: token.symbol,
-              ...balance
-            };
-          })
-        );
-        result = {
-          sol: solBalance,
-          tokens: tokenBalances
-        };
+      case 'getDepositAddress':
+        result = await getDepositAddress(exchange, tokenMint);
         break;
 
       case 'transfer':
