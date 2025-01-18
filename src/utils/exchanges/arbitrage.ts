@@ -77,6 +77,16 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
     return opportunities;
   }
 
+  // Get arbitrage settings for minimum thresholds
+  const { data: settings } = await supabase
+    .from('arbitrage_settings')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const minSpreadPercentage = settings?.min_spread_percentage ?? 0.1;
+  const minProfitAmount = settings?.min_profit_amount ?? 10.0;
+
   // Compare prices if both are available
   if (binancePrice && kucoinPrice) {
     // Check Binance -> Kucoin direction
@@ -84,9 +94,12 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
       const spread = ((kucoinPrice - binancePrice) / binancePrice) * 100;
       const potential = (kucoinPrice - binancePrice) * 1000; // Assuming 1000 units traded
 
-      console.log(`Found opportunity: binance -> kucoin, spread: ${spread}%, potential: $${potential}`);
+      console.log(`Found potential opportunity: Binance -> Kucoin`);
+      console.log(`Spread: ${spread.toFixed(4)}%, Potential: $${potential.toFixed(2)}`);
+      console.log(`Minimum required: Spread ${minSpreadPercentage}%, Profit $${minProfitAmount}`);
 
-      if (spread >= 0.1) { // Only show opportunities with at least 0.1% spread
+      if (spread >= minSpreadPercentage && potential >= minProfitAmount) {
+        console.log('Opportunity meets minimum requirements - adding to list');
         const opportunity = {
           buyExchange: 'Binance',
           sellExchange: 'Kucoin',
@@ -113,6 +126,8 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
         if (error) {
           console.error('Error storing arbitrage opportunity:', error);
         }
+      } else {
+        console.log('Opportunity filtered out - does not meet minimum requirements');
       }
     }
 
@@ -121,9 +136,12 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
       const spread = ((binancePrice - kucoinPrice) / kucoinPrice) * 100;
       const potential = (binancePrice - kucoinPrice) * 1000;
 
-      console.log(`Found reverse opportunity: kucoin -> binance, spread: ${spread}%, potential: $${potential}`);
+      console.log(`Found potential opportunity: Kucoin -> Binance`);
+      console.log(`Spread: ${spread.toFixed(4)}%, Potential: $${potential.toFixed(2)}`);
+      console.log(`Minimum required: Spread ${minSpreadPercentage}%, Profit $${minProfitAmount}`);
 
-      if (spread >= 0.1) {
+      if (spread >= minSpreadPercentage && potential >= minProfitAmount) {
+        console.log('Opportunity meets minimum requirements - adding to list');
         const opportunity = {
           buyExchange: 'Kucoin',
           sellExchange: 'Binance',
@@ -150,10 +168,12 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
         if (error) {
           console.error('Error storing arbitrage opportunity:', error);
         }
+      } else {
+        console.log('Opportunity filtered out - does not meet minimum requirements');
       }
     }
   }
 
-  console.log(`Found ${opportunities.length} arbitrage opportunities`);
+  console.log(`Found ${opportunities.length} valid arbitrage opportunities that meet minimum requirements`);
   return opportunities;
 }
