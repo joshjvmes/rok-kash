@@ -1,44 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
-import { fetchCCXTPrice } from "./ccxt";
 import type { ArbitrageOpportunity } from "../types/exchange";
-
-async function getPriceForExchange(exchange: string, symbol: string): Promise<number | null> {
-  try {
-    console.log(`Fetching price for ${exchange} - ${symbol}`);
-    const startTime = performance.now();
-    let price: number | null = null;
-    
-    switch (exchange) {
-      case 'binance':
-        price = await fetchCCXTPrice('binance', symbol);
-        break;
-      case 'kucoin':
-        price = await fetchCCXTPrice('kucoin', symbol);
-        break;
-    }
-
-    const executionTime = Math.round(performance.now() - startTime);
-
-    if (price === null) {
-      console.log(`No price returned for ${exchange} - ${symbol}`);
-    } else {
-      console.log(`Price for ${exchange} - ${symbol}: ${price}`);
-      
-      await supabase
-        .from('matching_trading_pairs')
-        .update({ 
-          average_execution_time_ms: executionTime,
-          last_price_check: new Date().toISOString()
-        })
-        .eq('symbol', symbol);
-    }
-
-    return price;
-  } catch (error) {
-    console.error(`Error fetching price for ${exchange} - ${symbol}:`, error);
-    return null;
-  }
-}
+import { getPriceForExchange } from "./priceUtils";
+import { processOpportunity } from "./opportunityUtils";
 
 export async function findArbitrageOpportunities(symbol: string): Promise<ArbitrageOpportunity[]> {
   const opportunities: ArbitrageOpportunity[] = [];
@@ -61,15 +24,6 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
   const binancePrice = await getPriceForExchange('binance', tradingPair.binance_symbol);
   const kucoinPrice = await getPriceForExchange('kucoin', tradingPair.kucoin_symbol);
 
-  // Create a map of exchange prices
-  const exchangeData: Record<string, { price: number | null }> = {
-    binance: { price: binancePrice },
-    kucoin: { price: kucoinPrice }
-  };
-
-  // Log the collected data
-  console.log('Exchange data collected:', exchangeData);
-
   // Get the current user's ID
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -91,85 +45,37 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
   if (binancePrice && kucoinPrice) {
     // Check Binance -> Kucoin direction
     if (kucoinPrice > binancePrice) {
-      const spread = ((kucoinPrice - binancePrice) / binancePrice) * 100;
-      const potential = (kucoinPrice - binancePrice) * 1000; // Assuming 1000 units traded
-
-      console.log(`Found potential opportunity: Binance -> Kucoin`);
-      console.log(`Spread: ${spread.toFixed(4)}%, Potential: $${potential.toFixed(2)}`);
-      console.log(`Minimum required: Spread ${minSpreadPercentage}%, Profit $${minProfitAmount}`);
-
-      if (spread >= minSpreadPercentage && potential >= minProfitAmount) {
-        console.log('Opportunity meets minimum requirements - adding to list');
-        const opportunity = {
-          buyExchange: 'Binance',
-          sellExchange: 'Kucoin',
-          symbol,
-          spread: parseFloat(spread.toFixed(2)),
-          potential: parseFloat(potential.toFixed(2))
-        };
-
+      const opportunity = await processOpportunity({
+        buyExchange: 'Binance',
+        sellExchange: 'Kucoin',
+        symbol,
+        buyPrice: binancePrice,
+        sellPrice: kucoinPrice,
+        minSpreadPercentage,
+        minProfitAmount,
+        userId: user.id
+      });
+      
+      if (opportunity) {
         opportunities.push(opportunity);
-
-        // Store the opportunity in the database with user_id
-        const { error } = await supabase
-          .from('arbitrage_opportunities')
-          .insert({
-            buy_exchange: opportunity.buyExchange,
-            sell_exchange: opportunity.sellExchange,
-            symbol: opportunity.symbol,
-            spread: opportunity.spread,
-            potential_profit: opportunity.potential,
-            status: 'pending',
-            user_id: user.id
-          });
-
-        if (error) {
-          console.error('Error storing arbitrage opportunity:', error);
-        }
-      } else {
-        console.log('Opportunity filtered out - does not meet minimum requirements');
       }
     }
 
     // Check Kucoin -> Binance direction
     if (binancePrice > kucoinPrice) {
-      const spread = ((binancePrice - kucoinPrice) / kucoinPrice) * 100;
-      const potential = (binancePrice - kucoinPrice) * 1000;
-
-      console.log(`Found potential opportunity: Kucoin -> Binance`);
-      console.log(`Spread: ${spread.toFixed(4)}%, Potential: $${potential.toFixed(2)}`);
-      console.log(`Minimum required: Spread ${minSpreadPercentage}%, Profit $${minProfitAmount}`);
-
-      if (spread >= minSpreadPercentage && potential >= minProfitAmount) {
-        console.log('Opportunity meets minimum requirements - adding to list');
-        const opportunity = {
-          buyExchange: 'Kucoin',
-          sellExchange: 'Binance',
-          symbol,
-          spread: parseFloat(spread.toFixed(2)),
-          potential: parseFloat(potential.toFixed(2))
-        };
-
+      const opportunity = await processOpportunity({
+        buyExchange: 'Kucoin',
+        sellExchange: 'Binance',
+        symbol,
+        buyPrice: kucoinPrice,
+        sellPrice: binancePrice,
+        minSpreadPercentage,
+        minProfitAmount,
+        userId: user.id
+      });
+      
+      if (opportunity) {
         opportunities.push(opportunity);
-
-        // Store the opportunity in the database with user_id
-        const { error } = await supabase
-          .from('arbitrage_opportunities')
-          .insert({
-            buy_exchange: opportunity.buyExchange,
-            sell_exchange: opportunity.sellExchange,
-            symbol: opportunity.symbol,
-            spread: opportunity.spread,
-            potential_profit: opportunity.potential,
-            status: 'pending',
-            user_id: user.id
-          });
-
-        if (error) {
-          console.error('Error storing arbitrage opportunity:', error);
-        }
-      } else {
-        console.log('Opportunity filtered out - does not meet minimum requirements');
       }
     }
   }
