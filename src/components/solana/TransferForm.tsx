@@ -111,7 +111,6 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         show={shouldShowAddress}
         fromType={fromType}
         toType={toType}
-        walletAddress={publicKey?.toString()}
       />
 
       <TransferValidation

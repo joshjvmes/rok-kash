@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useWallet } from '@solana/wallet-adapter-react';
 
 interface DepositAddressDisplayProps {
   exchange?: string;
@@ -18,7 +17,6 @@ export function DepositAddressDisplay({ exchange, tokenMint, show = false, fromT
   const [depositAddress, setDepositAddress] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { publicKey } = useWallet();
 
   useEffect(() => {
     async function fetchDepositAddress() {
@@ -51,13 +49,8 @@ export function DepositAddressDisplay({ exchange, tokenMint, show = false, fromT
       }
     }
 
-    // When transferring from exchange to wallet, use the connected wallet's address
-    if (fromType === 'exchange' && toType === 'wallet' && publicKey) {
-      setDepositAddress(publicKey.toString());
-    }
-
     fetchDepositAddress();
-  }, [exchange, tokenMint, show, fromType, toType, publicKey, toast]);
+  }, [exchange, tokenMint, show, fromType, toType, toast]);
 
   const handleCopy = async () => {
     try {
