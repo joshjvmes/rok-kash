@@ -73,23 +73,23 @@ export function ArbitrageOpportunity({
 
   return (
     <div className="space-y-2">
-      <Card className="p-4 bg-trading-gray hover:bg-trading-gray-light transition-colors">
+      <Card className="p-4 bg-[#1F2937] hover:bg-[#2D3748] transition-colors">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">{buyExchange}</span>
+              <span className="text-sm text-gray-300">{buyExchange}</span>
               <ArrowRight size={16} className="text-trading-blue" />
-              <span className="text-sm text-gray-400">{sellExchange}</span>
+              <span className="text-sm text-gray-300">{sellExchange}</span>
             </div>
             <span className="text-sm font-semibold">{symbol}</span>
           </div>
           <div className="flex items-center gap-4">
             <div>
-              <p className="text-sm text-gray-400">Spread</p>
+              <p className="text-sm text-gray-300">Spread</p>
               <p className="text-trading-green font-semibold">{spread}%</p>
             </div>
             <div>
-              <p className="text-sm text-gray-400">Potential</p>
+              <p className="text-sm text-gray-300">Potential</p>
               <p className="text-trading-green font-semibold">${potential}</p>
             </div>
             <Button
