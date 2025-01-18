@@ -14,7 +14,7 @@
  */
 
 import { Jupiter } from '@jup-ag/core';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import { connection } from './solana';
 import JSBI from 'jsbi';
 

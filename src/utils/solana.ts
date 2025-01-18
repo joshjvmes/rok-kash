@@ -1,5 +1,8 @@
-import { PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { supabase } from '@/integrations/supabase/client';
+
+// Initialize connection to Solana network
+export const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
 
 /**
  * Get SOL balance for a wallet address
