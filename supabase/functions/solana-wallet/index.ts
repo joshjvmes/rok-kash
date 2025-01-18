@@ -1,12 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { getSolBalance, getTokenBalance } from "./balances.ts";
-import { getDepositAddress } from "./deposits.ts";
-import { handleTransfer } from "./transfers.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders } from './constants.ts';
+import { getDepositAddress } from './deposits.ts';
+import { handleTransfer } from './transfers.ts';
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -15,19 +10,11 @@ serve(async (req) => {
   }
 
   try {
-    const { action, walletAddress, tokenMint, fromType, toType, fromAddress, toAddress, amount, exchange } = await req.json();
-    console.log('Processing request:', { action, walletAddress, tokenMint, exchange });
+    const { action, exchange, tokenMint, fromType, toType, fromAddress, toAddress, amount } = await req.json();
+    console.log('Processing request:', { action, exchange, tokenMint, fromType, toType });
 
     let result;
     switch (action) {
-      case 'getSOLBalance':
-        result = await getSolBalance(walletAddress);
-        break;
-
-      case 'getTokenBalance':
-        result = await getTokenBalance(tokenMint, walletAddress);
-        break;
-
       case 'getDepositAddress':
         result = await getDepositAddress(exchange, tokenMint);
         break;
