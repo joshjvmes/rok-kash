@@ -39,6 +39,15 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
   };
 
   const handleSubmit = async () => {
+    if ((fromType === 'wallet' || toType === 'wallet') && !connected) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your Phantom wallet to proceed.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       await onTransferSubmit({
@@ -115,7 +124,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
       <Button
         className="w-full"
         onClick={handleSubmit}
-        disabled={isLoading || !connected}
+        disabled={isLoading || ((fromType === 'wallet' || toType === 'wallet') && !connected)}
       >
         {isLoading ? "Processing..." : "Transfer"}
       </Button>

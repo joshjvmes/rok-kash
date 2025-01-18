@@ -20,7 +20,8 @@ export function TransferValidation({
   tokenMint,
   depositAddress,
 }: TransferValidationProps) {
-  if (!connected) {
+  // Only show connection alert if we're dealing with wallet operations
+  if ((fromType === 'wallet' || toType === 'wallet') && !connected) {
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
