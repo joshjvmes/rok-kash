@@ -70,6 +70,12 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
     }
   };
 
+  // Show deposit address when transferring to an exchange and a token is selected
+  const shouldShowDepositAddress = toType === 'exchange' && 
+    selectedExchange && 
+    tokenMint && 
+    fromType === 'wallet';
+
   return (
     <div className="space-y-4">
       <TransferDirectionSelector
@@ -85,6 +91,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         <ExchangeSelector
           value={selectedExchange}
           onChange={setSelectedExchange}
+          disabled={isLoading}
         />
       )}
 
@@ -100,7 +107,11 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         </div>
       )}
 
-      <DepositAddressDisplay />
+      <DepositAddressDisplay
+        exchange={selectedExchange}
+        tokenMint={tokenMint}
+        show={shouldShowDepositAddress}
+      />
 
       <TransferValidation
         connected={connected}
@@ -119,6 +130,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         onChange={(e) => setAmount(e.target.value)}
         min="0"
         step="any"
+        disabled={isLoading}
       />
 
       <Button
