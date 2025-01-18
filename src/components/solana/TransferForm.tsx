@@ -33,8 +33,10 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
   const { balance } = useSolanaTokens(tokenMint);
 
   const handleSwapDirection = () => {
-    setFromType(fromType === 'wallet' ? 'exchange' : 'wallet');
-    setToType(toType === 'wallet' ? 'exchange' : 'wallet');
+    const newFromType = toType;
+    const newToType = fromType;
+    setFromType(newFromType);
+    setToType(newToType);
   };
 
   const handleSubmit = async () => {
@@ -68,10 +70,12 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
     }
   };
 
-  // Show address when a token and exchange are selected, or when transferring to wallet
+  // Show address when a token and exchange are selected
   const shouldShowAddress = Boolean(
-    (selectedExchange && tokenMint) || 
-    (toType === 'wallet' && tokenMint && connected)
+    tokenMint && (
+      (fromType === 'wallet' && toType === 'exchange' && selectedExchange) ||
+      (fromType === 'exchange' && toType === 'wallet' && connected)
+    )
   );
 
   return (
@@ -111,6 +115,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         show={shouldShowAddress}
         fromType={fromType}
         toType={toType}
+        walletAddress={publicKey?.toString()}
       />
 
       <TransferValidation

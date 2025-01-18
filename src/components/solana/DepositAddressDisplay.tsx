@@ -11,22 +11,40 @@ interface DepositAddressDisplayProps {
   show?: boolean;
   fromType: 'wallet' | 'exchange';
   toType: 'exchange' | 'wallet';
+  walletAddress?: string;
 }
 
-export function DepositAddressDisplay({ exchange, tokenMint, show = false, fromType, toType }: DepositAddressDisplayProps) {
+export function DepositAddressDisplay({ 
+  exchange, 
+  tokenMint, 
+  show = false, 
+  fromType, 
+  toType,
+  walletAddress 
+}: DepositAddressDisplayProps) {
   const [depositAddress, setDepositAddress] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     async function fetchDepositAddress() {
-      if (!exchange || !tokenMint || !show) return;
-      
+      if (!show) {
+        setDepositAddress('');
+        return;
+      }
+
+      // If transferring to wallet, use wallet address
+      if (toType === 'wallet' && walletAddress) {
+        setDepositAddress(walletAddress);
+        return;
+      }
+
       // Only fetch exchange deposit address when transferring from wallet to exchange
-      if (fromType === 'wallet' && toType === 'exchange') {
+      if (fromType === 'wallet' && toType === 'exchange' && exchange && tokenMint) {
         setIsLoading(true);
         try {
-          const { data, error } = await supabase.functions.invoke('solana-transfer', {
+          console.log('Fetching deposit address for:', { exchange, tokenMint });
+          const { data, error } = await supabase.functions.invoke('solana-wallet', {
             body: {
               action: 'getDepositAddress',
               exchange,
@@ -35,7 +53,13 @@ export function DepositAddressDisplay({ exchange, tokenMint, show = false, fromT
           });
 
           if (error) throw error;
-          setDepositAddress(data.address);
+          
+          console.log('Deposit address response:', data);
+          if (data && data.address) {
+            setDepositAddress(data.address);
+          } else {
+            throw new Error('No deposit address returned');
+          }
         } catch (error) {
           console.error('Error fetching deposit address:', error);
           toast({
@@ -43,6 +67,7 @@ export function DepositAddressDisplay({ exchange, tokenMint, show = false, fromT
             description: "Failed to fetch deposit address. Please try again.",
             variant: "destructive",
           });
+          setDepositAddress('');
         } finally {
           setIsLoading(false);
         }
@@ -50,14 +75,14 @@ export function DepositAddressDisplay({ exchange, tokenMint, show = false, fromT
     }
 
     fetchDepositAddress();
-  }, [exchange, tokenMint, show, fromType, toType, toast]);
+  }, [exchange, tokenMint, show, fromType, toType, walletAddress, toast]);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(depositAddress);
       toast({
         title: "Address Copied",
-        description: `${fromType === 'wallet' ? 'Exchange deposit' : 'Wallet'} address copied to clipboard`,
+        description: `${toType === 'wallet' ? 'Wallet' : 'Exchange deposit'} address copied to clipboard`,
       });
     } catch (error) {
       console.error('Error copying address:', error);
@@ -71,7 +96,7 @@ export function DepositAddressDisplay({ exchange, tokenMint, show = false, fromT
 
   if (!show) return null;
 
-  const title = fromType === 'wallet' ? 'Exchange Deposit Address' : 'Destination Wallet Address';
+  const title = toType === 'wallet' ? 'Destination Wallet Address' : 'Exchange Deposit Address';
 
   return (
     <Card className="p-4 bg-serenity-white/50 backdrop-blur-sm">
