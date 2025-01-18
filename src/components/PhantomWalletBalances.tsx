@@ -5,6 +5,8 @@ import { getTokenBalance } from '@/utils/solana/tokens';
 import { Skeleton } from './ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Card } from './ui/card';
+import { Alert, AlertDescription } from './ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 // Define the tokens we want to display
 const DISPLAY_TOKENS = [
@@ -35,6 +37,7 @@ export const PhantomWalletBalances = () => {
   const [solBalance, setSolBalance] = useState<number | null>(null);
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBalances = async () => {
@@ -42,10 +45,13 @@ export const PhantomWalletBalances = () => {
         console.log('Wallet not connected or no public key available');
         setSolBalance(null);
         setTokenBalances([]);
+        setError(null);
         return;
       }
 
       setIsLoading(true);
+      setError(null);
+
       try {
         // Fetch SOL balance
         console.log('Fetching SOL balance for address:', publicKey.toString());
@@ -67,20 +73,17 @@ export const PhantomWalletBalances = () => {
             };
           } catch (error) {
             console.error(`Error fetching ${token.symbol} balance:`, error);
-            return {
-              symbol: token.symbol,
-              balance: '0',
-              decimals: token.decimals,
-              logoURI: token.logoURI
-            };
+            throw error;
           }
         });
 
         const balances = await Promise.all(balancePromises);
         console.log('All token balances:', balances);
         setTokenBalances(balances);
+        setError(null);
       } catch (error) {
         console.error('Error fetching wallet balances:', error);
+        setError('Failed to fetch wallet balances. Please try reconnecting your wallet.');
         toast({
           title: "Error",
           description: "Failed to fetch wallet balances. Please try reconnecting your wallet.",
@@ -96,6 +99,7 @@ export const PhantomWalletBalances = () => {
       setSolBalance(null);
       setTokenBalances([]);
       setIsLoading(false);
+      setError(null);
     } else {
       fetchBalances();
     }
@@ -120,6 +124,13 @@ export const PhantomWalletBalances = () => {
 
   return (
     <div className="space-y-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <Card className="p-4 bg-white/50 backdrop-blur-sm">
         <h3 className="text-lg font-semibold mb-2">SOL Balance</h3>
         {isLoading ? (
