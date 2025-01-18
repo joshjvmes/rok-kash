@@ -33,7 +33,6 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
   const { balance } = useSolanaTokens(tokenMint);
 
   const handleSwapDirection = () => {
-    console.log(`Swapping transfer direction from ${fromType} to ${toType === 'wallet' ? 'exchange' : 'wallet'}`);
     setFromType(fromType === 'wallet' ? 'exchange' : 'wallet');
     setToType(toType === 'wallet' ? 'exchange' : 'wallet');
   };
@@ -57,7 +56,6 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         amount,
         tokenMint,
       });
-      console.info('Transfer submitted successfully');
     } catch (error) {
       console.error('Transfer submission failed:', error);
       toast({
@@ -70,11 +68,8 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
     }
   };
 
-  // Show deposit address when transferring to an exchange and a token is selected
-  const shouldShowDepositAddress = toType === 'exchange' && 
-    selectedExchange && 
-    tokenMint && 
-    fromType === 'wallet';
+  // Show address when a token and exchange are selected
+  const shouldShowAddress = selectedExchange && tokenMint;
 
   return (
     <div className="space-y-4">
@@ -110,7 +105,9 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
       <DepositAddressDisplay
         exchange={selectedExchange}
         tokenMint={tokenMint}
-        show={shouldShowDepositAddress}
+        show={shouldShowAddress}
+        fromType={fromType}
+        toType={toType}
       />
 
       <TransferValidation
