@@ -11,16 +11,23 @@ interface MarketStructureProps {
 export function MarketStructure({ exchange, symbol }: MarketStructureProps) {
   const [marketData, setMarketData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
       try {
+        setIsLoading(true);
+        setError(null);
         console.log(`Fetching market structure for ${exchange} - ${symbol}`);
         const data = await fetchMarketStructure(exchange.toLowerCase(), symbol);
         console.log('Market structure data:', data);
+        if (!data) {
+          throw new Error('No market structure data received');
+        }
         setMarketData(data);
       } catch (error) {
         console.error('Error fetching market structure:', error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch market data');
       } finally {
         setIsLoading(false);
       }
@@ -37,10 +44,12 @@ export function MarketStructure({ exchange, symbol }: MarketStructureProps) {
     );
   }
 
-  if (!marketData) {
+  if (error || !marketData) {
     return (
       <Card className="p-4">
-        <p className="text-sm text-gray-500">No market structure data available</p>
+        <p className="text-sm text-gray-500">
+          {error || 'No market structure data available'}
+        </p>
       </Card>
     );
   }
@@ -70,6 +79,12 @@ export function MarketStructure({ exchange, symbol }: MarketStructureProps) {
           
           <span className="text-gray-500">Precision Price:</span>
           <span>{marketData.precision?.price || 'N/A'}</span>
+
+          <span className="text-gray-500">Maker Fee:</span>
+          <span>{(marketData.maker * 100).toFixed(3)}%</span>
+          
+          <span className="text-gray-500">Taker Fee:</span>
+          <span>{(marketData.taker * 100).toFixed(3)}%</span>
         </div>
       </div>
     </Card>
