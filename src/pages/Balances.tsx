@@ -1,6 +1,7 @@
 import { TotalExchangeBalance } from "@/components/TotalExchangeBalance";
 import { PhantomWalletBalances } from "@/components/PhantomWalletBalances";
 import { SolanaTokenTransfer } from "@/components/SolanaTokenTransfer";
+import { WalletBalanceHistory } from "@/components/WalletBalanceHistory";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
@@ -23,6 +24,8 @@ export default function Balances() {
           </div>
         </div>
       </Card>
+
+      <WalletBalanceHistory />
     </div>
   );
 }

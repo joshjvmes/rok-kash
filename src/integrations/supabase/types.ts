@@ -459,6 +459,39 @@ export type Database = {
         }
         Relationships: []
       }
+      solana_wallet_balances: {
+        Row: {
+          balance: number
+          created_at: string | null
+          id: string
+          last_updated: string | null
+          token_mint: string
+          usd_value: number | null
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          balance: number
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          token_mint: string
+          usd_value?: number | null
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          token_mint?: string
+          usd_value?: number | null
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       trading_settings: {
         Row: {
           created_at: string
