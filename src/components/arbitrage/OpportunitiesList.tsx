@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/pagination";
 import type { ArbitrageOpportunity } from "@/utils/types/exchange";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface OpportunitiesListProps {
   opportunities: ArbitrageOpportunity[];
@@ -25,6 +26,18 @@ export function OpportunitiesList({ opportunities, isLoading }: OpportunitiesLis
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return opportunities.slice(startIndex, endIndex);
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
   };
 
   return (
@@ -48,8 +61,8 @@ export function OpportunitiesList({ opportunities, isLoading }: OpportunitiesLis
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious 
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
+                      onClick={handlePreviousPage}
+                      className={cn(currentPage === 1 && "pointer-events-none opacity-50")}
                     />
                   </PaginationItem>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
@@ -64,8 +77,8 @@ export function OpportunitiesList({ opportunities, isLoading }: OpportunitiesLis
                   ))}
                   <PaginationItem>
                     <PaginationNext
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      disabled={currentPage === totalPages}
+                      onClick={handleNextPage}
+                      className={cn(currentPage === totalPages && "pointer-events-none opacity-50")}
                     />
                   </PaginationItem>
                 </PaginationContent>
