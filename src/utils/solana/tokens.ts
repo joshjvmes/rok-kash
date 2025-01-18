@@ -1,5 +1,3 @@
-import { Connection, PublicKey } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { supabase } from "@/integrations/supabase/client";
 
 export interface TokenInfo {
@@ -42,42 +40,16 @@ export async function getTokenList(): Promise<TokenInfo[]> {
 export async function getTokenBalance(tokenMint: string, walletAddress: string): Promise<TokenBalance> {
   try {
     console.log(`Fetching balance for token ${tokenMint} and wallet ${walletAddress}`);
-    const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
-    const walletPubkey = new PublicKey(walletAddress);
-    const mintPubkey = new PublicKey(tokenMint);
-
-    // Get all token accounts owned by the wallet
-    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-      walletPubkey,
-      {
-        programId: TOKEN_PROGRAM_ID,
+    const { data, error } = await supabase.functions.invoke('solana-wallet', {
+      body: {
+        action: 'getTokenBalance',
+        tokenMint,
+        walletAddress
       }
-    );
+    });
 
-    console.log('Token accounts found:', tokenAccounts.value.length);
-
-    // Find the specific token account for this mint
-    const tokenAccount = tokenAccounts.value.find(
-      (account) => account.account.data.parsed.info.mint === tokenMint
-    );
-
-    if (tokenAccount) {
-      console.log('Token account found:', tokenAccount);
-      const parsedInfo = tokenAccount.account.data.parsed.info;
-      
-      return {
-        mint: tokenMint,
-        balance: parsedInfo.tokenAmount.amount,
-        decimals: parsedInfo.tokenAmount.decimals
-      };
-    } else {
-      console.log('No token account found for mint:', tokenMint);
-      return {
-        mint: tokenMint,
-        balance: '0',
-        decimals: 6 // Default decimals for most SPL tokens
-      };
-    }
+    if (error) throw error;
+    return data;
   } catch (error) {
     console.error('Error fetching token balance:', error);
     throw error;
