@@ -15,9 +15,9 @@ export function OpportunitiesList({ opportunities, isLoading }: OpportunitiesLis
         {isLoading ? (
           <p>Loading opportunities...</p>
         ) : opportunities.length > 0 ? (
-          opportunities.map((opportunity) => (
+          opportunities.map((opportunity, index) => (
             <ArbitrageOpportunityComponent
-              key={`${opportunity.buyExchange}-${opportunity.sellExchange}-${opportunity.symbol}`}
+              key={`${opportunity.buyExchange}-${opportunity.sellExchange}-${opportunity.symbol}-${index}`}
               {...opportunity}
             />
           ))
