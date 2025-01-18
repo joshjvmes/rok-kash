@@ -29,37 +29,37 @@ export function SolanaTokenTransfer() {
         throw new Error('User not authenticated');
       }
 
-      const data = {
-        fromType: transferData.fromType,
-        toType: transferData.toType,
-        fromAddress: transferData.fromType === 'wallet' ? publicKey?.toString() : transferData.selectedExchange,
-        toAddress: transferData.toType === 'wallet' ? publicKey?.toString() : transferData.selectedExchange,
-        tokenMint: transferData.tokenMint,
-        amount: parseFloat(transferData.amount),
-      };
-
-      const { data: functionResponse, error: functionError } = await supabase.functions.invoke('solana-transfer', {
-        body: data
+      // Use the new solana-wallet edge function for transfer operations
+      const { data: transferResponse, error: transferError } = await supabase.functions.invoke('solana-wallet', {
+        body: {
+          action: 'transfer',
+          fromType: transferData.fromType,
+          toType: transferData.toType,
+          fromAddress: transferData.fromType === 'wallet' ? publicKey?.toString() : transferData.selectedExchange,
+          toAddress: transferData.toType === 'wallet' ? publicKey?.toString() : transferData.selectedExchange,
+          tokenMint: transferData.tokenMint,
+          amount: parseFloat(transferData.amount),
+        }
       });
 
-      if (functionError) throw functionError;
+      if (transferError) throw transferError;
 
       const { error: dbError } = await supabase.from('solana_transfers').insert({
         user_id: user.id,
         from_type: transferData.fromType,
         to_type: transferData.toType,
-        from_address: data.fromAddress,
-        to_address: data.toAddress,
+        from_address: transferData.fromType === 'wallet' ? publicKey?.toString() : transferData.selectedExchange,
+        to_address: transferData.toType === 'wallet' ? publicKey?.toString() : transferData.selectedExchange,
         token_mint: transferData.tokenMint,
         amount: parseFloat(transferData.amount),
-        status: functionResponse.status,
+        status: transferResponse.status,
       });
 
       if (dbError) throw dbError;
 
       toast({
         title: "Transfer initiated",
-        description: functionResponse.message || "Your transfer request has been recorded",
+        description: transferResponse.message || "Your transfer request has been recorded",
       });
     } catch (error) {
       console.error('Transfer error:', error);

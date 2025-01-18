@@ -73,6 +73,25 @@ async function getTokenBalance(tokenMint: string, walletAddress: string) {
   }
 }
 
+async function handleTransfer(data: {
+  fromType: 'wallet' | 'exchange',
+  toType: 'exchange' | 'wallet',
+  fromAddress: string,
+  toAddress: string,
+  tokenMint: string,
+  amount: number
+}) {
+  console.log('Processing transfer request:', data)
+
+  // For now, we'll just simulate the transfer process
+  // In a real implementation, this would interact with the Solana blockchain
+  return {
+    status: 'pending',
+    message: 'Transfer initiated successfully',
+    transactionId: `tx_${Date.now()}`
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -80,7 +99,7 @@ serve(async (req) => {
   }
 
   try {
-    const { action, walletAddress, tokenMint } = await req.json()
+    const { action, walletAddress, tokenMint, fromType, toType, fromAddress, toAddress, amount } = await req.json()
     console.log('Processing request:', { action, walletAddress, tokenMint })
 
     let result
@@ -108,6 +127,17 @@ serve(async (req) => {
           sol: solBalance,
           tokens: tokenBalances
         }
+        break
+
+      case 'transfer':
+        result = await handleTransfer({
+          fromType,
+          toType,
+          fromAddress,
+          toAddress,
+          tokenMint,
+          amount
+        })
         break
 
       default:
