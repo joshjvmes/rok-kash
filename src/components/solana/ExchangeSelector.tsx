@@ -6,28 +6,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const EXCHANGES = ['binance', 'kraken', 'kucoin', 'okx'];
-
 interface ExchangeSelectorProps {
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }
 
-export function ExchangeSelector({ value, onChange }: ExchangeSelectorProps) {
+export function ExchangeSelector({ value, onChange, disabled }: ExchangeSelectorProps) {
   return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger>
-        <SelectValue placeholder="Select exchange" />
-      </SelectTrigger>
-      <SelectContent>
-        {EXCHANGES.map((exchange) => (
-          <SelectItem key={exchange} value={exchange}>
-            {exchange.charAt(0).toUpperCase() + exchange.slice(1)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-serenity-mountain">Select Exchange</label>
+      <Select
+        value={value}
+        onValueChange={onChange}
+        disabled={disabled}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select an exchange" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="binance">Binance</SelectItem>
+          <SelectItem value="kraken">Kraken</SelectItem>
+          <SelectItem value="bybit">Bybit</SelectItem>
+          <SelectItem value="kucoin">KuCoin</SelectItem>
+          <SelectItem value="okx">OKX</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
-
-export { EXCHANGES };

@@ -404,9 +404,13 @@ export type Database = {
           amount: number
           created_at: string
           error_message: string | null
+          exchange_name: string | null
+          exchange_transaction_id: string | null
+          fee: number | null
           from_address: string
           from_type: string
           id: string
+          network: string | null
           status: string
           to_address: string
           to_type: string
@@ -419,9 +423,13 @@ export type Database = {
           amount: number
           created_at?: string
           error_message?: string | null
+          exchange_name?: string | null
+          exchange_transaction_id?: string | null
+          fee?: number | null
           from_address: string
           from_type: string
           id?: string
+          network?: string | null
           status?: string
           to_address: string
           to_type: string
@@ -434,9 +442,13 @@ export type Database = {
           amount?: number
           created_at?: string
           error_message?: string | null
+          exchange_name?: string | null
+          exchange_transaction_id?: string | null
+          fee?: number | null
           from_address?: string
           from_type?: string
           id?: string
+          network?: string | null
           status?: string
           to_address?: string
           to_type?: string
