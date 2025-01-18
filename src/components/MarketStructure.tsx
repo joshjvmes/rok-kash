@@ -9,10 +9,10 @@ interface MarketStructureProps {
   exchange: string;
 }
 
-export function MarketStructure({ symbol, exchange }: MarketStructureProps) {
+export function MarketStructure({ exchange, symbol }: MarketStructureProps) {
   const { data: marketInfo, isLoading } = useQuery({
-    queryKey: ['marketStructure', exchange, symbol],
-    queryFn: () => fetchMarketStructure(exchange, symbol),
+    queryKey: ['marketStructure', exchange.toLowerCase(), symbol],
+    queryFn: () => fetchMarketStructure(exchange.toLowerCase(), symbol),
   });
 
   if (isLoading) {
