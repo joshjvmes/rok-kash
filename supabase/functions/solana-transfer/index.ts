@@ -92,8 +92,8 @@ serve(async (req) => {
       }
     }
 
-    // Handle deposit address request
-    if (action === 'getDepositAddress') {
+    // Handle deposit from Phantom wallet to exchange
+    if (fromType === 'wallet' && toType === 'exchange') {
       console.log(`Fetching ${exchange} deposit address for:`, { tokenMint })
       
       const currencyCode = TOKEN_MINT_TO_CURRENCY[tokenMint]
@@ -106,7 +106,9 @@ serve(async (req) => {
 
       try {
         console.log(`Fetching ${exchange} deposit address for ${currencyCode}...`)
-        const depositAddress = await exchangeClient.fetchDepositAddress(currencyCode)
+        const depositAddress = await exchangeClient.fetchDepositAddress(currencyCode, {
+          network: 'SOL',
+        })
         console.log(`${exchange} deposit address:`, depositAddress)
 
         return new Response(
@@ -127,7 +129,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         status: 'error',
-        message: 'Invalid action or transfer type specified'
+        message: 'Invalid transfer type specified'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
