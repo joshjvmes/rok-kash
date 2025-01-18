@@ -1,5 +1,5 @@
-import { fetchCCXTPrice } from "./ccxt";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchCCXTPrice } from "./ccxt";
 import type { ArbitrageOpportunity } from "../types/exchange";
 
 async function getPriceForExchange(exchange: string, symbol: string): Promise<number | null> {
@@ -70,6 +70,13 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
   // Log the collected data
   console.log('Exchange data collected:', exchangeData);
 
+  // Get the current user's ID
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    console.log('No authenticated user found');
+    return opportunities;
+  }
+
   // Compare prices if both are available
   if (binancePrice && kucoinPrice) {
     // Check Binance -> Kucoin direction
@@ -90,7 +97,7 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
 
         opportunities.push(opportunity);
 
-        // Store the opportunity in the database
+        // Store the opportunity in the database with user_id
         const { error } = await supabase
           .from('arbitrage_opportunities')
           .insert({
@@ -99,7 +106,8 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
             symbol: opportunity.symbol,
             spread: opportunity.spread,
             potential_profit: opportunity.potential,
-            status: 'pending'
+            status: 'pending',
+            user_id: user.id
           });
 
         if (error) {
@@ -126,7 +134,7 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
 
         opportunities.push(opportunity);
 
-        // Store the opportunity in the database
+        // Store the opportunity in the database with user_id
         const { error } = await supabase
           .from('arbitrage_opportunities')
           .insert({
@@ -135,7 +143,8 @@ export async function findArbitrageOpportunities(symbol: string): Promise<Arbitr
             symbol: opportunity.symbol,
             spread: opportunity.spread,
             potential_profit: opportunity.potential,
-            status: 'pending'
+            status: 'pending',
+            user_id: user.id
           });
 
         if (error) {
