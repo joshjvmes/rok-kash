@@ -78,8 +78,8 @@ const WalletConnection: FC = () => {
 
 export const PhantomWallet: FC = () => {
   // Set to 'mainnet-beta' for production
-  const network = 'mainnet-beta' as WalletAdapterNetwork;
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const network = WalletAdapterNetwork.Mainnet;
+  const endpoint = useMemo(() => 'https://api.mainnet-beta.solana.com', []);
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
 
   return (

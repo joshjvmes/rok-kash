@@ -42,7 +42,8 @@ export async function getTokenList(): Promise<TokenInfo[]> {
 export async function getTokenBalance(tokenMint: string, walletAddress: string): Promise<TokenBalance> {
   try {
     console.log(`Fetching balance for token ${tokenMint} and wallet ${walletAddress}`);
-    const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+    // Use mainnet-beta instead of devnet
+    const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
     const walletPubkey = new PublicKey(walletAddress);
 
     // Get all token accounts owned by the wallet

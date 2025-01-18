@@ -2,7 +2,7 @@ import { Connection, PublicKey, clusterApiUrl, LAMPORTS_PER_SOL } from '@solana/
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 // Initialize connection to Solana mainnet
-export const connection = new Connection(clusterApiUrl('mainnet-beta'), 'confirmed');
+export const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
 
 /**
  * Get SOL balance for a wallet address
