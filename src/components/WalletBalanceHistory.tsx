@@ -1,80 +1,99 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Card } from "./ui/card";
-import { ScrollArea } from "./ui/scroll-area";
-import { Skeleton } from "./ui/skeleton";
-import { format } from "date-fns";
+import { useEffect, useState } from 'react';
+import { Card } from './ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from './ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 interface WalletBalance {
+  wallet_address: string;
   token_mint: string;
   balance: number;
   last_updated: string;
-  wallet_address: string;
 }
 
-const TOKEN_SYMBOLS: Record<string, string> = {
-  'So11111111111111111111111111111111111111112': 'SOL',
-  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'USDC',
-  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'USDT',
-};
+export const WalletBalanceHistory = () => {
+  const [balances, setBalances] = useState<WalletBalance[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-export function WalletBalanceHistory() {
-  const { data: balances, isLoading } = useQuery({
-    queryKey: ['wallet-balances'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solana_wallet_balances')
-        .select('*')
-        .order('last_updated', { ascending: false });
-      
-      if (error) throw error;
-      return data as WalletBalance[];
-    },
-  });
+  useEffect(() => {
+    const fetchBalances = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('solana_wallet_balances')
+          .select('*')
+          .order('last_updated', { ascending: false });
+
+        if (error) throw error;
+
+        setBalances(data || []);
+      } catch (error) {
+        console.error('Error fetching balance history:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load balance history",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBalances();
+  }, [toast]);
 
   if (isLoading) {
     return (
-      <Card className="p-6">
-        <h2 className="text-2xl font-bold mb-4">Wallet Balance History</h2>
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
-      </Card>
+      <div className="space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
     );
   }
 
+  const formatTokenSymbol = (mint: string) => {
+    switch (mint) {
+      case 'So11111111111111111111111111111111111111112':
+        return 'SOL';
+      case 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v':
+        return 'USDC';
+      case 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB':
+        return 'USDT';
+      default:
+        return mint.slice(0, 4) + '...' + mint.slice(-4);
+    }
+  };
+
   return (
-    <Card className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Wallet Balance History</h2>
-      <ScrollArea className="h-[400px]">
-        <div className="space-y-4">
-          {balances?.map((balance, index) => (
-            <div
-              key={`${balance.wallet_address}-${balance.token_mint}-${index}`}
-              className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm"
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium">
-                    {TOKEN_SYMBOLS[balance.token_mint] || balance.token_mint}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {balance.wallet_address.slice(0, 4)}...{balance.wallet_address.slice(-4)}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">{balance.balance.toFixed(6)}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {format(new Date(balance.last_updated), 'MMM d, yyyy HH:mm')}
-                  </p>
-                </div>
-              </div>
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold mb-4">Balance History</h2>
+      {balances.map((balance, index) => (
+        <Card key={index} className="p-4 bg-white/50 backdrop-blur-sm">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-gray-500">Wallet</p>
+              <p className="font-mono text-sm">
+                {balance.wallet_address.slice(0, 4)}...{balance.wallet_address.slice(-4)}
+              </p>
             </div>
-          ))}
-        </div>
-      </ScrollArea>
-    </Card>
+            <div className="text-right">
+              <p className="text-sm text-gray-500">Token</p>
+              <p className="font-medium">{formatTokenSymbol(balance.token_mint)}</p>
+            </div>
+          </div>
+          <div className="mt-2 flex justify-between items-end">
+            <div>
+              <p className="text-sm text-gray-500">Balance</p>
+              <p className="text-lg font-bold">{balance.balance.toFixed(4)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-500">
+                {new Date(balance.last_updated).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
   );
-}
+};

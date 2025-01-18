@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define the tokens we want to display
 const DISPLAY_TOKENS = [
@@ -38,6 +39,32 @@ export const PhantomWalletBalances = () => {
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const storeBalances = async (solBal: number, tokenBals: TokenBalance[]) => {
+    if (!publicKey) return;
+
+    try {
+      // Store SOL balance
+      await supabase.from('solana_wallet_balances').upsert({
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+        wallet_address: publicKey.toString(),
+        token_mint: 'So11111111111111111111111111111111111111112', // Native SOL mint
+        balance: solBal,
+      });
+
+      // Store token balances
+      for (const token of tokenBals) {
+        await supabase.from('solana_wallet_balances').upsert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          wallet_address: publicKey.toString(),
+          token_mint: DISPLAY_TOKENS.find(t => t.symbol === token.symbol)?.address || '',
+          balance: Number(token.balance) / Math.pow(10, token.decimals),
+        });
+      }
+    } catch (error) {
+      console.error('Error storing balances:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchBalances = async () => {
@@ -80,6 +107,10 @@ export const PhantomWalletBalances = () => {
         const balances = await Promise.all(balancePromises);
         console.log('All token balances:', balances);
         setTokenBalances(balances);
+        
+        // Store balances in database
+        await storeBalances(balance, balances);
+        
         setError(null);
       } catch (error) {
         console.error('Error fetching wallet balances:', error);
