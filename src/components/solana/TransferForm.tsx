@@ -68,8 +68,11 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
     }
   };
 
-  // Show address when a token and exchange are selected
-  const shouldShowAddress = selectedExchange && tokenMint;
+  // Show address when a token and exchange are selected, or when transferring to wallet
+  const shouldShowAddress = Boolean(
+    (selectedExchange && tokenMint) || 
+    (toType === 'wallet' && tokenMint && connected)
+  );
 
   return (
     <div className="space-y-4">
@@ -108,6 +111,7 @@ export function TransferForm({ onTransferSubmit }: TransferFormProps) {
         show={shouldShowAddress}
         fromType={fromType}
         toType={toType}
+        walletAddress={publicKey?.toString()}
       />
 
       <TransferValidation
