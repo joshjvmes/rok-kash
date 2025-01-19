@@ -22,6 +22,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 const exchangePages = [
   { title: "Bybit", path: "/exchanges/bybit" },
@@ -50,26 +52,23 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
-      // First check if we have a session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
         console.error("Session error:", sessionError);
-        // If there's no session, just redirect to login
         navigate("/login", { replace: true });
         return;
       }
 
       if (!session) {
-        // No active session, just redirect to login
         navigate("/login", { replace: true });
         return;
       }
 
-      // We have a session, try to sign out
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -85,10 +84,7 @@ export function AppSidebar() {
       navigate("/login", { replace: true });
     } catch (error) {
       console.error("Logout error:", error);
-      
-      // Even if logout fails, redirect to login page for safety
       navigate("/login", { replace: true });
-      
       toast({
         title: "Error during logout",
         description: "You have been redirected to the login page",
@@ -101,166 +97,204 @@ export function AppSidebar() {
   const currentExchange = exchangePages.find(page => location.pathname === page.path);
 
   return (
-    <Sidebar>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link to="/" className={location.pathname === "/" ? "text-rokcat-purple" : ""}>
-                    <Home />
-                    <span>Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed top-4 left-4 z-50 flex flex-col gap-1.5 p-2 md:hidden"
+      >
+        <span 
+          className={cn(
+            "block h-0.5 w-6 bg-foreground transition-transform duration-300",
+            isOpen && "translate-y-2 rotate-45"
+          )}
+        />
+        <span 
+          className={cn(
+            "block h-0.5 w-6 bg-foreground transition-transform duration-300",
+            isOpen && "-rotate-45"
+          )}
+        />
+      </button>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Exchange Testing</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start gap-2 px-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    >
-                      <TestTube2 className="h-4 w-4" />
-                      <span>{currentExchange?.title || "Select Exchange"}</span>
-                      <ChevronDown className="h-4 w-4 ml-auto" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent 
-                    className="w-56" 
-                    align="start" 
-                    sideOffset={8}
-                  >
-                    {exchangePages.map((page) => (
-                      <DropdownMenuItem key={page.path} asChild>
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed inset-0 z-40 transform transition-transform duration-300 md:relative md:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div 
+          className="absolute inset-0 bg-background/80 backdrop-blur-sm md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+        <Sidebar className="relative">
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild onClick={() => setIsOpen(false)}>
+                      <Link to="/" className={location.pathname === "/" ? "text-rokcat-purple" : ""}>
+                        <Home />
+                        <span>Dashboard</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Exchange Testing</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-start gap-2 px-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        >
+                          <TestTube2 className="h-4 w-4" />
+                          <span>{currentExchange?.title || "Select Exchange"}</span>
+                          <ChevronDown className="h-4 w-4 ml-auto" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent 
+                        className="w-56" 
+                        align="start" 
+                        sideOffset={8}
+                      >
+                        {exchangePages.map((page) => (
+                          <DropdownMenuItem key={page.path} asChild>
+                            <Link
+                              to={page.path}
+                              className={location.pathname === page.path ? "text-rokcat-purple" : ""}
+                              onClick={() => setIsOpen(false)}
+                            >
+                              {page.title}
+                            </Link>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Protocols</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {protocolPages.map((page) => (
+                    <SidebarMenuItem key={page.path}>
+                      <SidebarMenuButton asChild onClick={() => setIsOpen(false)}>
                         <Link
                           to={page.path}
                           className={location.pathname === page.path ? "text-rokcat-purple" : ""}
                         >
-                          {page.title}
+                          <page.icon />
+                          <span>{page.title}</span>
                         </Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Protocols</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {protocolPages.map((page) => (
-                <SidebarMenuItem key={page.path}>
-                  <SidebarMenuButton asChild>
-                    <Link
-                      to={page.path}
-                      className={location.pathname === page.path ? "text-rokcat-purple" : ""}
-                    >
-                      <page.icon />
-                      <span>{page.title}</span>
+            <SidebarGroup>
+              <SidebarGroupLabel>Algorithms</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {algorithmPages.map((page) => (
+                    <SidebarMenuItem key={page.path}>
+                      <SidebarMenuButton asChild onClick={() => setIsOpen(false)}>
+                        <Link
+                          to={page.path}
+                          className={location.pathname === page.path ? "text-rokcat-purple" : ""}
+                        >
+                          <page.icon />
+                          <span>{page.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+
+          <SidebarFooter className="p-4 flex flex-row items-center gap-2 justify-end">
+            <div className="flex items-center space-x-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    asChild
+                    className="hover:bg-rokcat-purple/10"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Link to="/balances">
+                      <Wallet className="h-5 w-5" />
                     </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Balances</TooltipContent>
+              </Tooltip>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Algorithms</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {algorithmPages.map((page) => (
-                <SidebarMenuItem key={page.path}>
-                  <SidebarMenuButton asChild>
-                    <Link
-                      to={page.path}
-                      className={location.pathname === page.path ? "text-rokcat-purple" : ""}
-                    >
-                      <page.icon />
-                      <span>{page.title}</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    asChild
+                    className="hover:bg-rokcat-purple/10"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Link to="/profit-loss">
+                      <TrendingUp className="h-5 w-5" />
                     </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Profit/Loss</TooltipContent>
+              </Tooltip>
 
-      </SidebarContent>
-      <SidebarFooter className="p-4 flex flex-row items-center gap-2 justify-end">
-        <div className="flex items-center space-x-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    asChild
+                    className="hover:bg-rokcat-purple/10"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Link to="/trade-history">
+                      <History className="h-5 w-5" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Trade History</TooltipContent>
+              </Tooltip>
+
+              <ThemeSwitcher />
               <Button
                 variant="ghost"
                 size="icon"
-                asChild
+                onClick={() => {
+                  setIsOpen(false);
+                  handleLogout();
+                }}
                 className="hover:bg-rokcat-purple/10"
               >
-                <Link to="/balances">
-                  <Wallet className="h-5 w-5" />
-                </Link>
+                <LogOut className="h-5 w-5" />
               </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Balances</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                asChild
-                className="hover:bg-rokcat-purple/10"
-              >
-                <Link to="/profit-loss">
-                  <TrendingUp className="h-5 w-5" />
-                </Link>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Profit/Loss</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                asChild
-                className="hover:bg-rokcat-purple/10"
-              >
-                <Link to="/trade-history">
-                  <History className="h-5 w-5" />
-                </Link>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Trade History</TooltipContent>
-          </Tooltip>
-
-          <ThemeSwitcher />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleLogout}
-            className="hover:bg-rokcat-purple/10"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
-        </div>
-      </SidebarFooter>
-    </Sidebar>
+            </div>
+          </SidebarFooter>
+        </Sidebar>
+      </div>
+    </>
   );
 }
