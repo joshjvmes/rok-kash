@@ -122,36 +122,17 @@ async function getDepositAddress(exchange: string, tokenMint: string) {
     let depositAddress;
     
     if (exchange.toLowerCase() === 'kraken') {
-      // Kraken requires a different method for deposit addresses
+      // For Kraken, use the deposit address method directly
       const method = currency === 'SOL' ? 'Solana' : currency;
-      const response = await exchangeInstance.privatePostDepositAddressesGet({
-        asset: currency,
-        method: method,
-        new: false // Try to get an existing address first
+      const response = await exchangeInstance.fetchDepositAddress(currency, {
+        network: method
       });
       
       console.log('Kraken deposit address response:', response);
-      
-      if (response.result && response.result.length > 0) {
-        depositAddress = {
-          address: response.result[0].address,
-          tag: response.result[0].tag
-        };
-      } else {
-        // If no existing address, request a new one
-        const newAddressResponse = await exchangeInstance.privatePostDepositAddressesNew({
-          asset: currency,
-          method: method
-        });
-        console.log('Kraken new deposit address response:', newAddressResponse);
-        
-        if (newAddressResponse.result) {
-          depositAddress = {
-            address: newAddressResponse.result.address,
-            tag: newAddressResponse.result.tag
-          };
-        }
-      }
+      depositAddress = {
+        address: response.address,
+        tag: response.tag
+      };
     } else if (exchange.toLowerCase() === 'kucoin') {
       // KuCoin specific handling
       const networks = {
