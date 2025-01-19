@@ -122,17 +122,27 @@ async function getDepositAddress(exchange: string, tokenMint: string) {
     let depositAddress;
     
     if (exchange.toLowerCase() === 'kraken') {
-      // For Kraken, use the deposit address method directly
-      const method = currency === 'SOL' ? 'Solana' : currency;
-      const response = await exchangeInstance.fetchDepositAddress(currency, {
-        network: method
-      });
-      
-      console.log('Kraken deposit address response:', response);
-      depositAddress = {
-        address: response.address,
-        tag: response.tag
-      };
+      try {
+        // For Kraken, use the deposit address method with specific network
+        const method = currency === 'SOL' ? 'Solana' : currency;
+        const response = await exchangeInstance.fetchDepositAddress(currency, {
+          network: method
+        });
+        
+        console.log('Kraken deposit address response:', response);
+        
+        if (!response || !response.address) {
+          throw new Error('No valid deposit address returned from Kraken');
+        }
+        
+        depositAddress = {
+          address: response.address,
+          tag: response.tag
+        };
+      } catch (krakenError) {
+        console.error('Kraken-specific error:', krakenError);
+        throw new Error(`Failed to get Kraken deposit address: ${krakenError.message}`);
+      }
     } else if (exchange.toLowerCase() === 'kucoin') {
       // KuCoin specific handling
       const networks = {
@@ -147,26 +157,34 @@ async function getDepositAddress(exchange: string, tokenMint: string) {
       });
       
       console.log('KuCoin deposit address response:', response);
+      
+      if (!response || !response.address) {
+        throw new Error('No valid deposit address returned from KuCoin');
+      }
+      
       depositAddress = {
         address: response.address,
         tag: response.tag
       };
     } else {
       // Default handling for other exchanges
-      depositAddress = await exchangeInstance.fetchDepositAddress(currency, {
+      const response = await exchangeInstance.fetchDepositAddress(currency, {
         network: 'SOL'
       });
+      
+      if (!response || !response.address) {
+        throw new Error(`No valid deposit address returned from ${exchange}`);
+      }
+      
+      depositAddress = response;
     }
 
     if (!depositAddress || !depositAddress.address) {
-      throw new Error(`Failed to get deposit address for ${currency} on ${exchange}`);
+      throw new Error(`${exchange} address is undefined`);
     }
 
     console.log('Deposit address:', depositAddress);
-    return {
-      address: depositAddress.address,
-      tag: depositAddress.tag
-    };
+    return depositAddress;
   } catch (error) {
     console.error('Error getting deposit address:', error);
     throw error;
