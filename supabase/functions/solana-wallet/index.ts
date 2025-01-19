@@ -89,15 +89,6 @@ async function getDepositAddress(exchange: string, tokenMint: string) {
         secret: Deno.env.get('KUCOIN_SECRET'),
         password: Deno.env.get('KUCOIN_PASSPHRASE')
       },
-      okx: {
-        apiKey: Deno.env.get('OKX_API_KEY'),
-        secret: Deno.env.get('OKX_SECRET'),
-        password: Deno.env.get('OKX_PASSPHRASE')
-      },
-      bybit: {
-        apiKey: Deno.env.get('BYBIT_API_KEY'),
-        secret: Deno.env.get('BYBIT_SECRET')
-      },
       kraken: {
         apiKey: Deno.env.get('KRAKEN_API_KEY'),
         secret: Deno.env.get('KRAKEN_API_SECRET')
@@ -126,10 +117,69 @@ async function getDepositAddress(exchange: string, tokenMint: string) {
       throw new Error(`Unsupported token mint: ${tokenMint}`);
     }
 
-    // Fetch deposit address
-    const depositAddress = await exchangeInstance.fetchDepositAddress(currency, {
-      network: 'SOL'
-    });
+    console.log(`Fetching deposit address for ${currency} on ${exchange}`);
+
+    let depositAddress;
+    
+    if (exchange.toLowerCase() === 'kraken') {
+      // Kraken requires a different method for deposit addresses
+      const method = currency === 'SOL' ? 'Solana' : currency;
+      const response = await exchangeInstance.privatePostDepositAddressesGet({
+        asset: currency,
+        method: method,
+        new: false // Try to get an existing address first
+      });
+      
+      console.log('Kraken deposit address response:', response);
+      
+      if (response.result && response.result.length > 0) {
+        depositAddress = {
+          address: response.result[0].address,
+          tag: response.result[0].tag
+        };
+      } else {
+        // If no existing address, request a new one
+        const newAddressResponse = await exchangeInstance.privatePostDepositAddressesNew({
+          asset: currency,
+          method: method
+        });
+        console.log('Kraken new deposit address response:', newAddressResponse);
+        
+        if (newAddressResponse.result) {
+          depositAddress = {
+            address: newAddressResponse.result.address,
+            tag: newAddressResponse.result.tag
+          };
+        }
+      }
+    } else if (exchange.toLowerCase() === 'kucoin') {
+      // KuCoin specific handling
+      const networks = {
+        'SOL': 'SOL',
+        'USDC': 'SOL',
+        'USDT': 'SOL'
+      };
+      
+      const response = await exchangeInstance.fetchDepositAddress(currency, {
+        network: networks[currency],
+        chain: 'SOL'
+      });
+      
+      console.log('KuCoin deposit address response:', response);
+      depositAddress = {
+        address: response.address,
+        tag: response.tag
+      };
+    } else {
+      // Default handling for other exchanges
+      depositAddress = await exchangeInstance.fetchDepositAddress(currency, {
+        network: 'SOL'
+      });
+    }
+
+    if (!depositAddress || !depositAddress.address) {
+      throw new Error(`Failed to get deposit address for ${currency} on ${exchange}`);
+    }
 
     console.log('Deposit address:', depositAddress);
     return {
