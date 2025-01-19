@@ -119,14 +119,14 @@ export function AppSidebar() {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-0 z-40 transform transition-transform duration-300 md:relative md:translate-x-0",
+        "fixed inset-0 z-40 transform transition-transform duration-300 md:relative md:translate-x-0 md:inset-auto md:h-screen",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div 
           className="absolute inset-0 bg-background/80 backdrop-blur-sm md:hidden"
           onClick={() => setIsOpen(false)}
         />
-        <Sidebar className="relative">
+        <Sidebar className="relative h-full">
           <SidebarContent>
             <SidebarGroup>
               <SidebarGroupLabel>Navigation</SidebarGroupLabel>
