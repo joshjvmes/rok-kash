@@ -11,6 +11,7 @@ export interface ArbitrageOpportunity {
   symbol: string;
   spread: number;
   potential: number;
+  timestamp?: string; // Added timestamp as optional property
 }
 
 export interface CoinbasePrice {
