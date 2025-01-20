@@ -1,10 +1,18 @@
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, Loader2, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { createOrder } from "@/utils/exchanges/ccxt";
 import { useToast } from "@/hooks/use-toast";
 import { MarketStructure } from "./MarketStructure";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ArbitrageOpportunityProps {
   buyExchange: string;
@@ -12,6 +20,26 @@ interface ArbitrageOpportunityProps {
   symbol: string;
   spread: number;
   potential: number;
+}
+
+interface ArbitrageCalculation {
+  grossProfit: number;
+  netProfit: number;
+  executionTimeMs: number;
+  costs: {
+    buyExchangeFees: number;
+    sellExchangeFees: number;
+    transferFees: number;
+    slippageCost: number;
+    marketImpactCost: number;
+  };
+  metrics: {
+    expectedSlippage: number;
+    estimatedExecutionTime: number;
+    liquidityScore: number;
+    riskScore: number;
+    confidenceScore: number;
+  };
 }
 
 export function ArbitrageOpportunity({
@@ -24,6 +52,25 @@ export function ArbitrageOpportunity({
   const [isExecuting, setIsExecuting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const { toast } = useToast();
+
+  const { data: calculation, isLoading: isCalculating } = useQuery<ArbitrageCalculation>({
+    queryKey: ['arbitrage-calculation', buyExchange, sellExchange, symbol, potential],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('calculate-arbitrage', {
+        body: {
+          buyExchange,
+          sellExchange,
+          symbol,
+          amount: 1000, // Default amount for calculation
+          buyPrice: potential / (1 + spread / 100),
+          sellPrice: potential / (1 + spread / 100) * (1 + spread / 100)
+        }
+      });
+
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const handleExecute = async () => {
     setIsExecuting(true);
@@ -88,9 +135,56 @@ export function ArbitrageOpportunity({
               <p className="text-sm text-gray-600">Spread</p>
               <p className="text-trading-green font-semibold">{spread}%</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Potential</p>
-              <p className="text-trading-green font-semibold">${potential}</p>
+            <div className="relative">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <p className="text-sm text-gray-600">Potential</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-trading-green font-semibold">${potential}</p>
+                        <Info size={14} className="text-gray-400" />
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="w-64 p-2">
+                    {isCalculating ? (
+                      <p className="text-sm">Calculating details...</p>
+                    ) : calculation ? (
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Gross Profit:</span>
+                          <span>${calculation.grossProfit.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Net Profit:</span>
+                          <span>${calculation.netProfit.toFixed(2)}</span>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          <p>Costs Breakdown:</p>
+                          <div className="pl-2">
+                            <p>Buy Exchange Fee: ${calculation.costs.buyExchangeFees.toFixed(2)}</p>
+                            <p>Sell Exchange Fee: ${calculation.costs.sellExchangeFees.toFixed(2)}</p>
+                            <p>Transfer Fee: ${calculation.costs.transferFees.toFixed(2)}</p>
+                            <p>Slippage: ${calculation.costs.slippageCost.toFixed(2)}</p>
+                            <p>Market Impact: ${calculation.costs.marketImpactCost.toFixed(2)}</p>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          <p>Metrics:</p>
+                          <div className="pl-2">
+                            <p>Execution Time: {(calculation.metrics.estimatedExecutionTime / 1000).toFixed(1)}s</p>
+                            <p>Confidence Score: {calculation.metrics.confidenceScore.toFixed(0)}%</p>
+                            <p>Risk Score: {calculation.metrics.riskScore.toFixed(0)}%</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm">Error calculating details</p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <Button
               variant="outline"
