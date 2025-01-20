@@ -42,6 +42,56 @@ export type Database = {
         }
         Relationships: []
       }
+      arbitrage_execution_metrics: {
+        Row: {
+          actual_slippage_percentage: number
+          buy_exchange: string
+          created_at: string | null
+          execution_time_ms: number
+          id: string
+          liquidity_depth: number
+          market_impact_percentage: number
+          network_latency_ms: number
+          opportunity_id: string | null
+          sell_exchange: string
+          symbol: string
+        }
+        Insert: {
+          actual_slippage_percentage: number
+          buy_exchange: string
+          created_at?: string | null
+          execution_time_ms: number
+          id?: string
+          liquidity_depth: number
+          market_impact_percentage: number
+          network_latency_ms: number
+          opportunity_id?: string | null
+          sell_exchange: string
+          symbol: string
+        }
+        Update: {
+          actual_slippage_percentage?: number
+          buy_exchange?: string
+          created_at?: string | null
+          execution_time_ms?: number
+          id?: string
+          liquidity_depth?: number
+          market_impact_percentage?: number
+          network_latency_ms?: number
+          opportunity_id?: string | null
+          sell_exchange?: string
+          symbol?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arbitrage_execution_metrics_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "arbitrage_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       arbitrage_opportunities: {
         Row: {
           buy_exchange: string
@@ -191,26 +241,56 @@ export type Database = {
       }
       exchange_metadata: {
         Row: {
+          avg_network_latency_ms: number | null
           avg_transfer_time_minutes: number
           created_at: string
           exchange_name: string
+          historical_slippage_percentage: number | null
           id: string
+          maker_fee_percentage: number | null
+          market_impact_factor: number | null
+          max_trade_amount: number | null
+          max_withdrawal_amount: number | null
+          min_trade_amount: number | null
+          min_withdrawal_amount: number | null
+          supported_networks: string[] | null
+          taker_fee_percentage: number | null
           trading_fee_percentage: number
           withdrawal_fee_flat: number
         }
         Insert: {
+          avg_network_latency_ms?: number | null
           avg_transfer_time_minutes?: number
           created_at?: string
           exchange_name: string
+          historical_slippage_percentage?: number | null
           id?: string
+          maker_fee_percentage?: number | null
+          market_impact_factor?: number | null
+          max_trade_amount?: number | null
+          max_withdrawal_amount?: number | null
+          min_trade_amount?: number | null
+          min_withdrawal_amount?: number | null
+          supported_networks?: string[] | null
+          taker_fee_percentage?: number | null
           trading_fee_percentage?: number
           withdrawal_fee_flat?: number
         }
         Update: {
+          avg_network_latency_ms?: number | null
           avg_transfer_time_minutes?: number
           created_at?: string
           exchange_name?: string
+          historical_slippage_percentage?: number | null
           id?: string
+          maker_fee_percentage?: number | null
+          market_impact_factor?: number | null
+          max_trade_amount?: number | null
+          max_withdrawal_amount?: number | null
+          min_trade_amount?: number | null
+          min_withdrawal_amount?: number | null
+          supported_networks?: string[] | null
+          taker_fee_percentage?: number | null
           trading_fee_percentage?: number
           withdrawal_fee_flat?: number
         }
