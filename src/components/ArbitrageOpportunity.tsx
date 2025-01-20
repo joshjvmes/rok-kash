@@ -74,13 +74,12 @@ export function ArbitrageOpportunity({
   const handleExecute = async () => {
     setIsExecuting(true);
     try {
-      // Execute buy order on buyExchange
       const buyOrder = await createOrder(
         buyExchange.toLowerCase(),
         symbol,
         "market",
         "buy",
-        1000 // Default amount for demo
+        1000
       );
 
       if (buyOrder) {
@@ -89,13 +88,12 @@ export function ArbitrageOpportunity({
           description: `Successfully bought on ${buyExchange}`,
         });
 
-        // Execute sell order on sellExchange
         const sellOrder = await createOrder(
           sellExchange.toLowerCase(),
           symbol,
           "market",
           "sell",
-          1000 // Default amount for demo
+          1000
         );
 
         if (sellOrder) {
@@ -134,56 +132,9 @@ export function ArbitrageOpportunity({
               <p className="text-sm text-gray-600">Spread</p>
               <p className="text-trading-green font-semibold">{spread}%</p>
             </div>
-            <div className="relative">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <p className="text-sm text-gray-600">Potential</p>
-                      <div className="flex items-center gap-1">
-                        <p className="text-trading-green font-semibold">${potential}</p>
-                        <Info size={14} className="text-gray-400" />
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent className="w-64 p-2">
-                    {isCalculating ? (
-                      <p className="text-sm">Calculating details...</p>
-                    ) : calculation ? (
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span>Gross Profit:</span>
-                          <span>${calculation.grossProfit.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Net Profit:</span>
-                          <span>${calculation.netProfit.toFixed(2)}</span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          <p>Costs Breakdown:</p>
-                          <div className="pl-2">
-                            <p>Buy Exchange Fee: ${calculation.costs.buyExchangeFees.toFixed(2)}</p>
-                            <p>Sell Exchange Fee: ${calculation.costs.sellExchangeFees.toFixed(2)}</p>
-                            <p>Transfer Fee: ${calculation.costs.transferFees.toFixed(2)}</p>
-                            <p>Slippage: ${calculation.costs.slippageCost.toFixed(2)}</p>
-                            <p>Market Impact: ${calculation.costs.marketImpactCost.toFixed(2)}</p>
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          <p>Metrics:</p>
-                          <div className="pl-2">
-                            <p>Execution Time: {(calculation.metrics.estimatedExecutionTime / 1000).toFixed(1)}s</p>
-                            <p>Confidence Score: {calculation.metrics.confidenceScore.toFixed(0)}%</p>
-                            <p>Risk Score: {calculation.metrics.riskScore.toFixed(0)}%</p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm">Error calculating details</p>
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+            <div>
+              <p className="text-sm text-gray-600">Potential</p>
+              <p className="text-trading-green font-semibold">${potential}</p>
             </div>
             <Button
               variant="outline"
