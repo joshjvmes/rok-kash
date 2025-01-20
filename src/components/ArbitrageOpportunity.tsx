@@ -27,6 +27,7 @@ export function ArbitrageOpportunity({
 }: ArbitrageOpportunityProps) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hasLoadedDetails, setHasLoadedDetails] = useState(false);
   const { toast } = useToast();
 
   // Calculate estimated profit with $80,000 investment
@@ -97,6 +98,14 @@ export function ArbitrageOpportunity({
     }
   };
 
+  const handleExpand = () => {
+    const newExpandedState = !isExpanded;
+    setIsExpanded(newExpandedState);
+    if (newExpandedState && !hasLoadedDetails) {
+      setHasLoadedDetails(true);
+    }
+  };
+
   const estimatedProfit = calculateEstimatedProfit();
 
   return (
@@ -135,7 +144,7 @@ export function ArbitrageOpportunity({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={handleExpand}
             >
               {isExpanded ? (
                 <ChevronUp className="h-4 w-4" />
@@ -180,10 +189,12 @@ export function ArbitrageOpportunity({
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <MarketStructure exchange={buyExchange} symbol={symbol} />
-              <MarketStructure exchange={sellExchange} symbol={symbol} />
-            </div>
+            {hasLoadedDetails && (
+              <div className="grid grid-cols-2 gap-4">
+                <MarketStructure exchange={buyExchange} symbol={symbol} />
+                <MarketStructure exchange={sellExchange} symbol={symbol} />
+              </div>
+            )}
           </div>
         </Card>
       )}
