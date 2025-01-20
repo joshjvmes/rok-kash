@@ -42,6 +42,63 @@ export type Database = {
         }
         Relationships: []
       }
+      arbitrage_calculations: {
+        Row: {
+          base_amount: number
+          buy_price: number
+          created_at: string
+          fees_buy: number
+          fees_sell: number
+          gross_profit: number
+          id: string
+          net_profit: number
+          network_fees: number
+          opportunity_id: string
+          sell_price: number
+        }
+        Insert: {
+          base_amount: number
+          buy_price: number
+          created_at?: string
+          fees_buy: number
+          fees_sell: number
+          gross_profit: number
+          id?: string
+          net_profit: number
+          network_fees: number
+          opportunity_id: string
+          sell_price: number
+        }
+        Update: {
+          base_amount?: number
+          buy_price?: number
+          created_at?: string
+          fees_buy?: number
+          fees_sell?: number
+          gross_profit?: number
+          id?: string
+          net_profit?: number
+          network_fees?: number
+          opportunity_id?: string
+          sell_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arbitrage_calculations_opportunity_fk"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "arbitrage_opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arbitrage_calculations_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "arbitrage_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       arbitrage_execution_metrics: {
         Row: {
           actual_slippage_percentage: number

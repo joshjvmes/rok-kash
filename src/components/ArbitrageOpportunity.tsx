@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { createOrder } from "@/utils/exchanges/ccxt";
 import { useToast } from "@/hooks/use-toast";
-import { MarketStructure } from "./MarketStructure";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -213,10 +212,86 @@ export function ArbitrageOpportunity({
         </div>
       </Card>
       {isExpanded && (
-        <div className="grid grid-cols-2 gap-4">
-          <MarketStructure exchange={buyExchange} symbol={symbol} />
-          <MarketStructure exchange={sellExchange} symbol={symbol} />
-        </div>
+        <Card className="p-4">
+          {isCalculating ? (
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="ml-2">Calculating profit details...</span>
+            </div>
+          ) : calculation ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Profit Breakdown</h3>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Gross Profit</span>
+                      <span className="text-sm font-medium">${calculation.grossProfit.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Total Costs</span>
+                      <span className="text-sm font-medium text-red-500">
+                        -${(calculation.grossProfit - calculation.netProfit).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1">
+                      <span className="text-sm font-semibold">Net Profit</span>
+                      <span className="text-sm font-semibold text-trading-green">
+                        ${calculation.netProfit.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Cost Breakdown</h3>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Buy Exchange Fee</span>
+                      <span className="text-sm">${calculation.costs.buyExchangeFees.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Sell Exchange Fee</span>
+                      <span className="text-sm">${calculation.costs.sellExchangeFees.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Transfer Fee</span>
+                      <span className="text-sm">${calculation.costs.transferFees.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Slippage</span>
+                      <span className="text-sm">${calculation.costs.slippageCost.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600">Market Impact</span>
+                      <span className="text-sm">${calculation.costs.marketImpactCost.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Risk Metrics</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Execution Time</p>
+                    <p className="text-sm font-medium">
+                      {(calculation.metrics.estimatedExecutionTime / 1000).toFixed(1)}s
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Confidence Score</p>
+                    <p className="text-sm font-medium">{calculation.metrics.confidenceScore.toFixed(0)}%</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Risk Score</p>
+                    <p className="text-sm font-medium">{calculation.metrics.riskScore.toFixed(0)}%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">Error loading calculation details</p>
+          )}
+        </Card>
       )}
     </div>
   );
