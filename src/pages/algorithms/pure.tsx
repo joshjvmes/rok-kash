@@ -36,7 +36,9 @@ export default function PureArbitrage() {
           sellExchange: opp.sell_exchange,
           symbol: opp.symbol,
           spread: Number(opp.spread),
-          potential: Number(opp.potential_profit)
+          potential: Number(opp.potential_profit),
+          buyPrice: Number(opp.buy_price),
+          sellPrice: Number(opp.sell_price)
         })) || [];
 
         setOpportunities(formattedOpportunities);

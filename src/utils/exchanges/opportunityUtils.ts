@@ -39,12 +39,14 @@ export async function processOpportunity({
 
   if (spread >= minSpreadPercentage && potential >= minProfitAmount) {
     console.log('Opportunity meets minimum requirements - adding to list');
-    const opportunity = {
+    const opportunity: ArbitrageOpportunity = {
       buyExchange,
       sellExchange,
       symbol,
       spread: parseFloat(spread.toFixed(2)),
-      potential: parseFloat(potential.toFixed(2))
+      potential: parseFloat(potential.toFixed(2)),
+      buyPrice,
+      sellPrice
     };
 
     // Store the opportunity in the database
@@ -57,7 +59,9 @@ export async function processOpportunity({
         spread: opportunity.spread,
         potential_profit: opportunity.potential,
         status: 'pending',
-        user_id: userId
+        user_id: userId,
+        buy_price: buyPrice,
+        sell_price: sellPrice
       });
 
     if (error) {
