@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { findArbitrageOpportunities } from "@/utils/exchanges/arbitrage";
-import { useToast } from "@/hooks/use-toast";
 import type { ArbitrageOpportunity } from "@/utils/types/exchange";
 import type { ArbitrageSettings } from "@/types/arbitrage";
 
@@ -11,103 +9,56 @@ interface ArbitrageMonitorProps {
 }
 
 export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMonitorProps) {
-  const [isMonitoring, setIsMonitoring] = useState(false);
-  const { toast } = useToast();
-
   useEffect(() => {
-    let isMounted = true;
-    let timeoutId: NodeJS.Timeout;
-
-    const monitorTradingPair = async (tradingPair: any) => {
-      if (!isMounted || !isMonitoring) return;
-
+    const checkArbitrageOpportunities = async () => {
       try {
-        console.log(`Checking pair: ${tradingPair.symbol}`);
-        const pairOpportunities = await findArbitrageOpportunities(tradingPair.symbol);
+        console.log('Fetching arbitrage opportunities...');
         
-        if (!isMounted) return;
-
-        const filteredOpportunities = pairOpportunities.filter(opp => 
-          opp.spread >= settings.min_spread_percentage &&
-          opp.potential >= settings.min_profit_amount &&
-          settings.exchanges.includes(opp.buyExchange) &&
-          settings.exchanges.includes(opp.sellExchange)
+        const { data: opportunities, error } = await supabase.functions.invoke(
+          'compare-exchange-prices',
+          {
+            body: { symbols: settings.symbols }
+          }
         );
 
-        if (filteredOpportunities.length > 0) {
-          onOpportunitiesFound(filteredOpportunities);
-
-          if (settings.notifications_enabled) {
-            toast({
-              title: "New Arbitrage Opportunities",
-              description: `Found ${filteredOpportunities.length} opportunities for ${tradingPair.symbol}`,
-            });
-          }
-        }
-
-        // Wait for 30 seconds before checking the next pair
-        timeoutId = setTimeout(() => {
-          if (isMounted && isMonitoring) {
-            monitorTradingPair(tradingPair);
-          }
-        }, 30000);
-
-      } catch (error: any) {
-        console.error(`Error monitoring ${tradingPair.symbol}:`, error);
-        toast({
-          title: "Error",
-          description: error.message || `Failed to monitor ${tradingPair.symbol}`,
-          variant: "destructive",
-        });
-
-        // Even on error, wait 30 seconds before retrying
-        timeoutId = setTimeout(() => {
-          if (isMounted && isMonitoring) {
-            monitorTradingPair(tradingPair);
-          }
-        }, 30000);
-      }
-    };
-
-    const startMonitoring = async () => {
-      try {
-        const { data: tradingPairs, error } = await supabase
-          .from('matching_trading_pairs')
-          .select('*')
-          .eq('is_active', true);
-
-        if (error) throw error;
-
-        if (!tradingPairs || tradingPairs.length === 0) {
-          console.log('No active trading pairs found');
+        if (error) {
+          console.error('Error fetching opportunities:', error);
           return;
         }
 
-        setIsMonitoring(true);
-        tradingPairs.forEach(pair => {
-          monitorTradingPair(pair);
+        // Filter opportunities based on settings
+        const validOpportunities = opportunities.filter((opp: ArbitrageOpportunity) => {
+          const meetsSpreadRequirement = opp.spread >= settings.min_spread_percentage;
+          const meetsProfitRequirement = opp.potential >= settings.min_profit_amount;
+          const exchangesEnabled = settings.exchanges.includes(opp.buyExchange) && 
+                                 settings.exchanges.includes(opp.sellExchange);
+
+          if (meetsSpreadRequirement && meetsProfitRequirement && exchangesEnabled) {
+            console.log('Opportunity meets minimum requirements - adding to list');
+            return true;
+          }
+          return false;
         });
 
-      } catch (error: any) {
-        console.error("Error starting monitoring:", error);
-        toast({
-          title: "Error",
-          description: error.message || "Failed to start monitoring",
-          variant: "destructive",
-        });
+        console.log(`Found ${validOpportunities.length} valid arbitrage opportunities that meet minimum requirements`);
+        onOpportunitiesFound(validOpportunities);
+
+      } catch (error) {
+        console.error('Error in checkArbitrageOpportunities:', error);
       }
     };
 
-    startMonitoring();
+    // Initial check
+    checkArbitrageOpportunities();
 
-    return () => {
-      isMounted = false;
-      setIsMonitoring(false);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [settings, toast, onOpportunitiesFound]);
+    // Set up interval for periodic checks
+    const interval = setInterval(
+      checkArbitrageOpportunities,
+      settings.refresh_interval * 1000
+    );
+
+    return () => clearInterval(interval);
+  }, [settings, onOpportunitiesFound]);
 
   return null;
 }
