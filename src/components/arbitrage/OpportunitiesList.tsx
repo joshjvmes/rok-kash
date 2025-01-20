@@ -15,12 +15,23 @@ export function OpportunitiesList({ opportunities, isLoading }: OpportunitiesLis
         {isLoading ? (
           <p>Loading opportunities...</p>
         ) : opportunities.length > 0 ? (
-          opportunities.map((opportunity, index) => (
-            <ArbitrageOpportunityComponent
-              key={`${opportunity.buyExchange}-${opportunity.sellExchange}-${opportunity.symbol}-${index}`}
-              {...opportunity}
-            />
-          ))
+          opportunities.map((opportunity, index) => {
+            // Log the opportunity data to verify prices are present
+            console.log('Rendering opportunity:', opportunity);
+            
+            return (
+              <ArbitrageOpportunityComponent
+                key={`${opportunity.buyExchange}-${opportunity.sellExchange}-${opportunity.symbol}-${index}`}
+                buyExchange={opportunity.buyExchange}
+                sellExchange={opportunity.sellExchange}
+                symbol={opportunity.symbol}
+                spread={opportunity.spread}
+                potential={opportunity.potential}
+                buyPrice={opportunity.buyPrice}
+                sellPrice={opportunity.sellPrice}
+              />
+            );
+          })
         ) : (
           <p>No arbitrage opportunities found</p>
         )}
