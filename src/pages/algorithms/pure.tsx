@@ -36,7 +36,8 @@ export default function PureArbitrage() {
           sellExchange: opp.sell_exchange,
           symbol: opp.symbol,
           spread: Number(opp.spread),
-          potential: Number(opp.potential_profit)
+          potential: Number(opp.potential_profit),
+          timestamp: opp.created_at
         })) || [];
 
         setOpportunities(formattedOpportunities);
@@ -53,7 +54,6 @@ export default function PureArbitrage() {
   const handleNewOpportunities = (newOpportunities: ArbitrageOpportunity[]) => {
     console.log("Received new opportunities:", newOpportunities);
     setOpportunities(prev => {
-      // Filter out duplicates based on symbol and exchanges
       const existing = new Set(prev.map(o => 
         `${o.buyExchange}-${o.sellExchange}-${o.symbol}`
       ));
@@ -79,6 +79,7 @@ export default function PureArbitrage() {
       <OpportunitiesList 
         opportunities={opportunities}
         isLoading={isLoading}
+        timeframeMinutes={10} // Show opportunities from last 10 minutes
       />
     </div>
   );
