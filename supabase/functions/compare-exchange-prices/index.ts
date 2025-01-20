@@ -7,145 +7,155 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface ExchangePrices {
-  [key: string]: number | null;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { symbols = ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT'] } = await req.json()
-    const exchanges = ['binance', 'kucoin']
-    const opportunities = []
+    const { symbols = ['BTC/USDT'] } = await req.json();
+    const opportunities = [];
+    
+    console.log('Starting price comparison for symbols:', symbols);
 
-    console.log('Starting price comparison for symbols:', symbols)
+    // Initialize exchange instances
+    const binance = new ccxt.binance({
+      enableRateLimit: true,
+      timeout: 30000,
+    });
 
-    // Initialize exchange instances with proper configuration
-    const exchangeInstances: { [key: string]: ccxt.Exchange } = {}
-    for (const exchange of exchanges) {
-      const exchangeClass = ccxt[exchange]
-      exchangeInstances[exchange] = new exchangeClass({
-        enableRateLimit: true,
-        timeout: 30000,
-      })
+    const kucoin = new ccxt.kucoin({
+      enableRateLimit: true,
+      timeout: 30000,
+    });
 
-      // Configure exchange-specific settings
-      if (exchange === 'binance') {
-        exchangeInstances[exchange].apiKey = Deno.env.get('BINANCE_API_KEY')
-        exchangeInstances[exchange].secret = Deno.env.get('BINANCE_SECRET')
-      } else if (exchange === 'kucoin') {
-        exchangeInstances[exchange].apiKey = Deno.env.get('KUCOIN_API_KEY')
-        exchangeInstances[exchange].secret = Deno.env.get('KUCOIN_SECRET')
-        exchangeInstances[exchange].password = Deno.env.get('KUCOIN_PASSPHRASE')
-      }
+    // Configure API credentials if available
+    if (Deno.env.get('BINANCE_API_KEY')) {
+      binance.apiKey = Deno.env.get('BINANCE_API_KEY');
+      binance.secret = Deno.env.get('BINANCE_SECRET');
     }
 
-    // Create Supabase client for storing opportunities
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')
-    const supabase = createClient(supabaseUrl!, supabaseKey!)
+    if (Deno.env.get('KUCOIN_API_KEY')) {
+      kucoin.apiKey = Deno.env.get('KUCOIN_API_KEY');
+      kucoin.secret = Deno.env.get('KUCOIN_SECRET');
+      kucoin.password = Deno.env.get('KUCOIN_PASSPHRASE');
+    }
 
-    // Fetch prices for each symbol across exchanges
+    // Create Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Load markets for both exchanges
+    console.log('Loading markets...');
+    await Promise.all([
+      binance.loadMarkets(),
+      kucoin.loadMarkets()
+    ]);
+
+    // Process each symbol
     for (const symbol of symbols) {
-      console.log(`Fetching prices for ${symbol}`)
-      const prices: ExchangePrices = {}
+      try {
+        console.log(`Fetching prices for ${symbol}`);
+        
+        // Fetch tickers simultaneously
+        const [binanceTicker, kucoinTicker] = await Promise.all([
+          binance.fetchTicker(symbol).catch(error => {
+            console.error(`Error fetching Binance ticker for ${symbol}:`, error.message);
+            return null;
+          }),
+          kucoin.fetchTicker(symbol).catch(error => {
+            console.error(`Error fetching Kucoin ticker for ${symbol}:`, error.message);
+            return null;
+          })
+        ]);
 
-      for (const exchange of exchanges) {
-        try {
-          await exchangeInstances[exchange].loadMarkets()
-          const ticker = await exchangeInstances[exchange].fetchTicker(symbol)
-          prices[exchange] = ticker.last
-          console.log(`${exchange} price for ${symbol}: ${ticker.last}`)
-        } catch (error) {
-          console.error(`Error fetching ${symbol} price from ${exchange}:`, error)
-          prices[exchange] = null
+        if (!binanceTicker || !kucoinTicker) {
+          console.log(`Skipping ${symbol} - missing ticker data`);
+          continue;
         }
-      }
 
-      // Compare prices between exchanges
-      const buyExchange = 'binance'
-      const sellExchange = 'kucoin'
-      const buyPrice = prices[buyExchange]
-      const sellPrice = prices[sellExchange]
+        const binancePrice = binanceTicker.last;
+        const kucoinPrice = kucoinTicker.last;
 
-      if (buyPrice && sellPrice) {
-        // Calculate spread in both directions
-        const spread1 = ((sellPrice - buyPrice) / buyPrice) * 100
-        const spread2 = ((buyPrice - sellPrice) / sellPrice) * 100
+        if (!binancePrice || !kucoinPrice) {
+          console.log(`Skipping ${symbol} - invalid prices`);
+          continue;
+        }
 
-        const timestamp = new Date().toISOString()
+        // Calculate spreads in both directions
+        const binanceToKucoinSpread = ((kucoinPrice - binancePrice) / binancePrice) * 100;
+        const kucoinToBinanceSpread = ((binancePrice - kucoinPrice) / kucoinPrice) * 100;
 
-        // Check first direction (buy on Binance, sell on Kucoin)
-        if (spread1 > 0) {
+        const timestamp = new Date().toISOString();
+
+        // Check Binance -> Kucoin direction
+        if (binanceToKucoinSpread > 0) {
           const opportunity = {
-            buyExchange,
-            sellExchange,
+            buyExchange: 'Binance',
+            sellExchange: 'Kucoin',
             symbol,
-            spread: parseFloat(spread1.toFixed(4)),
-            potential: parseFloat((sellPrice - buyPrice).toFixed(2)),
+            spread: parseFloat(binanceToKucoinSpread.toFixed(4)),
+            potential: parseFloat((kucoinPrice - binancePrice).toFixed(2)),
             timestamp,
-            buyPrice,
-            sellPrice
-          }
-          opportunities.push(opportunity)
+            buyPrice: binancePrice,
+            sellPrice: kucoinPrice
+          };
+          opportunities.push(opportunity);
 
-          // Store opportunity in database
-          try {
-            await supabase.from('arbitrage_opportunities').insert([{
-              buy_exchange: buyExchange,
-              sell_exchange: sellExchange,
-              symbol,
-              spread: opportunity.spread,
-              potential_profit: opportunity.potential,
-              buy_price: buyPrice,
-              sell_price: sellPrice,
-              status: 'pending'
-            }])
-          } catch (error) {
-            console.error('Error storing opportunity:', error)
-          }
+          // Store in database
+          await supabase.from('arbitrage_opportunities').insert([{
+            buy_exchange: opportunity.buyExchange,
+            sell_exchange: opportunity.sellExchange,
+            symbol: opportunity.symbol,
+            spread: opportunity.spread,
+            potential_profit: opportunity.potential,
+            buy_price: opportunity.buyPrice,
+            sell_price: opportunity.sellPrice,
+            status: 'pending'
+          }]).catch(error => {
+            console.error('Error storing opportunity:', error);
+          });
         }
 
-        // Check reverse direction (buy on Kucoin, sell on Binance)
-        if (spread2 > 0) {
+        // Check Kucoin -> Binance direction
+        if (kucoinToBinanceSpread > 0) {
           const opportunity = {
-            buyExchange: sellExchange,
-            sellExchange: buyExchange,
+            buyExchange: 'Kucoin',
+            sellExchange: 'Binance',
             symbol,
-            spread: parseFloat(spread2.toFixed(4)),
-            potential: parseFloat((buyPrice - sellPrice).toFixed(2)),
+            spread: parseFloat(kucoinToBinanceSpread.toFixed(4)),
+            potential: parseFloat((binancePrice - kucoinPrice).toFixed(2)),
             timestamp,
-            buyPrice: sellPrice,
-            sellPrice: buyPrice
-          }
-          opportunities.push(opportunity)
+            buyPrice: kucoinPrice,
+            sellPrice: binancePrice
+          };
+          opportunities.push(opportunity);
 
-          // Store opportunity in database
-          try {
-            await supabase.from('arbitrage_opportunities').insert([{
-              buy_exchange: sellExchange,
-              sell_exchange: buyExchange,
-              symbol,
-              spread: opportunity.spread,
-              potential_profit: opportunity.potential,
-              buy_price: sellPrice,
-              sell_price: buyPrice,
-              status: 'pending'
-            }])
-          } catch (error) {
-            console.error('Error storing opportunity:', error)
-          }
+          // Store in database
+          await supabase.from('arbitrage_opportunities').insert([{
+            buy_exchange: opportunity.buyExchange,
+            sell_exchange: opportunity.sellExchange,
+            symbol: opportunity.symbol,
+            spread: opportunity.spread,
+            potential_profit: opportunity.potential,
+            buy_price: opportunity.buyPrice,
+            sell_price: opportunity.sellPrice,
+            status: 'pending'
+          }]).catch(error => {
+            console.error('Error storing opportunity:', error);
+          });
         }
+      } catch (error) {
+        console.error(`Error processing ${symbol}:`, error);
+        continue;
       }
     }
 
     // Sort opportunities by potential profit
-    opportunities.sort((a, b) => b.potential - a.potential)
+    opportunities.sort((a, b) => b.potential - a.potential);
 
-    console.log(`Found ${opportunities.length} opportunities`)
+    console.log(`Found ${opportunities.length} opportunities`);
     
     return new Response(
       JSON.stringify(opportunities),
@@ -153,15 +163,18 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
       }
-    )
+    );
   } catch (error) {
-    console.error('Error in compare-exchange-prices:', error)
+    console.error('Error in compare-exchange-prices:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500
       }
-    )
+    );
   }
 })
