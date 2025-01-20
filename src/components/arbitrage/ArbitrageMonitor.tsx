@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { findArbitrageOpportunities } from "@/utils/exchanges/arbitrage";
 import { useToast } from "@/hooks/use-toast";
@@ -14,60 +14,41 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
   const [isMonitoring, setIsMonitoring] = useState(false);
   const { toast } = useToast();
 
+  const processOpportunities = useCallback(async (tradingPair: any) => {
+    try {
+      console.log(`Checking pair: ${tradingPair.symbol}`);
+      const pairOpportunities = await findArbitrageOpportunities(tradingPair.symbol);
+      
+      const filteredOpportunities = pairOpportunities.filter(opp => 
+        opp.spread >= settings.min_spread_percentage &&
+        opp.potential >= settings.min_profit_amount &&
+        settings.exchanges.includes(opp.buyExchange) &&
+        settings.exchanges.includes(opp.sellExchange)
+      );
+
+      if (filteredOpportunities.length > 0) {
+        onOpportunitiesFound(filteredOpportunities);
+
+        if (settings.notifications_enabled) {
+          toast({
+            title: "New Arbitrage Opportunities",
+            description: `Found ${filteredOpportunities.length} opportunities for ${tradingPair.symbol}`,
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error(`Error monitoring ${tradingPair.symbol}:`, error);
+      toast({
+        title: "Error",
+        description: error.message || `Failed to monitor ${tradingPair.symbol}`,
+        variant: "destructive",
+      });
+    }
+  }, [settings, toast, onOpportunitiesFound]);
+
   useEffect(() => {
     let isMounted = true;
-    let timeoutId: NodeJS.Timeout;
-
-    const monitorTradingPair = async (tradingPair: any) => {
-      if (!isMounted || !isMonitoring) return;
-
-      try {
-        console.log(`Checking pair: ${tradingPair.symbol}`);
-        const pairOpportunities = await findArbitrageOpportunities(tradingPair.symbol);
-        
-        if (!isMounted) return;
-
-        const filteredOpportunities = pairOpportunities.filter(opp => 
-          opp.spread >= settings.min_spread_percentage &&
-          opp.potential >= settings.min_profit_amount &&
-          settings.exchanges.includes(opp.buyExchange) &&
-          settings.exchanges.includes(opp.sellExchange)
-        );
-
-        if (filteredOpportunities.length > 0) {
-          onOpportunitiesFound(filteredOpportunities);
-
-          if (settings.notifications_enabled) {
-            toast({
-              title: "New Arbitrage Opportunities",
-              description: `Found ${filteredOpportunities.length} opportunities for ${tradingPair.symbol}`,
-            });
-          }
-        }
-
-        // Wait for 30 seconds before checking the next pair
-        timeoutId = setTimeout(() => {
-          if (isMounted && isMonitoring) {
-            monitorTradingPair(tradingPair);
-          }
-        }, 30000);
-
-      } catch (error: any) {
-        console.error(`Error monitoring ${tradingPair.symbol}:`, error);
-        toast({
-          title: "Error",
-          description: error.message || `Failed to monitor ${tradingPair.symbol}`,
-          variant: "destructive",
-        });
-
-        // Even on error, wait 30 seconds before retrying
-        timeoutId = setTimeout(() => {
-          if (isMounted && isMonitoring) {
-            monitorTradingPair(tradingPair);
-          }
-        }, 30000);
-      }
-    };
+    let timeoutIds: NodeJS.Timeout[] = [];
 
     const startMonitoring = async () => {
       try {
@@ -84,9 +65,25 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
         }
 
         setIsMonitoring(true);
-        tradingPairs.forEach(pair => {
-          monitorTradingPair(pair);
+
+        // Process pairs sequentially with delay
+        tradingPairs.forEach((pair, index) => {
+          const timeoutId = setTimeout(() => {
+            if (isMounted && isMonitoring) {
+              processOpportunities(pair);
+            }
+          }, index * 5000); // 5 second delay between each pair
+          timeoutIds.push(timeoutId);
         });
+
+        // Set up the next round of checks
+        const cycleTimeout = setTimeout(() => {
+          if (isMounted && isMonitoring) {
+            startMonitoring();
+          }
+        }, Math.max(settings.refresh_interval * 1000, tradingPairs.length * 5000));
+        
+        timeoutIds.push(cycleTimeout);
 
       } catch (error: any) {
         console.error("Error starting monitoring:", error);
@@ -103,11 +100,9 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
     return () => {
       isMounted = false;
       setIsMonitoring(false);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      timeoutIds.forEach(id => clearTimeout(id));
     };
-  }, [settings, toast, onOpportunitiesFound]);
+  }, [settings, toast, processOpportunities, isMonitoring]);
 
   return null;
 }
