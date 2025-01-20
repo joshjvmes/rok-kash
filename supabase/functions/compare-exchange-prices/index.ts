@@ -7,150 +7,172 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
+const MAX_REQUESTS = 30; // Maximum requests per window
+const requestCounts = new Map<string, { count: number; timestamp: number }>();
+
+function isRateLimited(clientId: string): boolean {
+  const now = Date.now();
+  const clientRequests = requestCounts.get(clientId);
+
+  if (!clientRequests || (now - clientRequests.timestamp) > RATE_LIMIT_WINDOW) {
+    requestCounts.set(clientId, { count: 1, timestamp: now });
+    return false;
+  }
+
+  if (clientRequests.count >= MAX_REQUESTS) {
+    return true;
+  }
+
+  clientRequests.count++;
+  return false;
+}
+
+// Batch process symbols
+async function processBatch(
+  symbols: string[], 
+  exchanges: ccxt.Exchange[], 
+  supabase: any
+): Promise<any[]> {
+  const opportunities = [];
+  const batchSize = 5;
+  
+  for (let i = 0; i < symbols.length; i += batchSize) {
+    const batch = symbols.slice(i, i + batchSize);
+    const batchPromises = batch.map(async (symbol) => {
+      try {
+        const tickerPromises = exchanges.map(exchange => 
+          exchange.fetchTicker(symbol).catch(error => {
+            console.error(`Error fetching ${exchange.id} ticker for ${symbol}:`, error.message);
+            return null;
+          })
+        );
+
+        const tickers = await Promise.all(tickerPromises);
+        const validTickers = tickers.map((ticker, index) => ({
+          exchange: exchanges[index].id,
+          price: ticker?.last,
+          symbol
+        })).filter(t => t.price !== null && t.price !== undefined);
+
+        // Compare prices within valid tickers
+        for (let i = 0; i < validTickers.length; i++) {
+          for (let j = i + 1; j < validTickers.length; j++) {
+            const buyExchange = validTickers[i];
+            const sellExchange = validTickers[j];
+
+            const spread = ((sellExchange.price - buyExchange.price) / buyExchange.price) * 100;
+            const reversedSpread = ((buyExchange.price - sellExchange.price) / sellExchange.price) * 100;
+
+            if (spread > 0) {
+              opportunities.push({
+                buyExchange: buyExchange.exchange,
+                sellExchange: sellExchange.exchange,
+                symbol,
+                spread: parseFloat(spread.toFixed(4)),
+                potential: parseFloat((sellExchange.price - buyExchange.price).toFixed(2)),
+                timestamp: new Date().toISOString(),
+                buyPrice: buyExchange.price,
+                sellPrice: sellExchange.price
+              });
+            }
+
+            if (reversedSpread > 0) {
+              opportunities.push({
+                buyExchange: sellExchange.exchange,
+                sellExchange: buyExchange.exchange,
+                symbol,
+                spread: parseFloat(reversedSpread.toFixed(4)),
+                potential: parseFloat((buyExchange.price - sellExchange.price).toFixed(2)),
+                timestamp: new Date().toISOString(),
+                buyPrice: sellExchange.price,
+                sellPrice: buyExchange.price
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing ${symbol}:`, error);
+      }
+    });
+
+    await Promise.all(batchPromises);
+    // Add small delay between batches to prevent rate limiting
+    if (i + batchSize < symbols.length) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  return opportunities;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const clientId = req.headers.get('x-client-info') || 'anonymous';
+    if (isRateLimited(clientId)) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded' }),
+        { 
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     const { symbols = ['BTC/USDT'] } = await req.json();
-    const opportunities = [];
-    
     console.log('Starting price comparison for symbols:', symbols);
 
-    // Initialize exchange instances
-    const binance = new ccxt.binance({
-      enableRateLimit: true,
-      timeout: 30000,
+    // Initialize exchanges with proper configuration
+    const exchanges = [
+      new ccxt.binance({ enableRateLimit: true, timeout: 30000 }),
+      new ccxt.kucoin({ enableRateLimit: true, timeout: 30000 })
+    ];
+
+    // Configure API credentials
+    const exchangeCredentials = [
+      {
+        exchange: exchanges[0],
+        apiKey: Deno.env.get('BINANCE_API_KEY'),
+        secret: Deno.env.get('BINANCE_SECRET')
+      },
+      {
+        exchange: exchanges[1],
+        apiKey: Deno.env.get('KUCOIN_API_KEY'),
+        secret: Deno.env.get('KUCOIN_SECRET'),
+        password: Deno.env.get('KUCOIN_PASSPHRASE')
+      }
+    ];
+
+    // Apply credentials if available
+    exchangeCredentials.forEach(({ exchange, apiKey, secret, password }) => {
+      if (apiKey && secret) {
+        exchange.apiKey = apiKey;
+        exchange.secret = secret;
+        if (password && 'password' in exchange) {
+          exchange.password = password;
+        }
+      }
     });
-
-    const kucoin = new ccxt.kucoin({
-      enableRateLimit: true,
-      timeout: 30000,
-    });
-
-    // Configure API credentials if available
-    if (Deno.env.get('BINANCE_API_KEY')) {
-      binance.apiKey = Deno.env.get('BINANCE_API_KEY');
-      binance.secret = Deno.env.get('BINANCE_SECRET');
-    }
-
-    if (Deno.env.get('KUCOIN_API_KEY')) {
-      kucoin.apiKey = Deno.env.get('KUCOIN_API_KEY');
-      kucoin.secret = Deno.env.get('KUCOIN_SECRET');
-      kucoin.password = Deno.env.get('KUCOIN_PASSPHRASE');
-    }
 
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Load markets for both exchanges
-    console.log('Loading markets...');
-    await Promise.all([
-      binance.loadMarkets(),
-      kucoin.loadMarkets()
-    ]);
+    // Load markets in parallel
+    await Promise.all(exchanges.map(exchange => 
+      exchange.loadMarkets().catch(error => {
+        console.error(`Error loading markets for ${exchange.id}:`, error);
+      })
+    ));
 
-    // Process each symbol
-    for (const symbol of symbols) {
-      try {
-        console.log(`Fetching prices for ${symbol}`);
-        
-        // Fetch tickers simultaneously
-        const [binanceTicker, kucoinTicker] = await Promise.all([
-          binance.fetchTicker(symbol).catch(error => {
-            console.error(`Error fetching Binance ticker for ${symbol}:`, error.message);
-            return null;
-          }),
-          kucoin.fetchTicker(symbol).catch(error => {
-            console.error(`Error fetching Kucoin ticker for ${symbol}:`, error.message);
-            return null;
-          })
-        ]);
-
-        if (!binanceTicker || !kucoinTicker) {
-          console.log(`Skipping ${symbol} - missing ticker data`);
-          continue;
-        }
-
-        const binancePrice = binanceTicker.last;
-        const kucoinPrice = kucoinTicker.last;
-
-        if (!binancePrice || !kucoinPrice) {
-          console.log(`Skipping ${symbol} - invalid prices`);
-          continue;
-        }
-
-        // Calculate spreads in both directions
-        const binanceToKucoinSpread = ((kucoinPrice - binancePrice) / binancePrice) * 100;
-        const kucoinToBinanceSpread = ((binancePrice - kucoinPrice) / kucoinPrice) * 100;
-
-        const timestamp = new Date().toISOString();
-
-        // Check Binance -> Kucoin direction
-        if (binanceToKucoinSpread > 0) {
-          const opportunity = {
-            buyExchange: 'Binance',
-            sellExchange: 'Kucoin',
-            symbol,
-            spread: parseFloat(binanceToKucoinSpread.toFixed(4)),
-            potential: parseFloat((kucoinPrice - binancePrice).toFixed(2)),
-            timestamp,
-            buyPrice: binancePrice,
-            sellPrice: kucoinPrice
-          };
-          opportunities.push(opportunity);
-
-          // Store in database
-          await supabase.from('arbitrage_opportunities').insert([{
-            buy_exchange: opportunity.buyExchange,
-            sell_exchange: opportunity.sellExchange,
-            symbol: opportunity.symbol,
-            spread: opportunity.spread,
-            potential_profit: opportunity.potential,
-            buy_price: opportunity.buyPrice,
-            sell_price: opportunity.sellPrice,
-            status: 'pending'
-          }]).catch(error => {
-            console.error('Error storing opportunity:', error);
-          });
-        }
-
-        // Check Kucoin -> Binance direction
-        if (kucoinToBinanceSpread > 0) {
-          const opportunity = {
-            buyExchange: 'Kucoin',
-            sellExchange: 'Binance',
-            symbol,
-            spread: parseFloat(kucoinToBinanceSpread.toFixed(4)),
-            potential: parseFloat((binancePrice - kucoinPrice).toFixed(2)),
-            timestamp,
-            buyPrice: kucoinPrice,
-            sellPrice: binancePrice
-          };
-          opportunities.push(opportunity);
-
-          // Store in database
-          await supabase.from('arbitrage_opportunities').insert([{
-            buy_exchange: opportunity.buyExchange,
-            sell_exchange: opportunity.sellExchange,
-            symbol: opportunity.symbol,
-            spread: opportunity.spread,
-            potential_profit: opportunity.potential,
-            buy_price: opportunity.buyPrice,
-            sell_price: opportunity.sellPrice,
-            status: 'pending'
-          }]).catch(error => {
-            console.error('Error storing opportunity:', error);
-          });
-        }
-      } catch (error) {
-        console.error(`Error processing ${symbol}:`, error);
-        continue;
-      }
-    }
+    // Process symbols in batches
+    const opportunities = await processBatch(symbols, exchanges, supabase);
 
     // Sort opportunities by potential profit
     opportunities.sort((a, b) => b.potential - a.potential);
