@@ -1,10 +1,17 @@
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, Loader2, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createOrder } from "@/utils/exchanges/ccxt";
 import { useToast } from "@/hooks/use-toast";
 import { MarketStructure } from "./MarketStructure";
+import { calculateArbitrageProfitability } from "@/utils/exchanges/profitCalculator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ArbitrageOpportunityProps {
   buyExchange: string;
@@ -12,6 +19,9 @@ interface ArbitrageOpportunityProps {
   symbol: string;
   spread: number;
   potential: number;
+  buyPrice: number;
+  sellPrice: number;
+  amount?: number;
 }
 
 export function ArbitrageOpportunity({
@@ -20,10 +30,33 @@ export function ArbitrageOpportunity({
   symbol,
   spread,
   potential,
+  buyPrice,
+  sellPrice,
+  amount = 1000, // Default trading amount
 }: ArbitrageOpportunityProps) {
   const [isExecuting, setIsExecuting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [profitDetails, setProfitDetails] = useState<any>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const loadProfitDetails = async () => {
+      try {
+        const details = await calculateArbitrageProfitability(
+          buyPrice,
+          sellPrice,
+          amount,
+          buyExchange,
+          sellExchange
+        );
+        setProfitDetails(details);
+      } catch (error) {
+        console.error('Error calculating profit details:', error);
+      }
+    };
+
+    loadProfitDetails();
+  }, [buyPrice, sellPrice, amount, buyExchange, sellExchange]);
 
   const handleExecute = async () => {
     setIsExecuting(true);
@@ -34,7 +67,7 @@ export function ArbitrageOpportunity({
         symbol,
         "market",
         "buy",
-        1000 // Default amount for demo
+        amount
       );
 
       if (buyOrder) {
@@ -49,7 +82,7 @@ export function ArbitrageOpportunity({
           symbol,
           "market",
           "sell",
-          1000 // Default amount for demo
+          amount
         );
 
         if (sellOrder) {
@@ -88,15 +121,36 @@ export function ArbitrageOpportunity({
               <p className="text-sm text-gray-600">Spread</p>
               <p className="text-trading-green font-semibold">{spread}%</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Potential</p>
-              <p className="text-trading-green font-semibold">${potential}</p>
+            <div className="flex items-center gap-1">
+              <div>
+                <p className="text-sm text-gray-600">Net Profit</p>
+                <p className={`font-semibold ${profitDetails?.isViable ? 'text-trading-green' : 'text-trading-red'}`}>
+                  ${profitDetails?.details.netProfit.toFixed(2) || '0.00'}
+                </p>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info size={16} className="text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="space-y-1">
+                      <p>Gross Profit: ${profitDetails?.details.grossProfit.toFixed(2)}</p>
+                      <p>Buy Fees: ${profitDetails?.details.buyFees.toFixed(2)}</p>
+                      <p>Sell Fees: ${profitDetails?.details.sellFees.toFixed(2)}</p>
+                      <p>Transfer Fees: ${profitDetails?.details.transferFees.toFixed(2)}</p>
+                      <p>Slippage Cost: ${profitDetails?.details.slippageCost.toFixed(2)}</p>
+                      <p>Time to Execute: ~{profitDetails?.details.timeToExecute}min</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <Button
               variant="outline"
               className="ml-2"
               onClick={handleExecute}
-              disabled={isExecuting}
+              disabled={isExecuting || !profitDetails?.isViable}
             >
               {isExecuting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
