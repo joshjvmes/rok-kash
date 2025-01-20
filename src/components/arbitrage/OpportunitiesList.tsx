@@ -18,13 +18,7 @@ export function OpportunitiesList({ opportunities, isLoading }: OpportunitiesLis
           opportunities.map((opportunity, index) => (
             <ArbitrageOpportunityComponent
               key={`${opportunity.buyExchange}-${opportunity.sellExchange}-${opportunity.symbol}-${index}`}
-              buyExchange={opportunity.buyExchange}
-              sellExchange={opportunity.sellExchange}
-              symbol={opportunity.symbol}
-              spread={opportunity.spread}
-              potential={opportunity.potential}
-              buyPrice={opportunity.buyPrice || 0}
-              sellPrice={opportunity.sellPrice || 0}
+              {...opportunity}
             />
           ))
         ) : (

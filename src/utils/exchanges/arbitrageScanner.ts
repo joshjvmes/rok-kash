@@ -125,9 +125,7 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
               sellExchange: sellExchange.exchange,
               symbol,
               spread: parseFloat(spread.toFixed(2)),
-              potential: parseFloat(potential.toFixed(2)),
-              buyPrice: buyExchange.price,
-              sellPrice: sellExchange.price
+              potential: parseFloat(potential.toFixed(2))
             });
           }
 
@@ -138,9 +136,7 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
               sellExchange: buyExchange.exchange,
               symbol,
               spread: parseFloat(reversedSpread.toFixed(2)),
-              potential: parseFloat(potential.toFixed(2)),
-              buyPrice: sellExchange.price,
-              sellPrice: buyExchange.price
+              potential: parseFloat(potential.toFixed(2))
             });
           }
         }

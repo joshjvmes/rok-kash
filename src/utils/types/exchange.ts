@@ -11,8 +11,6 @@ export interface ArbitrageOpportunity {
   symbol: string;
   spread: number;
   potential: number;
-  buyPrice: number;
-  sellPrice: number;
 }
 
 export interface CoinbasePrice {
