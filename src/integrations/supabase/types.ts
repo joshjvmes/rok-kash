@@ -45,14 +45,12 @@ export type Database = {
       arbitrage_opportunities: {
         Row: {
           buy_exchange: string
-          buy_price: number | null
           created_at: string
           executed_at: string | null
           execution_error: string | null
           id: string
           potential_profit: number
           sell_exchange: string
-          sell_price: number | null
           spread: number
           status: string
           symbol: string
@@ -60,14 +58,12 @@ export type Database = {
         }
         Insert: {
           buy_exchange: string
-          buy_price?: number | null
           created_at?: string
           executed_at?: string | null
           execution_error?: string | null
           id?: string
           potential_profit: number
           sell_exchange: string
-          sell_price?: number | null
           spread: number
           status?: string
           symbol: string
@@ -75,14 +71,12 @@ export type Database = {
         }
         Update: {
           buy_exchange?: string
-          buy_price?: number | null
           created_at?: string
           executed_at?: string | null
           execution_error?: string | null
           id?: string
           potential_profit?: number
           sell_exchange?: string
-          sell_price?: number | null
           spread?: number
           status?: string
           symbol?: string
