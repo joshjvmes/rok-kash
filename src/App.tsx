@@ -34,6 +34,7 @@ import SemiAutomatic from "./pages/algorithms/semi-automatic";
 import Balances from "./pages/Balances";
 import ProfitLoss from "./pages/ProfitLoss";
 import TradeHistory from "./pages/TradeHistory";
+import EC2Monitor from "./pages/aws/EC2Monitor";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => {
                                 <CommandTerminal />
                                 <Routes>
                                   <Route path="/" element={<Index />} />
+                                  <Route path="/aws/ec2" element={<EC2Monitor />} />
                                   <Route path="/exchanges/bybit" element={<BybitTest />} />
                                   <Route path="/exchanges/coinbase" element={<CoinbaseTest />} />
                                   <Route path="/exchanges/kraken" element={<KrakenTest />} />

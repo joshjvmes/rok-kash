@@ -1,4 +1,4 @@
-import { Home, TestTube2, LogOut, Database, Link2, ArrowDown, XOctagon, Brain, Triangle, Code, ChartLine, Infinity, ChevronDown, Wallet, TrendingUp, History } from "lucide-react";
+import { Home, TestTube2, LogOut, Database, Link2, ArrowDown, XOctagon, Brain, Triangle, Code, ChartLine, Infinity, ChevronDown, Wallet, TrendingUp, History, Cloud } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -112,6 +112,17 @@ export function AppSidebar() {
                   <Link to="/" className={location.pathname === "/" ? "text-rokcat-purple" : ""}>
                     <Home />
                     <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link 
+                    to="/aws/ec2" 
+                    className={location.pathname === "/aws/ec2" ? "text-rokcat-purple" : ""}
+                  >
+                    <Cloud />
+                    <span>EC2 Monitor</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
