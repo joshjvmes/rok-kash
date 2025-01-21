@@ -18,7 +18,7 @@ serve(async (req) => {
 
   try {
     const ec2Client = new EC2Client({
-      region: "us-east-1", // Update this to your desired region
+      region: "us-east-1",
       credentials: {
         accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID') || '',
         secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY') || '',
@@ -31,17 +31,19 @@ serve(async (req) => {
     switch (action) {
       case 'launch':
         // Launch a new EC2 instance with Docker pre-installed
-        const userData = Buffer.from(`
-          #!/bin/bash
-          yum update -y
-          yum install -y docker
-          service docker start
-          usermod -a -G docker ec2-user
-          docker pull node:18
-        `).toString('base64')
+        const userDataScript = `#!/bin/bash
+yum update -y
+yum install -y docker
+service docker start
+usermod -a -G docker ec2-user
+docker pull node:18`;
+
+        // Use TextEncoder instead of Buffer
+        const encoder = new TextEncoder();
+        const userData = btoa(String.fromCharCode(...encoder.encode(userDataScript)));
 
         const runInstancesParams = {
-          ImageId: 'ami-0c55b159cbfafe1f0', // Amazon Linux 2 AMI ID
+          ImageId: 'ami-0e731c8a588258d0d', // Latest Amazon Linux 2023 AMI
           InstanceType: 't2.micro',
           MinCount: 1,
           MaxCount: 1,
@@ -55,8 +57,10 @@ serve(async (req) => {
           }]
         }
 
+        console.log('Launching EC2 instance with params:', runInstancesParams);
         const runCommand = new RunInstancesCommand(runInstancesParams)
         const runResponse = await ec2Client.send(runCommand)
+        console.log('Launch response:', runResponse);
         
         return new Response(
           JSON.stringify({
@@ -68,7 +72,7 @@ serve(async (req) => {
         )
 
       case 'status':
-        // Get status of EC2 instances
+        console.log('Fetching EC2 instances status');
         const describeCommand = new DescribeInstancesCommand({})
         const describeResponse = await ec2Client.send(describeCommand)
         
