@@ -24,6 +24,7 @@ serve(async (req) => {
     const supabaseServiceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!awsAccessKeyId || !awsSecretAccessKey) {
+      console.error('AWS credentials not configured')
       throw new Error('AWS credentials not configured')
     }
 
@@ -36,10 +37,10 @@ serve(async (req) => {
     })
 
     const { action } = await req.json()
+    console.log('Received action:', action)
 
     switch (action) {
       case 'scanner-status':
-        // Get instance status and check if API is responding
         const instances = await getInstances(ec2Client);
         const runningInstance = instances.find(i => 
           i.state === 'running' && 
@@ -61,7 +62,6 @@ serve(async (req) => {
         }
 
         try {
-          // Try to fetch status from the instance's API
           const response = await fetch(`http://${runningInstance.publicDns}:3000/status`);
           const data = await response.json();
           return new Response(
@@ -110,7 +110,6 @@ serve(async (req) => {
       case 'launch':
         console.log('Starting EC2 instance launch process...')
         
-        // Create API server setup script
         const apiServerScript = `
 # Install Node.js API server dependencies
 npm init -y
@@ -193,30 +192,20 @@ docker build -t arbitrage-scanner .
 docker run -d \\
   --name arbitrage-scanner \\
   --restart unless-stopped \\
-  -e BINANCE_API_KEY=${Deno.env.get('BINANCE_API_KEY')} \\
-  -e BINANCE_SECRET=${Deno.env.get('BINANCE_SECRET')} \\
-  -e BYBIT_API_KEY=${Deno.env.get('BYBIT_API_KEY')} \\
-  -e BYBIT_SECRET=${Deno.env.get('BYBIT_SECRET')} \\
-  -e KUCOIN_API_KEY=${Deno.env.get('KUCOIN_API_KEY')} \\
-  -e KUCOIN_SECRET=${Deno.env.get('KUCOIN_SECRET')} \\
-  -e KUCOIN_PASSPHRASE=${Deno.env.get('KUCOIN_PASSPHRASE')} \\
-  -e KRAKEN_API_KEY=${Deno.env.get('KRAKEN_API_KEY')} \\
-  -e KRAKEN_API_SECRET=${Deno.env.get('KRAKEN_API_SECRET')} \\
-  -e OKX_API_KEY=${Deno.env.get('OKX_API_KEY')} \\
-  -e OKX_SECRET=${Deno.env.get('OKX_SECRET')} \\
-  -e OKX_PASSPHRASE=${Deno.env.get('OKX_PASSPHRASE')} \\
   arbitrage-scanner`
 
+        console.log('Preparing user data script...')
         const encoder = new TextEncoder()
         const userData = btoa(String.fromCharCode(...encoder.encode(userDataScript)))
 
+        console.log('Creating EC2 instance with RunInstancesCommand...')
         const runInstancesParams = {
           ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2023
           InstanceType: 't2.medium',
           MinCount: 1,
           MaxCount: 1,
           UserData: userData,
-          SecurityGroupIds: ['sg-0d534a988b5751839'], // Updated security group ID
+          SecurityGroupIds: ['sg-0d534a988b5751839'], // Make sure this security group exists and has proper permissions
           TagSpecifications: [{
             ResourceType: 'instance',
             Tags: [{
@@ -226,19 +215,23 @@ docker run -d \\
           }]
         }
 
-        console.log('Launching EC2 instance with params:', runInstancesParams)
-        const runCommand = new RunInstancesCommand(runInstancesParams)
-        const runResponse = await ec2Client.send(runCommand)
-        console.log('Launch response:', runResponse)
-        
-        return new Response(
-          JSON.stringify({
-            message: "Successfully launched arbitrage scanner instance",
-            instanceId: runResponse.Instances?.[0]?.InstanceId,
-            status: "success"
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        try {
+          const runCommand = new RunInstancesCommand(runInstancesParams)
+          const runResponse = await ec2Client.send(runCommand)
+          console.log('Launch response:', runResponse)
+          
+          return new Response(
+            JSON.stringify({
+              message: "Successfully launched arbitrage scanner instance",
+              instanceId: runResponse.Instances?.[0]?.InstanceId,
+              status: "success"
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Error in RunInstancesCommand:', error)
+          throw error
+        }
 
       case 'status':
         console.log('Fetching EC2 instances status')
