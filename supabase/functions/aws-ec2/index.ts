@@ -147,7 +147,7 @@ docker run -d \\
           MinCount: 1,
           MaxCount: 1,
           UserData: userData,
-          SecurityGroupIds: ['sg-0123456789abcdef0'], // Replace with your security group ID
+          SecurityGroupIds: ['YOUR_SECURITY_GROUP_ID'], // Replace with your actual security group ID
           TagSpecifications: [{
             ResourceType: 'instance',
             Tags: [{
