@@ -19,12 +19,15 @@ const SupabaseIPRanges = () => {
   useEffect(() => {
     const fetchIPRanges = async () => {
       try {
+        console.log('Fetching IP ranges from database...');
         const { data, error } = await supabase
           .from('supabase_ip_ranges')
           .select('*')
           .order('created_at', { ascending: false });
 
         if (error) throw error;
+        
+        console.info(`Successfully fetched ${data?.length || 0} IP ranges`);
         setIpRanges(data || []);
       } catch (error) {
         console.error('Error fetching IP ranges:', error);
