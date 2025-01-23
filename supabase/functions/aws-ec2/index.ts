@@ -110,16 +110,50 @@ serve(async (req) => {
       case 'launch':
         console.log('Starting EC2 instance launch process...')
         
-        const apiServerScript = `
-# Install Node.js API server dependencies
-npm init -y
-npm install express cors @supabase/supabase-js dotenv
+        const userDataScript = `#!/bin/bash
+# Update system and install basic tools
+yum update -y
+yum install -y curl git
+
+# Install Docker
+yum install -y docker
+systemctl start docker
+systemctl enable docker
+usermod -a -G docker ec2-user
+
+# Install Node.js using nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm install 18
+nvm use 18
+
+# Create working directory
+mkdir -p /opt/arbitrage-api
+cd /opt/arbitrage-api
+
+# Create package.json
+cat > package.json << 'EOL'
+{
+  "name": "arbitrage-api",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "@supabase/supabase-js": "^2.39.3"
+  }
+}
+EOL
+
+# Install dependencies
+npm install
 
 # Create API server file
 cat > server.js << 'EOL'
-const express = require('express');
-const cors = require('cors');
-const { createClient } = require('@supabase/supabase-js');
+import express from 'express';
+import cors from 'cors';
+import { createClient } from '@supabase/supabase-js';
 
 const app = express();
 app.use(cors());
@@ -130,12 +164,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-// Endpoint to get instance status
 app.get('/status', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -145,8 +177,13 @@ app.get('/status', async (req, res) => {
       .limit(10);
       
     if (error) throw error;
-    res.json({ status: 'running', data });
+    res.json({ 
+      status: 'running',
+      lastUpdate: new Date().toISOString(),
+      data 
+    });
   } catch (error) {
+    console.error('Error fetching status:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -165,34 +202,21 @@ SUPABASE_SERVICE_ROLE_KEY=${supabaseServiceRole}
 PORT=3000
 EOL
 
-# Start the API server
+# Install PM2 globally
+npm install -g pm2
+
+# Start the API server with PM2
 pm2 start server.js --name "arbitrage-api"
+
+# Save PM2 process list
+pm2 save
+
+# Setup PM2 to start on boot
+pm2 startup
+
+# Log completion
+echo "Setup completed successfully" > /var/log/user-data.log
 `
-
-        const userDataScript = `#!/bin/bash
-yum update -y
-yum install -y docker git nodejs npm
-service docker start
-usermod -a -G docker ec2-user
-systemctl enable docker
-
-# Install PM2 for process management
-npm install -y pm2 -g
-
-# Setup API server
-mkdir -p /opt/arbitrage-api
-cd /opt/arbitrage-api
-${apiServerScript}
-
-# Setup arbitrage scanner
-docker pull node:18
-git clone https://github.com/your-org/arbitrage-scanner.git
-cd arbitrage-scanner
-docker build -t arbitrage-scanner .
-docker run -d \\
-  --name arbitrage-scanner \\
-  --restart unless-stopped \\
-  arbitrage-scanner`
 
         console.log('Preparing user data script...')
         const encoder = new TextEncoder()
@@ -205,7 +229,7 @@ docker run -d \\
           MinCount: 1,
           MaxCount: 1,
           UserData: userData,
-          SecurityGroupIds: ['sg-0d534a988b5751839'], // Make sure this security group exists and has proper permissions
+          SecurityGroupIds: ['sg-0d534a988b5751839'],
           TagSpecifications: [{
             ResourceType: 'instance',
             Tags: [{
