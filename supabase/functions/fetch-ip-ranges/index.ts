@@ -11,19 +11,27 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Get service role key from environment
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!serviceRoleKey) {
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
+    }
+
     // Fetch IP ranges from Supabase's public endpoint
     console.log('Fetching IP ranges from Supabase API...')
     const response = await fetch('https://api.supabase.com/v1/network/ip-ranges', {
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        'Authorization': `Bearer ${serviceRoleKey}`,
       }
     })
     
     if (!response.ok) {
-      throw new Error(`API responded with status ${response.status}: ${await response.text()}`)
+      const errorText = await response.text()
+      console.error('API Error:', response.status, errorText)
+      throw new Error(`API responded with status ${response.status}: ${errorText}`)
     }
+
     const rawData = await response.json()
-    
     console.log('Raw data from API:', JSON.stringify(rawData, null, 2))
     
     // The API returns an object with arrays for different services
@@ -50,9 +58,14 @@ Deno.serve(async (req) => {
     console.log('Processed IP ranges:', JSON.stringify(ipRanges, null, 2))
 
     // Create Supabase client using environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    if (!supabaseUrl) {
+      throw new Error('SUPABASE_URL is not set')
+    }
+
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      supabaseUrl,
+      serviceRoleKey
     )
 
     console.log('Clearing existing IP ranges...')
