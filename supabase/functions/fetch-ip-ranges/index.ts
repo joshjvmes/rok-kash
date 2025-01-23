@@ -12,6 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     // Fetch IP ranges from Supabase's public endpoint
+    console.log('Fetching IP ranges from Supabase API...')
     const response = await fetch('https://api.supabase.com/v1/network/ip-ranges')
     const data = await response.json()
 
@@ -21,12 +22,14 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    console.log('Clearing existing IP ranges...')
     // Clear existing IP ranges
     await supabaseClient
       .from('supabase_ip_ranges')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
 
+    console.log('Inserting new IP ranges...')
     // Insert new IP ranges
     const { error } = await supabaseClient.from('supabase_ip_ranges').insert(
       data.map((range: any) => ({
@@ -38,6 +41,7 @@ Deno.serve(async (req) => {
 
     if (error) throw error
 
+    console.log('IP ranges updated successfully')
     return new Response(
       JSON.stringify({ message: 'IP ranges updated successfully' }),
       {
@@ -46,6 +50,7 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
+    console.error('Error updating IP ranges:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
