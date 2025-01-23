@@ -4,7 +4,13 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const PROJECT_ID = SUPABASE_URL.match(/https:\/\/(.*?)\.supabase/)?.[1] || "";
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 async function handleFunctionsList() {
+  console.log("Fetching functions list");
   const response = await fetch(
     `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions`,
     {
@@ -22,6 +28,7 @@ async function handleFunctionsList() {
 }
 
 async function handleFunctionLogs(functionName: string) {
+  console.log(`Fetching logs for function: ${functionName}`);
   const response = await fetch(
     `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions/${functionName}/logs`,
     {
@@ -39,8 +46,14 @@ async function handleFunctionLogs(functionName: string) {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
     const { command } = await req.json();
+    console.log(`Executing command: ${command}`);
     let result;
 
     // Parse the command
@@ -75,13 +88,12 @@ serve(async (req) => {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          ...corsHeaders,
         },
       }
     );
   } catch (error) {
+    console.error('Error executing command:', error);
     return new Response(
       JSON.stringify({ 
         error: error.message,
@@ -91,9 +103,7 @@ serve(async (req) => {
         status: 400,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          ...corsHeaders,
         },
       }
     );

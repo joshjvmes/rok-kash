@@ -27,9 +27,14 @@ const SupabaseCLI = () => {
       if (error) throw error;
 
       // Format and display the output
-      const formattedOutput = JSON.stringify(data.output, null, 2)
-        .split('\n')
-        .map(line => line.trim());
+      let formattedOutput: string[] = [];
+      if (typeof data.output === 'string') {
+        formattedOutput = data.output.split('\n');
+      } else {
+        formattedOutput = [JSON.stringify(data.output, null, 2)]
+          .flatMap(str => str.split('\n'))
+          .map(line => line.trim());
+      }
       
       setOutput(prev => [...prev, ...formattedOutput]);
 
@@ -48,6 +53,7 @@ const SupabaseCLI = () => {
       });
     } finally {
       setIsLoading(false);
+      setCommand(""); // Clear the input after execution
     }
   };
 
