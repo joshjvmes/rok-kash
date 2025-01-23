@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ExchangeBalanceProps {
   exchange: string;
-  className?: string; // Added className prop for flexibility
+  className?: string;
 }
 
 interface BalanceData {
@@ -23,6 +23,20 @@ interface BalanceData {
     [key: string]: number;
   };
 }
+
+interface BalanceItemProps {
+  coin: string;
+  amount: number;
+  exchange: string;
+}
+
+// Separate component for balance item to avoid key prop access issues
+const BalanceItem = ({ coin, amount, exchange }: BalanceItemProps) => (
+  <div className="flex justify-between text-sm">
+    <span className="text-serenity-mountain">{coin}</span>
+    <span className="text-serenity-mountain font-medium">{Number(amount).toFixed(8)}</span>
+  </div>
+);
 
 export function ExchangeBalance({ exchange, className }: ExchangeBalanceProps) {
   const { toast } = useToast();
@@ -114,10 +128,12 @@ export function ExchangeBalance({ exchange, className }: ExchangeBalanceProps) {
           <div className="space-y-2">
             {nonZeroBalances.length > 0 ? (
               nonZeroBalances.map(([coin, amount]) => (
-                <div key={`${exchange}-${coin}`} className="flex justify-between text-sm">
-                  <span className="text-serenity-mountain">{coin}</span>
-                  <span className="text-serenity-mountain font-medium">{Number(amount).toFixed(8)}</span>
-                </div>
+                <BalanceItem
+                  key={`${exchange}-${coin}`}
+                  coin={coin}
+                  amount={amount}
+                  exchange={exchange}
+                />
               ))
             ) : (
               <p className="text-sm text-serenity-mountain">No balance found</p>
