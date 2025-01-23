@@ -13,7 +13,12 @@ Deno.serve(async (req) => {
   try {
     // Fetch IP ranges from Supabase's public endpoint
     console.log('Fetching IP ranges from Supabase API...')
-    const response = await fetch('https://api.supabase.com/v1/network/ip-ranges')
+    const response = await fetch('https://api.supabase.com/v1/network/ip-ranges', {
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      }
+    })
+    
     if (!response.ok) {
       throw new Error(`API responded with status ${response.status}: ${await response.text()}`)
     }
