@@ -50,18 +50,19 @@ const SupabaseIPRanges = () => {
       setIsRefreshing(true);
       console.log('Refreshing IP ranges from Supabase API...');
       
-      const response = await fetch(
-        'https://pojfmdxsoqfxfzkujwah.supabase.co/functions/v1/fetch-ip-ranges',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
-          },
-        }
-      );
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
 
-      if (!response.ok) {
-        throw new Error('Failed to refresh IP ranges');
+      const response = await supabase.functions.invoke('fetch-ip-ranges', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (response.error) {
+        throw response.error;
       }
 
       console.info('Successfully refreshed IP ranges');
@@ -72,11 +73,11 @@ const SupabaseIPRanges = () => {
 
       // Fetch the updated ranges
       await fetchIPRanges();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error refreshing IP ranges:', error);
       toast({
         title: "Error",
-        description: "Failed to refresh IP ranges",
+        description: error.message || "Failed to refresh IP ranges",
         variant: "destructive",
       });
     } finally {
