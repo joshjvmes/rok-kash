@@ -14,31 +14,35 @@ Deno.serve(async (req) => {
     // Fetch IP ranges from Supabase's public endpoint
     console.log('Fetching IP ranges from Supabase API...')
     const response = await fetch('https://api.supabase.com/v1/network/ip-ranges')
+    if (!response.ok) {
+      throw new Error(`API responded with status ${response.status}: ${await response.text()}`)
+    }
     const rawData = await response.json()
     
-    console.log('Raw data from API:', rawData)
+    console.log('Raw data from API:', JSON.stringify(rawData, null, 2))
     
     // The API returns an object with arrays for different services
     // We need to flatten and transform this into the format we want
     const ipRanges = [
-      ...(rawData.ipv4?.database || []).map((range: string) => ({
+      ...((rawData.ipv4?.database || []).map((range: string) => ({
         ip_range: range,
         region: null,
         service: 'database'
-      })),
-      ...(rawData.ipv4?.dashboard || []).map((range: string) => ({
+      })) || []),
+      ...((rawData.ipv4?.dashboard || []).map((range: string) => ({
         ip_range: range,
         region: null,
         service: 'dashboard'
-      })),
-      ...(rawData.ipv4?.api || []).map((range: string) => ({
+      })) || []),
+      ...((rawData.ipv4?.api || []).map((range: string) => ({
         ip_range: range,
         region: null,
         service: 'api'
-      }))
+      })) || [])
     ]
 
-    console.log('Processed IP ranges:', ipRanges)
+    console.log('Number of IP ranges found:', ipRanges.length)
+    console.log('Processed IP ranges:', JSON.stringify(ipRanges, null, 2))
 
     // Create Supabase client using environment variables
     const supabaseClient = createClient(
@@ -61,11 +65,16 @@ Deno.serve(async (req) => {
         .insert(ipRanges)
 
       if (error) throw error
+    } else {
+      console.log('No IP ranges found to insert')
     }
 
     console.log('IP ranges updated successfully')
     return new Response(
-      JSON.stringify({ message: 'IP ranges updated successfully' }),
+      JSON.stringify({ 
+        message: 'IP ranges updated successfully',
+        count: ipRanges.length 
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
