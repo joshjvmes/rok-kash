@@ -14,53 +14,63 @@ async function handleFunctionsList() {
   console.log("Using Project ID:", PROJECT_ID);
   console.log("Service Role Key length:", SERVICE_ROLE_KEY.length);
   
-  const response = await fetch(
-    `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions`,
-    {
-      headers: {
-        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-      },
+  try {
+    const response = await fetch(
+      `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions`,
+      {
+        headers: {
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    console.log("Response status:", response.status);
+    console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Functions list error:", errorText);
+      throw new Error(`Failed to fetch functions: ${response.statusText}`);
     }
-  );
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Functions list error:", errorText);
-    console.error("Response status:", response.status);
-    console.error("Response headers:", Object.fromEntries(response.headers.entries()));
-    throw new Error(`Failed to fetch functions: ${response.statusText}`);
+    
+    const data = await response.json();
+    console.log("Functions list response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in handleFunctionsList:", error);
+    throw error;
   }
-  
-  const data = await response.json();
-  console.log("Functions list response:", data);
-  return data;
 }
 
 async function handleFunctionLogs(functionName: string) {
   console.log(`Fetching logs for function: ${functionName}`);
   console.log("Using Project ID:", PROJECT_ID);
-  console.log("Service Role Key length:", SERVICE_ROLE_KEY.length);
   
-  const response = await fetch(
-    `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions/${functionName}/logs`,
-    {
-      headers: {
-        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-      },
+  try {
+    const response = await fetch(
+      `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions/${functionName}/logs`,
+      {
+        headers: {
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Function logs error:", errorText);
+      throw new Error(`Failed to fetch logs: ${response.statusText}`);
     }
-  );
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Function logs error:", errorText);
-    console.error("Response status:", response.status);
-    console.error("Response headers:", Object.fromEntries(response.headers.entries()));
-    throw new Error(`Failed to fetch logs: ${response.statusText}`);
+    
+    const data = await response.json();
+    console.log("Function logs response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in handleFunctionLogs:", error);
+    throw error;
   }
-  
-  const data = await response.json();
-  console.log("Function logs response:", data);
-  return data;
 }
 
 serve(async (req) => {
@@ -73,22 +83,18 @@ serve(async (req) => {
     const { command } = await req.json();
     console.log(`Executing command: ${command}`);
 
-    // Validate command format
     if (!command || typeof command !== 'string') {
       throw new Error('Command is required and must be a string');
     }
 
-    // Parse the command
     const parts = command.trim().split(' ');
     
-    // Validate it starts with 'supabase'
     if (parts[0] !== 'supabase') {
       throw new Error('Command must start with "supabase"');
     }
 
     let result;
 
-    // Handle different commands
     switch(parts[1]) {
       case 'functions':
         switch(parts[2]) {
