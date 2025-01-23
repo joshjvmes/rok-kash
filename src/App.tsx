@@ -16,7 +16,7 @@ import { clusterApiUrl } from '@solana/web3.js';
 import { useMemo } from 'react';
 import Index from "./pages/Index";
 import Login from "./pages/Login";
-import SupabaseCLI from "./pages/SupabaseCLI";
+import SupabaseIPRanges from "./pages/SupabaseIPRanges";
 import BybitTest from "./pages/exchanges/BybitTest";
 import CoinbaseTest from "./pages/exchanges/CoinbaseTest";
 import KrakenTest from "./pages/exchanges/KrakenTest";
@@ -91,7 +91,7 @@ const App = () => {
                                 <CommandTerminal />
                                 <Routes>
                                   <Route path="/" element={<Index />} />
-                                  <Route path="/supabase-cli" element={<SupabaseCLI />} />
+                                  <Route path="/supabase-ip-ranges" element={<SupabaseIPRanges />} />
                                   <Route path="/aws/ec2" element={<EC2Monitor />} />
                                   <Route path="/exchanges/bybit" element={<BybitTest />} />
                                   <Route path="/exchanges/coinbase" element={<CoinbaseTest />} />

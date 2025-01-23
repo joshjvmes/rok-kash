@@ -635,6 +635,33 @@ export type Database = {
         }
         Relationships: []
       }
+      supabase_ip_ranges: {
+        Row: {
+          created_at: string
+          id: string
+          ip_range: string
+          region: string | null
+          service: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_range: string
+          region?: string | null
+          service?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_range?: string
+          region?: string | null
+          service?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       trading_settings: {
         Row: {
           created_at: string
