@@ -25,26 +25,37 @@ serve(async (req) => {
       },
     })
 
-    // Parse the request body
-    const { action, instanceParams } = await req.json()
+    const { action } = await req.json()
 
     switch (action) {
       case 'launch':
-        // Launch a new EC2 instance with Docker pre-installed
+        // Launch a new EC2 instance with Docker and arbitrage scanner setup
         const userDataScript = `#!/bin/bash
 yum update -y
-yum install -y docker
+yum install -y docker git
 service docker start
 usermod -a -G docker ec2-user
-docker pull node:18`;
+systemctl enable docker
+docker pull node:18
 
-        // Use TextEncoder instead of Buffer
+# Clone and setup arbitrage scanner
+git clone https://github.com/your-org/arbitrage-scanner.git
+cd arbitrage-scanner
+docker build -t arbitrage-scanner .
+docker run -d \\
+  --name arbitrage-scanner \\
+  --restart unless-stopped \\
+  -e KUCOIN_API_KEY=${Deno.env.get('KUCOIN_API_KEY')} \\
+  -e KUCOIN_SECRET=${Deno.env.get('KUCOIN_SECRET')} \\
+  -e KUCOIN_PASSPHRASE=${Deno.env.get('KUCOIN_PASSPHRASE')} \\
+  arbitrage-scanner`;
+
         const encoder = new TextEncoder();
         const userData = btoa(String.fromCharCode(...encoder.encode(userDataScript)));
 
         const runInstancesParams = {
-          ImageId: 'ami-0e731c8a588258d0d', // Latest Amazon Linux 2023 AMI
-          InstanceType: 't2.micro',
+          ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2023
+          InstanceType: 't2.medium', // Using medium instance for better performance
           MinCount: 1,
           MaxCount: 1,
           UserData: userData,
@@ -64,7 +75,7 @@ docker pull node:18`;
         
         return new Response(
           JSON.stringify({
-            message: "Successfully launched EC2 instance",
+            message: "Successfully launched arbitrage scanner instance",
             instanceId: runResponse.Instances?.[0]?.InstanceId,
             status: "success"
           }),
