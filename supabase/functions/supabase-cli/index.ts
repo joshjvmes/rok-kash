@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -9,32 +10,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
+
 async function handleFunctionsList() {
   console.log("Fetching functions list");
-  console.log("Using Project ID:", PROJECT_ID);
-  console.log("Service Role Key length:", SERVICE_ROLE_KEY.length);
-  
   try {
-    const response = await fetch(
-      `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions`,
-      {
-        headers: {
-          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    
-    console.log("Response status:", response.status);
-    console.log("Response headers:", Object.fromEntries(response.headers.entries()));
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Functions list error:", errorText);
-      throw new Error(`Failed to fetch functions: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
+    const { data, error } = await supabase
+      .from('_functions')
+      .select('*');
+
+    if (error) throw error;
     console.log("Functions list response:", data);
     return data;
   } catch (error) {
@@ -45,26 +35,15 @@ async function handleFunctionsList() {
 
 async function handleFunctionLogs(functionName: string) {
   console.log(`Fetching logs for function: ${functionName}`);
-  console.log("Using Project ID:", PROJECT_ID);
-  
   try {
-    const response = await fetch(
-      `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions/${functionName}/logs`,
-      {
-        headers: {
-          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Function logs error:", errorText);
-      throw new Error(`Failed to fetch logs: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
+    const { data, error } = await supabase
+      .from('_functions_logs')
+      .select('*')
+      .eq('function_name', functionName)
+      .order('timestamp', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
     console.log("Function logs response:", data);
     return data;
   } catch (error) {
