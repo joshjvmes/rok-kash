@@ -1,104 +1,87 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const PROJECT_ID = SUPABASE_URL.match(/https:\/\/(.*?)\.supabase/)?.[1] || "";
+
+async function handleFunctionsList() {
+  const response = await fetch(
+    `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions`,
+    {
+      headers: {
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      },
+    }
+  );
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch functions: ${response.statusText}`);
+  }
+  
+  return await response.json();
 }
 
-// Simulate CLI command responses
-function simulateCommand(command: string): { output: string; error: boolean } {
-  const commands = {
-    'functions list': {
-      output: `
-Functions
-  • rebalance-transfer
-  • supabase-cli
-  • aws-connect
-  • aws-ec2
-  • bybit-proxy
-  • calculate-arbitrage
-  • ccxt-proxy
-  • coinbase-proxy
-  • compare-exchange-prices
-  • jupiter-proxy
-  • kraken-proxy
-  • raydium-proxy
-  • solana-proxy
-  • solana-transfer
-  • solana-wallet
-  • uniswap-proxy`,
-      error: false
-    },
-    'functions deploy --show-region-ips': {
-      output: `
-Deployment complete.
-
-Functions can be accessed using the following Region IPs:
-  • East US (Virginia) - 100.21.0.0/20
-  • West US (Oregon) - 34.214.0.0/16
-  • Southeast Asia (Singapore) - 18.136.0.0/16`,
-      error: false
-    },
-    'functions logs': {
-      output: `
-Recent function logs:
-[2024-03-20 10:15:32] INFO: Function "rebalance-transfer" executed successfully
-[2024-03-20 10:14:55] INFO: Function "ccxt-proxy" completed with status 200
-[2024-03-20 10:13:22] INFO: New deployment detected for "supabase-cli"`,
-      error: false
+async function handleFunctionLogs(functionName: string) {
+  const response = await fetch(
+    `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions/${functionName}/logs`,
+    {
+      headers: {
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      },
     }
-  };
-
-  // Clean up the command string
-  const cleanCommand = command.trim().toLowerCase();
-
-  // Find matching command
-  const matchingCommand = Object.entries(commands).find(([cmd]) => 
-    cleanCommand.startsWith(cmd.toLowerCase())
   );
-
-  if (matchingCommand) {
-    return matchingCommand[1];
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch logs: ${response.statusText}`);
   }
-
-  return {
-    output: `Error: Command "${command}" not recognized. Available commands:\n` +
-            `  • functions list\n` +
-            `  • functions deploy --show-region-ips\n` +
-            `  • functions logs`,
-    error: true
-  };
+  
+  return await response.json();
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
   try {
-    const { command } = await req.json()
-    console.log('Executing command:', command)
-    
-    // Validate command exists
-    if (!command) {
-      throw new Error('No command provided');
+    const { command } = await req.json();
+    let result;
+
+    // Parse the command
+    const parts = command.split(' ');
+    if (parts[0] !== 'supabase') {
+      throw new Error('Only supabase commands are supported');
     }
 
-    const result = simulateCommand(command);
+    // Handle different commands
+    switch(parts[1]) {
+      case 'functions':
+        switch(parts[2]) {
+          case 'list':
+            result = await handleFunctionsList();
+            break;
+          case 'logs':
+            if (!parts[3]) {
+              throw new Error('Function name is required for logs');
+            }
+            result = await handleFunctionLogs(parts[3]);
+            break;
+          default:
+            throw new Error(`Unsupported functions command: ${parts[2]}`);
+        }
+        break;
+      default:
+        throw new Error(`Unsupported command: ${parts[1]}`);
+    }
 
     return new Response(
-      JSON.stringify(result),
-      { 
+      JSON.stringify({ output: result }),
+      {
         headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
       }
-    )
+    );
   } catch (error) {
-    console.error('Error executing command:', error)
-    
     return new Response(
       JSON.stringify({ 
         error: error.message,
@@ -107,10 +90,12 @@ serve(async (req) => {
       { 
         status: 400,
         headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
       }
-    )
+    );
   }
-})
+});

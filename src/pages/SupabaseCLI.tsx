@@ -21,14 +21,17 @@ const SupabaseCLI = () => {
       setOutput(prev => [...prev, `$ ${command}`]);
 
       const { data, error } = await supabase.functions.invoke('supabase-cli', {
-        body: { command: `supabase ${command}` }
+        body: { command }
       });
 
       if (error) throw error;
 
-      // Split output into lines and add to output
-      const outputLines = data.output.split('\n').filter(Boolean);
-      setOutput(prev => [...prev, ...outputLines]);
+      // Format and display the output
+      const formattedOutput = JSON.stringify(data.output, null, 2)
+        .split('\n')
+        .map(line => line.trim());
+      
+      setOutput(prev => [...prev, ...formattedOutput]);
 
       toast({
         title: "Command executed",
