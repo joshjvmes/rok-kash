@@ -1,4 +1,4 @@
-import { Home, Cloud, Terminal } from "lucide-react";
+import { Home, Cloud, Table } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   SidebarMenu,
@@ -33,11 +33,11 @@ export function NavigationMenu() {
       <SidebarMenuItem>
         <SidebarMenuButton asChild>
           <Link 
-            to="/supabase-cli" 
-            className={location.pathname === "/supabase-cli" ? "text-rokcat-purple" : ""}
+            to="/supabase-ip-ranges" 
+            className={location.pathname === "/supabase-ip-ranges" ? "text-rokcat-purple" : ""}
           >
-            <Terminal />
-            <span>Supabase CLI</span>
+            <Table />
+            <span>IP Ranges</span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
