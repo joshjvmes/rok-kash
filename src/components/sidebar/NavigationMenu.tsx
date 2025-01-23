@@ -1,4 +1,4 @@
-import { Home, Cloud } from "lucide-react";
+import { Home, Cloud, Terminal } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   SidebarMenu,
@@ -27,6 +27,17 @@ export function NavigationMenu() {
           >
             <Cloud />
             <span>EC2 Monitor</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild>
+          <Link 
+            to="/supabase-cli" 
+            className={location.pathname === "/supabase-cli" ? "text-rokcat-purple" : ""}
+          >
+            <Terminal />
+            <span>Supabase CLI</span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>

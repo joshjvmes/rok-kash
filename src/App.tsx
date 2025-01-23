@@ -16,6 +16,7 @@ import { clusterApiUrl } from '@solana/web3.js';
 import { useMemo } from 'react';
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import SupabaseCLI from "./pages/SupabaseCLI";
 import BybitTest from "./pages/exchanges/BybitTest";
 import CoinbaseTest from "./pages/exchanges/CoinbaseTest";
 import KrakenTest from "./pages/exchanges/KrakenTest";
@@ -38,7 +39,6 @@ import EC2Monitor from "./pages/aws/EC2Monitor";
 
 const queryClient = new QueryClient();
 
-// Protected Route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
@@ -58,7 +58,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
-  // Set up Solana wallet configuration
   const network = 'devnet';
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
@@ -92,6 +91,7 @@ const App = () => {
                                 <CommandTerminal />
                                 <Routes>
                                   <Route path="/" element={<Index />} />
+                                  <Route path="/supabase-cli" element={<SupabaseCLI />} />
                                   <Route path="/aws/ec2" element={<EC2Monitor />} />
                                   <Route path="/exchanges/bybit" element={<BybitTest />} />
                                   <Route path="/exchanges/coinbase" element={<CoinbaseTest />} />
