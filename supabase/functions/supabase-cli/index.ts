@@ -55,7 +55,13 @@ async function handleFunctionLogs(functionName: string) {
 async function handleIpRanges() {
   console.log("Fetching Supabase IP ranges");
   try {
-    const response = await fetch('https://api.supabase.com/v1/network-restrictions/ip-ranges');
+    const response = await fetch('https://api.supabase.com/v1/network-restrictions/ip-ranges', {
+      headers: {
+        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
     if (!response.ok) {
       throw new Error(`Failed to fetch IP ranges: ${response.statusText}`);
     }
