@@ -52,8 +52,23 @@ async function handleFunctionLogs(functionName: string) {
   }
 }
 
+async function handleIpRanges() {
+  console.log("Fetching Supabase IP ranges");
+  try {
+    const response = await fetch('https://api.supabase.com/v1/network-restrictions/ip-ranges');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch IP ranges: ${response.statusText}`);
+    }
+    const data = await response.json();
+    console.log("IP ranges response:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in handleIpRanges:", error);
+    throw error;
+  }
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -89,6 +104,9 @@ serve(async (req) => {
           default:
             throw new Error(`Unsupported functions command: ${parts[2]}`);
         }
+        break;
+      case 'ip-ranges':
+        result = await handleIpRanges();
         break;
       default:
         throw new Error(`Unsupported command: ${parts[1]}`);
