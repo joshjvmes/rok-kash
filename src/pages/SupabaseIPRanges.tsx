@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface IPRange {
   id: string;
@@ -15,34 +18,90 @@ interface IPRange {
 const SupabaseIPRanges = () => {
   const [ipRanges, setIpRanges] = useState<IPRange[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { toast } = useToast();
+
+  const fetchIPRanges = async () => {
+    try {
+      console.log('Fetching IP ranges from database...');
+      const { data, error } = await supabase
+        .from('supabase_ip_ranges')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      console.info(`Successfully fetched ${data?.length || 0} IP ranges`);
+      setIpRanges(data || []);
+    } catch (error) {
+      console.error('Error fetching IP ranges:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch IP ranges",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refreshIPRanges = async () => {
+    try {
+      setIsRefreshing(true);
+      console.log('Refreshing IP ranges from Supabase API...');
+      
+      const response = await fetch(
+        'https://pojfmdxsoqfxfzkujwah.supabase.co/functions/v1/fetch-ip-ranges',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh IP ranges');
+      }
+
+      console.info('Successfully refreshed IP ranges');
+      toast({
+        title: "Success",
+        description: "IP ranges refreshed successfully",
+      });
+
+      // Fetch the updated ranges
+      await fetchIPRanges();
+    } catch (error) {
+      console.error('Error refreshing IP ranges:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh IP ranges",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchIPRanges = async () => {
-      try {
-        console.log('Fetching IP ranges from database...');
-        const { data, error } = await supabase
-          .from('supabase_ip_ranges')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        
-        console.info(`Successfully fetched ${data?.length || 0} IP ranges`);
-        setIpRanges(data || []);
-      } catch (error) {
-        console.error('Error fetching IP ranges:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchIPRanges();
   }, []);
 
   return (
     <div className="space-y-4">
       <Card className="p-4">
-        <h2 className="text-2xl font-bold mb-4">Supabase IP Ranges</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Supabase IP Ranges</h2>
+          <Button 
+            onClick={refreshIPRanges} 
+            disabled={isRefreshing}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
         {isLoading ? (
           <div className="text-muted-foreground animate-pulse">Loading IP ranges...</div>
         ) : (
@@ -72,7 +131,7 @@ const SupabaseIPRanges = () => {
               </table>
               {ipRanges.length === 0 && (
                 <div className="text-center text-muted-foreground py-4">
-                  No IP ranges found
+                  No IP ranges found. Click refresh to fetch the latest ranges.
                 </div>
               )}
             </div>
