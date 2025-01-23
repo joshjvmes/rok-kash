@@ -67,8 +67,6 @@ docker run -d \\
   -e OKX_API_KEY=${Deno.env.get('OKX_API_KEY')} \\
   -e OKX_SECRET=${Deno.env.get('OKX_SECRET')} \\
   -e OKX_PASSPHRASE=${Deno.env.get('OKX_PASSPHRASE')} \\
-  -e COINBASE_API_KEY=${Deno.env.get('COINBASE_API_KEY')} \\
-  -e COINBASE_SECRET=${Deno.env.get('COINBASE_SECRET')} \\
   arbitrage-scanner`
 
         const encoder = new TextEncoder()
