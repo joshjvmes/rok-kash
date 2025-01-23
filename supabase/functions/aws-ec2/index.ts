@@ -12,16 +12,25 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    // Validate AWS credentials
+    const awsAccessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID')
+    const awsSecretAccessKey = Deno.env.get('AWS_SECRET_ACCESS_KEY')
+
+    if (!awsAccessKeyId || !awsSecretAccessKey) {
+      throw new Error('AWS credentials not configured')
+    }
+
     const ec2Client = new EC2Client({
       region: "us-east-1",
       credentials: {
-        accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID') || '',
-        secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY') || '',
+        accessKeyId: awsAccessKeyId,
+        secretAccessKey: awsSecretAccessKey,
       },
     })
 
@@ -29,7 +38,8 @@ serve(async (req) => {
 
     switch (action) {
       case 'launch':
-        // Launch a new EC2 instance with Docker and arbitrage scanner setup
+        console.log('Starting EC2 instance launch process...')
+        
         const userDataScript = `#!/bin/bash
 yum update -y
 yum install -y docker git
@@ -48,14 +58,14 @@ docker run -d \\
   -e KUCOIN_API_KEY=${Deno.env.get('KUCOIN_API_KEY')} \\
   -e KUCOIN_SECRET=${Deno.env.get('KUCOIN_SECRET')} \\
   -e KUCOIN_PASSPHRASE=${Deno.env.get('KUCOIN_PASSPHRASE')} \\
-  arbitrage-scanner`;
+  arbitrage-scanner`
 
-        const encoder = new TextEncoder();
-        const userData = btoa(String.fromCharCode(...encoder.encode(userDataScript)));
+        const encoder = new TextEncoder()
+        const userData = btoa(String.fromCharCode(...encoder.encode(userDataScript)))
 
         const runInstancesParams = {
           ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2023
-          InstanceType: 't2.medium', // Using medium instance for better performance
+          InstanceType: 't2.medium',
           MinCount: 1,
           MaxCount: 1,
           UserData: userData,
@@ -68,10 +78,10 @@ docker run -d \\
           }]
         }
 
-        console.log('Launching EC2 instance with params:', runInstancesParams);
+        console.log('Launching EC2 instance with params:', runInstancesParams)
         const runCommand = new RunInstancesCommand(runInstancesParams)
         const runResponse = await ec2Client.send(runCommand)
-        console.log('Launch response:', runResponse);
+        console.log('Launch response:', runResponse)
         
         return new Response(
           JSON.stringify({
@@ -83,7 +93,7 @@ docker run -d \\
         )
 
       case 'status':
-        console.log('Fetching EC2 instances status');
+        console.log('Fetching EC2 instances status')
         const describeCommand = new DescribeInstancesCommand({})
         const describeResponse = await ec2Client.send(describeCommand)
         
