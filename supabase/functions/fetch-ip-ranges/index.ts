@@ -14,7 +14,31 @@ Deno.serve(async (req) => {
     // Fetch IP ranges from Supabase's public endpoint
     console.log('Fetching IP ranges from Supabase API...')
     const response = await fetch('https://api.supabase.com/v1/network/ip-ranges')
-    const data = await response.json()
+    const rawData = await response.json()
+    
+    console.log('Raw data from API:', rawData)
+    
+    // The API returns an object with arrays for different services
+    // We need to flatten and transform this into the format we want
+    const ipRanges = [
+      ...(rawData.ipv4?.database || []).map((range: string) => ({
+        ip_range: range,
+        region: null,
+        service: 'database'
+      })),
+      ...(rawData.ipv4?.dashboard || []).map((range: string) => ({
+        ip_range: range,
+        region: null,
+        service: 'dashboard'
+      })),
+      ...(rawData.ipv4?.api || []).map((range: string) => ({
+        ip_range: range,
+        region: null,
+        service: 'api'
+      }))
+    ]
+
+    console.log('Processed IP ranges:', ipRanges)
 
     // Create Supabase client using environment variables
     const supabaseClient = createClient(
@@ -29,17 +53,15 @@ Deno.serve(async (req) => {
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
 
-    console.log('Inserting new IP ranges...')
-    // Insert new IP ranges
-    const { error } = await supabaseClient.from('supabase_ip_ranges').insert(
-      data.map((range: any) => ({
-        ip_range: range.cidr,
-        region: range.region,
-        service: range.service,
-      }))
-    )
+    if (ipRanges.length > 0) {
+      console.log('Inserting new IP ranges...')
+      // Insert new IP ranges
+      const { error } = await supabaseClient
+        .from('supabase_ip_ranges')
+        .insert(ipRanges)
 
-    if (error) throw error
+      if (error) throw error
+    }
 
     console.log('IP ranges updated successfully')
     return new Response(
