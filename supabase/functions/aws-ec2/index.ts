@@ -38,6 +38,75 @@ serve(async (req) => {
     const { action } = await req.json()
 
     switch (action) {
+      case 'scanner-status':
+        // Get instance status and check if API is responding
+        const instances = await getInstances(ec2Client);
+        const runningInstance = instances.find(i => 
+          i.state === 'running' && 
+          i.tags.some(t => t.Key === 'Name' && t.Value === 'ArbitrageScanner')
+        );
+
+        if (!runningInstance || !runningInstance.publicDns) {
+          return new Response(
+            JSON.stringify({
+              status: {
+                status: 'stopped',
+                lastUpdate: new Date().toISOString(),
+                activeSymbols: [],
+                opportunities: 0
+              }
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        try {
+          // Try to fetch status from the instance's API
+          const response = await fetch(`http://${runningInstance.publicDns}:3000/status`);
+          const data = await response.json();
+          return new Response(
+            JSON.stringify({ status: data }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Error fetching scanner status:', error);
+          return new Response(
+            JSON.stringify({
+              status: {
+                status: 'error',
+                lastUpdate: new Date().toISOString(),
+                activeSymbols: [],
+                opportunities: 0
+              }
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+      case 'scanner-start':
+      case 'scanner-stop':
+        const actionType = action === 'scanner-start' ? 'start' : 'stop';
+        const instances2 = await getInstances(ec2Client);
+        const targetInstance = instances2.find(i => 
+          i.tags.some(t => t.Key === 'Name' && t.Value === 'ArbitrageScanner')
+        );
+
+        if (!targetInstance || !targetInstance.publicDns) {
+          throw new Error('No scanner instance found');
+        }
+
+        try {
+          const response = await fetch(`http://${targetInstance.publicDns}:3000/${actionType}`);
+          const data = await response.json();
+          return new Response(
+            JSON.stringify(data),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error(`Error ${actionType}ing scanner:`, error);
+          throw new Error(`Failed to ${actionType} scanner`);
+        }
+
       case 'launch':
         console.log('Starting EC2 instance launch process...')
         
@@ -210,3 +279,17 @@ docker run -d \\
     )
   }
 })
+
+async function getInstances(ec2Client: EC2Client) {
+  const describeCommand = new DescribeInstancesCommand({})
+  const describeResponse = await ec2Client.send(describeCommand)
+  
+  return describeResponse.Reservations?.flatMap(reservation => 
+    reservation.Instances?.map(instance => ({
+      instanceId: instance.InstanceId,
+      state: instance.State?.Name,
+      publicDns: instance.PublicDnsName,
+      tags: instance.Tags || []
+    })) || []
+  ) || []
+}

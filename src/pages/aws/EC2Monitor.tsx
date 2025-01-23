@@ -1,4 +1,6 @@
 import { EC2Manager } from "@/components/aws/EC2Manager";
+import { ArbitrageScanner } from "@/components/aws/ArbitrageScanner";
+import { ArbitrageClusterManager } from "@/components/aws/ArbitrageClusterManager";
 
 const EC2Monitor = () => {
   return (
@@ -7,6 +9,10 @@ const EC2Monitor = () => {
       <p className="text-muted-foreground">
         Manage and monitor your AWS EC2 instances for arbitrage scanning.
       </p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <ArbitrageScanner />
+        <ArbitrageClusterManager />
+      </div>
       <EC2Manager />
     </div>
   );
