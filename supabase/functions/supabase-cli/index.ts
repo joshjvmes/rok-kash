@@ -54,13 +54,21 @@ serve(async (req) => {
   try {
     const { command } = await req.json();
     console.log(`Executing command: ${command}`);
-    let result;
+
+    // Validate command format
+    if (!command || typeof command !== 'string') {
+      throw new Error('Command is required and must be a string');
+    }
 
     // Parse the command
-    const parts = command.split(' ');
+    const parts = command.trim().split(' ');
+    
+    // Validate it starts with 'supabase'
     if (parts[0] !== 'supabase') {
-      throw new Error('Only supabase commands are supported');
+      throw new Error('Command must start with "supabase"');
     }
+
+    let result;
 
     // Handle different commands
     switch(parts[1]) {
