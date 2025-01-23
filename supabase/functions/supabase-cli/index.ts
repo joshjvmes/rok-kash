@@ -1,15 +1,25 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   try {
     const { command } = await req.json()
+    console.log('Executing command:', command)
     
     // Create list of allowed commands for security
     const allowedCommands = [
       'functions list',
-      'functions logs',
       'functions deploy --show-region-ips',
+      'functions logs'
     ]
 
     // Validate command
@@ -32,19 +42,34 @@ serve(async (req) => {
     const output = new TextDecoder().decode(stdout)
     const error = new TextDecoder().decode(stderr)
 
+    console.log('Command output:', output || error)
+
     return new Response(
       JSON.stringify({
         output: output || error,
         error: error ? true : false
       }),
-      { headers: { 'Content-Type': 'application/json' } }
+      { 
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
     )
   } catch (error) {
+    console.error('Error executing command:', error)
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        output: `Error: ${error.message}`
+      }),
       { 
         status: 400,
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       }
     )
   }
