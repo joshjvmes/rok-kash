@@ -3,7 +3,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const PROJECT_ID = SUPABASE_URL.match(/https:\/\/(.*?)\.supabase/)?.[1] || "";
 
 const corsHeaders = {
@@ -58,7 +57,7 @@ async function handleIpRanges() {
   try {
     const response = await fetch('https://api.supabase.com/v1/network-restrictions/ip-ranges', {
       headers: {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json'
       }
     });
