@@ -11,6 +11,8 @@ const corsHeaders = {
 
 async function handleFunctionsList() {
   console.log("Fetching functions list");
+  console.log("Using Project ID:", PROJECT_ID);
+  
   const response = await fetch(
     `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions`,
     {
@@ -21,14 +23,20 @@ async function handleFunctionsList() {
   );
   
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Functions list error:", errorText);
     throw new Error(`Failed to fetch functions: ${response.statusText}`);
   }
   
-  return await response.json();
+  const data = await response.json();
+  console.log("Functions list response:", data);
+  return data;
 }
 
 async function handleFunctionLogs(functionName: string) {
   console.log(`Fetching logs for function: ${functionName}`);
+  console.log("Using Project ID:", PROJECT_ID);
+  
   const response = await fetch(
     `https://api.supabase.com/v1/projects/${PROJECT_ID}/functions/${functionName}/logs`,
     {
@@ -39,10 +47,14 @@ async function handleFunctionLogs(functionName: string) {
   );
   
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Function logs error:", errorText);
     throw new Error(`Failed to fetch logs: ${response.statusText}`);
   }
   
-  return await response.json();
+  const data = await response.json();
+  console.log("Function logs response:", data);
+  return data;
 }
 
 serve(async (req) => {

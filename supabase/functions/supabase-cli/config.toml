@@ -1,0 +1,4 @@
+project_id = "pojfmdxsoqfxfzkujwah"
+
+[functions.supabase-cli]
+verify_jwt = false
