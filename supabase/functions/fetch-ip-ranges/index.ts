@@ -70,19 +70,27 @@ Deno.serve(async (req) => {
 
     console.log('Clearing existing IP ranges...')
     // Clear existing IP ranges
-    await supabaseClient
+    const { error: deleteError } = await supabaseClient
       .from('supabase_ip_ranges')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
 
+    if (deleteError) {
+      console.error('Error deleting existing IP ranges:', deleteError)
+      throw deleteError
+    }
+
     if (ipRanges.length > 0) {
       console.log('Inserting new IP ranges...')
       // Insert new IP ranges
-      const { error } = await supabaseClient
+      const { error: insertError } = await supabaseClient
         .from('supabase_ip_ranges')
         .insert(ipRanges)
 
-      if (error) throw error
+      if (insertError) {
+        console.error('Error inserting IP ranges:', insertError)
+        throw insertError
+      }
     } else {
       console.log('No IP ranges found to insert')
     }
