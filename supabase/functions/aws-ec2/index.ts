@@ -12,15 +12,16 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Validate AWS credentials
     const awsAccessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID')
     const awsSecretAccessKey = Deno.env.get('AWS_SECRET_ACCESS_KEY')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+    const supabaseServiceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!awsAccessKeyId || !awsSecretAccessKey) {
       throw new Error('AWS credentials not configured')
@@ -40,15 +41,83 @@ serve(async (req) => {
       case 'launch':
         console.log('Starting EC2 instance launch process...')
         
+        // Create API server setup script
+        const apiServerScript = `
+# Install Node.js API server dependencies
+npm init -y
+npm install express cors @supabase/supabase-js dotenv
+
+# Create API server file
+cat > server.js << 'EOL'
+const express = require('express');
+const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// Endpoint to get instance status
+app.get('/status', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('arbitrage_opportunities')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
+      
+    if (error) throw error;
+    res.json({ status: 'running', data });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(\`API Server running on port \${PORT}\`);
+});
+EOL
+
+# Create environment file
+cat > .env << EOL
+SUPABASE_URL=${supabaseUrl}
+SUPABASE_ANON_KEY=${supabaseAnonKey}
+SUPABASE_SERVICE_ROLE_KEY=${supabaseServiceRole}
+PORT=3000
+EOL
+
+# Start the API server
+pm2 start server.js --name "arbitrage-api"
+`
+
         const userDataScript = `#!/bin/bash
 yum update -y
-yum install -y docker git
+yum install -y docker git nodejs npm
 service docker start
 usermod -a -G docker ec2-user
 systemctl enable docker
-docker pull node:18
 
-# Clone and setup arbitrage scanner
+# Install PM2 for process management
+npm install -y pm2 -g
+
+# Setup API server
+mkdir -p /opt/arbitrage-api
+cd /opt/arbitrage-api
+${apiServerScript}
+
+# Setup arbitrage scanner
+docker pull node:18
 git clone https://github.com/your-org/arbitrage-scanner.git
 cd arbitrage-scanner
 docker build -t arbitrage-scanner .
@@ -78,6 +147,7 @@ docker run -d \\
           MinCount: 1,
           MaxCount: 1,
           UserData: userData,
+          SecurityGroupIds: ['sg-0123456789abcdef0'], // Replace with your security group ID
           TagSpecifications: [{
             ResourceType: 'instance',
             Tags: [{
