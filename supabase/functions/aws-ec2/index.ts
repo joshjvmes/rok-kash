@@ -55,9 +55,20 @@ docker build -t arbitrage-scanner .
 docker run -d \\
   --name arbitrage-scanner \\
   --restart unless-stopped \\
+  -e BINANCE_API_KEY=${Deno.env.get('BINANCE_API_KEY')} \\
+  -e BINANCE_SECRET=${Deno.env.get('BINANCE_SECRET')} \\
+  -e BYBIT_API_KEY=${Deno.env.get('BYBIT_API_KEY')} \\
+  -e BYBIT_SECRET=${Deno.env.get('BYBIT_SECRET')} \\
   -e KUCOIN_API_KEY=${Deno.env.get('KUCOIN_API_KEY')} \\
   -e KUCOIN_SECRET=${Deno.env.get('KUCOIN_SECRET')} \\
   -e KUCOIN_PASSPHRASE=${Deno.env.get('KUCOIN_PASSPHRASE')} \\
+  -e KRAKEN_API_KEY=${Deno.env.get('KRAKEN_API_KEY')} \\
+  -e KRAKEN_API_SECRET=${Deno.env.get('KRAKEN_API_SECRET')} \\
+  -e OKX_API_KEY=${Deno.env.get('OKX_API_KEY')} \\
+  -e OKX_SECRET=${Deno.env.get('OKX_SECRET')} \\
+  -e OKX_PASSPHRASE=${Deno.env.get('OKX_PASSPHRASE')} \\
+  -e COINBASE_API_KEY=${Deno.env.get('COINBASE_API_KEY')} \\
+  -e COINBASE_SECRET=${Deno.env.get('COINBASE_SECRET')} \\
   arbitrage-scanner`
 
         const encoder = new TextEncoder()
