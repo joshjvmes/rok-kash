@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ExchangeBalanceProps {
   exchange: string;
+  className?: string; // Added className prop for flexibility
 }
 
 interface BalanceData {
@@ -23,12 +24,12 @@ interface BalanceData {
   };
 }
 
-export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
+export function ExchangeBalance({ exchange, className }: ExchangeBalanceProps) {
   const { toast } = useToast();
   const { data: balance, isLoading, error, refetch } = useQuery<BalanceData>({
     queryKey: ['balance', exchange],
     queryFn: () => fetchBalance(exchange),
-    refetchInterval: 360000, // Changed from 3600000 to 360000 (6 minutes)
+    refetchInterval: 360000, // 6 minutes
   });
 
   const handleTestConnection = async () => {
@@ -113,7 +114,7 @@ export function ExchangeBalance({ exchange }: ExchangeBalanceProps) {
           <div className="space-y-2">
             {nonZeroBalances.length > 0 ? (
               nonZeroBalances.map(([coin, amount]) => (
-                <div key={coin} className="flex justify-between text-sm">
+                <div key={`${exchange}-${coin}`} className="flex justify-between text-sm">
                   <span className="text-serenity-mountain">{coin}</span>
                   <span className="text-serenity-mountain font-medium">{Number(amount).toFixed(8)}</span>
                 </div>
