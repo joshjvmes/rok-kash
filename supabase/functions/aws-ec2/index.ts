@@ -33,82 +33,29 @@ serve(async (req) => {
       },
     })
 
-    const { action } = await req.json()
+    // Parse request body
+    let body;
+    try {
+      body = await req.json()
+    } catch (error) {
+      console.error('Error parsing request body:', error)
+      throw new Error('Invalid request body')
+    }
+
+    const { action } = body
     console.log('Received action:', action)
 
     switch (action) {
       case 'launch': {
         console.log('Starting EC2 instance launch process...')
         
+        // Simplified user data script for testing
         const userDataScript = `#!/bin/bash
+echo "Starting setup..." > /var/log/user-data.log
 yum update -y
 yum install -y nodejs npm
-mkdir -p /opt/arbitrage-api
-cd /opt/arbitrage-api
-cat > package.json << 'EOL'
-{
-  "name": "arbitrage-api",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5"
-  }
-}
-EOL
-
-npm install
-
-cat > server.js << 'EOL'
-import express from 'express';
-import cors from 'cors';
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-let scannerStatus = {
-  status: 'stopped',
-  lastUpdate: new Date().toISOString(),
-  activeSymbols: [],
-  opportunities: 0
-};
-
-app.get('/status', (req, res) => {
-  res.json(scannerStatus);
-});
-
-app.get('/start', (req, res) => {
-  scannerStatus = {
-    status: 'running',
-    lastUpdate: new Date().toISOString(),
-    activeSymbols: ['BTC/USDT', 'ETH/USDT'],
-    opportunities: 0
-  };
-  res.json({ message: 'Scanner started' });
-});
-
-app.get('/stop', (req, res) => {
-  scannerStatus = {
-    status: 'stopped',
-    lastUpdate: new Date().toISOString(),
-    activeSymbols: [],
-    opportunities: 0
-  };
-  res.json({ message: 'Scanner stopped' });
-});
-
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(\`API Server running on port \${PORT}\`);
-});
-EOL
-
-node server.js > /var/log/arbitrage-api.log 2>&1 &
-echo "Setup completed" > /var/log/user-data.log`
+echo "Node.js installed" >> /var/log/user-data.log
+echo "Setup completed" >> /var/log/user-data.log`
 
         console.log('Preparing user data script...')
         const encoder = new TextEncoder()
@@ -132,13 +79,14 @@ echo "Setup completed" > /var/log/user-data.log`
         }
 
         try {
+          console.log('Sending RunInstancesCommand...')
           const runCommand = new RunInstancesCommand(runInstancesParams)
           const runResponse = await ec2Client.send(runCommand)
           console.log('Launch response:', runResponse)
           
           return new Response(
             JSON.stringify({
-              message: "Successfully launched arbitrage scanner instance",
+              message: "Successfully launched instance",
               instanceId: runResponse.Instances?.[0]?.InstanceId,
               status: "success"
             }),
@@ -155,7 +103,7 @@ echo "Setup completed" > /var/log/user-data.log`
         const describeCommand = new DescribeInstancesCommand({})
         const describeResponse = await ec2Client.send(describeCommand)
         
-        const allInstances = describeResponse.Reservations?.flatMap(reservation => 
+        const instances = describeResponse.Reservations?.flatMap(reservation => 
           reservation.Instances?.map(instance => ({
             instanceId: instance.InstanceId,
             state: instance.State?.Name,
@@ -166,7 +114,7 @@ echo "Setup completed" > /var/log/user-data.log`
 
         return new Response(
           JSON.stringify({
-            instances: allInstances,
+            instances,
             status: "success"
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
