@@ -121,6 +121,22 @@ echo "Setup completed" >> /var/log/user-data.log`
         )
       }
 
+      case 'scanner-status': {
+        console.log('Fetching scanner status')
+        // For now, return a mock status since we don't have the actual scanner running
+        return new Response(
+          JSON.stringify({
+            status: {
+              status: 'stopped',
+              lastUpdate: new Date().toISOString(),
+              activeSymbols: [],
+              opportunities: 0
+            }
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       default:
         throw new Error(`Unsupported action: ${action}`)
     }
