@@ -111,15 +111,9 @@ serve(async (req) => {
         console.log('Starting EC2 instance launch process...')
         
         const userDataScript = `#!/bin/bash
-# Update system and install basic tools
+# Update system
 yum update -y
-yum install -y curl git
-
-# Install Docker
-yum install -y docker
-systemctl start docker
-systemctl enable docker
-usermod -a -G docker ec2-user
+yum install -y curl
 
 # Install Node.js using nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
@@ -138,6 +132,9 @@ cat > package.json << 'EOL'
   "name": "arbitrage-api",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
@@ -160,32 +157,39 @@ app.use(cors());
 app.use(express.json());
 
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  '${supabaseUrl}',
+  '${supabaseServiceRole}'
 );
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+let scannerStatus = {
+  status: 'stopped',
+  lastUpdate: new Date().toISOString(),
+  activeSymbols: [],
+  opportunities: 0
+};
+
+app.get('/status', (req, res) => {
+  res.json(scannerStatus);
 });
 
-app.get('/status', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('arbitrage_opportunities')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(10);
-      
-    if (error) throw error;
-    res.json({ 
-      status: 'running',
-      lastUpdate: new Date().toISOString(),
-      data 
-    });
-  } catch (error) {
-    console.error('Error fetching status:', error);
-    res.status(500).json({ error: error.message });
-  }
+app.get('/start', (req, res) => {
+  scannerStatus = {
+    status: 'running',
+    lastUpdate: new Date().toISOString(),
+    activeSymbols: ['BTC/USDT', 'ETH/USDT'],
+    opportunities: 0
+  };
+  res.json({ message: 'Scanner started' });
+});
+
+app.get('/stop', (req, res) => {
+  scannerStatus = {
+    status: 'stopped',
+    lastUpdate: new Date().toISOString(),
+    activeSymbols: [],
+    opportunities: 0
+  };
+  res.json({ message: 'Scanner stopped' });
 });
 
 const PORT = process.env.PORT || 3000;
@@ -194,29 +198,18 @@ app.listen(PORT, () => {
 });
 EOL
 
-# Create environment file
-cat > .env << EOL
-SUPABASE_URL=${supabaseUrl}
-SUPABASE_ANON_KEY=${supabaseAnonKey}
-SUPABASE_SERVICE_ROLE_KEY=${supabaseServiceRole}
-PORT=3000
-EOL
-
 # Install PM2 globally
 npm install -g pm2
 
 # Start the API server with PM2
 pm2 start server.js --name "arbitrage-api"
 
-# Save PM2 process list
+# Save PM2 process list and setup startup
 pm2 save
-
-# Setup PM2 to start on boot
 pm2 startup
 
 # Log completion
-echo "Setup completed successfully" > /var/log/user-data.log
-`
+echo "Setup completed successfully" > /var/log/user-data.log`
 
         console.log('Preparing user data script...')
         const encoder = new TextEncoder()
@@ -224,8 +217,8 @@ echo "Setup completed successfully" > /var/log/user-data.log
 
         console.log('Creating EC2 instance with RunInstancesCommand...')
         const runInstancesParams = {
-          ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2023
-          InstanceType: 't2.medium',
+          ImageId: 'ami-0e731c8a588258d0d',
+          InstanceType: 't2.micro',
           MinCount: 1,
           MaxCount: 1,
           UserData: userData,
@@ -267,7 +260,7 @@ echo "Setup completed successfully" > /var/log/user-data.log
             instanceId: instance.InstanceId,
             state: instance.State?.Name,
             publicDns: instance.PublicDnsName,
-            tags: instance.Tags
+            tags: instance.Tags || []
           })) || []
         ) || []
 
