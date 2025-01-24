@@ -11,6 +11,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -18,13 +19,12 @@ serve(async (req) => {
   try {
     const awsAccessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID')
     const awsSecretAccessKey = Deno.env.get('AWS_SECRET_ACCESS_KEY')
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseServiceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!awsAccessKeyId || !awsSecretAccessKey) {
       throw new Error('AWS credentials not configured')
     }
 
+    console.log('Initializing EC2 client...')
     const ec2Client = new EC2Client({
       region: "us-east-1",
       credentials: {
@@ -37,19 +37,14 @@ serve(async (req) => {
     console.log('Received action:', action)
 
     switch (action) {
-      case 'launch':
+      case 'launch': {
         console.log('Starting EC2 instance launch process...')
         
         const userDataScript = `#!/bin/bash
-# Update system
 yum update -y
-yum install -y curl
-
-# Create working directory
+yum install -y nodejs npm
 mkdir -p /opt/arbitrage-api
 cd /opt/arbitrage-api
-
-# Create package.json
 cat > package.json << 'EOL'
 {
   "name": "arbitrage-api",
@@ -65,10 +60,8 @@ cat > package.json << 'EOL'
 }
 EOL
 
-# Install dependencies
 npm install
 
-# Create API server file
 cat > server.js << 'EOL'
 import express from 'express';
 import cors from 'cors';
@@ -114,19 +107,16 @@ app.listen(PORT, () => {
 });
 EOL
 
-# Install and start the server
 node server.js > /var/log/arbitrage-api.log 2>&1 &
-
-# Log completion
-echo "Setup completed successfully" > /var/log/user-data.log`
+echo "Setup completed" > /var/log/user-data.log`
 
         console.log('Preparing user data script...')
         const encoder = new TextEncoder()
         const userData = btoa(String.fromCharCode(...encoder.encode(userDataScript)))
 
-        console.log('Creating EC2 instance with RunInstancesCommand...')
+        console.log('Creating EC2 instance...')
         const runInstancesParams = {
-          ImageId: 'ami-0e731c8a588258d0d',
+          ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2023
           InstanceType: 't2.micro',
           MinCount: 1,
           MaxCount: 1,
@@ -158,8 +148,9 @@ echo "Setup completed successfully" > /var/log/user-data.log`
           console.error('Error in RunInstancesCommand:', error)
           throw error
         }
+      }
 
-      case 'status':
+      case 'status': {
         console.log('Fetching EC2 instances status')
         const describeCommand = new DescribeInstancesCommand({})
         const describeResponse = await ec2Client.send(describeCommand)
@@ -180,6 +171,7 @@ echo "Setup completed successfully" > /var/log/user-data.log`
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
+      }
 
       default:
         throw new Error(`Unsupported action: ${action}`)
