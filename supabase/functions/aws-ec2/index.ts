@@ -21,6 +21,7 @@ serve(async (req) => {
     const awsSecretAccessKey = Deno.env.get('AWS_SECRET_ACCESS_KEY')
 
     if (!awsAccessKeyId || !awsSecretAccessKey) {
+      console.error('AWS credentials not configured')
       throw new Error('AWS credentials not configured')
     }
 
@@ -49,25 +50,20 @@ serve(async (req) => {
       case 'launch': {
         console.log('Starting EC2 instance launch process...')
         
-        // Simplified user data script for testing
+        // Basic user data script for testing
         const userDataScript = `#!/bin/bash
 echo "Starting setup..." > /var/log/user-data.log
 yum update -y
 yum install -y nodejs npm
-echo "Node.js installed" >> /var/log/user-data.log
 echo "Setup completed" >> /var/log/user-data.log`
 
-        console.log('Preparing user data script...')
-        const encoder = new TextEncoder()
-        const userData = btoa(String.fromCharCode(...encoder.encode(userDataScript)))
-
-        console.log('Creating EC2 instance...')
+        console.log('Creating EC2 instance with user data script...')
         const runInstancesParams = {
           ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2023
           InstanceType: 't2.micro',
           MinCount: 1,
           MaxCount: 1,
-          UserData: userData,
+          UserData: btoa(userDataScript),
           SecurityGroupIds: ['sg-0d534a988b5751839'],
           TagSpecifications: [{
             ResourceType: 'instance',
@@ -123,7 +119,6 @@ echo "Setup completed" >> /var/log/user-data.log`
 
       case 'scanner-status': {
         console.log('Fetching scanner status')
-        // For now, return a mock status since we don't have the actual scanner running
         return new Response(
           JSON.stringify({
             status: {
