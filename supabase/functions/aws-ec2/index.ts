@@ -41,8 +41,8 @@ serve(async (req) => {
 
     switch (action) {
       case 'scanner-status':
-        const instances = await getInstances(ec2Client);
-        const runningInstance = instances.find(i => 
+        const scannerInstances = await getInstances(ec2Client);
+        const runningInstance = scannerInstances.find(i => 
           i.state === 'running' && 
           i.tags.some(t => t.Key === 'Name' && t.Value === 'ArbitrageScanner')
         );
@@ -86,8 +86,8 @@ serve(async (req) => {
       case 'scanner-start':
       case 'scanner-stop':
         const actionType = action === 'scanner-start' ? 'start' : 'stop';
-        const instances2 = await getInstances(ec2Client);
-        const targetInstance = instances2.find(i => 
+        const targetInstances = await getInstances(ec2Client);
+        const targetInstance = targetInstances.find(i => 
           i.tags.some(t => t.Key === 'Name' && t.Value === 'ArbitrageScanner')
         );
 
@@ -262,7 +262,7 @@ echo "Setup completed successfully" > /var/log/user-data.log
         const describeCommand = new DescribeInstancesCommand({})
         const describeResponse = await ec2Client.send(describeCommand)
         
-        const instances = describeResponse.Reservations?.flatMap(reservation => 
+        const allInstances = describeResponse.Reservations?.flatMap(reservation => 
           reservation.Instances?.map(instance => ({
             instanceId: instance.InstanceId,
             state: instance.State?.Name,
@@ -273,7 +273,7 @@ echo "Setup completed successfully" > /var/log/user-data.log
 
         return new Response(
           JSON.stringify({
-            instances,
+            instances: allInstances,
             status: "success"
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
