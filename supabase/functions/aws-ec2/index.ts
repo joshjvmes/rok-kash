@@ -39,7 +39,6 @@ serve(async (req) => {
     const { action, test } = body
     console.log('Received action:', action, 'test:', test)
 
-    // Initialize Supabase client for storing opportunities
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -174,7 +173,7 @@ echo "Setup completed" >> /var/log/user-data.log`
           .from('arbitrage_opportunities')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(10);
+          .limit(20);
 
         if (error) {
           console.error('Error fetching opportunities:', error);
@@ -187,7 +186,9 @@ echo "Setup completed" >> /var/log/user-data.log`
           sellExchange: opp.sell_exchange,
           symbol: opp.symbol,
           spread: opp.spread,
-          potential: opp.potential_profit
+          potential: opp.potential_profit,
+          buyPrice: opp.buy_price,
+          sellPrice: opp.sell_price
         }));
 
         // Log opportunities for the terminal component

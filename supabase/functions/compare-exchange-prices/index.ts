@@ -12,6 +12,9 @@ const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
 const MAX_REQUESTS = 30; // Maximum requests per window
 const requestCounts = new Map<string, { count: number; timestamp: number }>();
 
+const SUPPORTED_EXCHANGES = ['binance', 'kucoin', 'bybit', 'kraken', 'okx'];
+const MIN_SPREAD_THRESHOLD = 0.05; // 0.05% minimum spread to consider
+
 function isRateLimited(clientId: string): boolean {
   const now = Date.now();
   const clientRequests = requestCounts.get(clientId);
@@ -29,7 +32,71 @@ function isRateLimited(clientId: string): boolean {
   return false;
 }
 
-// Batch process symbols
+async function initializeExchanges() {
+  const exchanges = SUPPORTED_EXCHANGES.map(id => {
+    const exchange = new ccxt[id]({
+      enableRateLimit: true,
+      timeout: 30000,
+      options: {
+        defaultType: 'spot',
+        adjustForTimeDifference: true,
+      }
+    });
+
+    // Configure API credentials if available
+    const apiKey = Deno.env.get(`${id.toUpperCase()}_API_KEY`);
+    const secret = Deno.env.get(`${id.toUpperCase()}_SECRET`);
+    const passphrase = Deno.env.get(`${id.toUpperCase()}_PASSPHRASE`);
+
+    if (apiKey && secret) {
+      exchange.apiKey = apiKey;
+      exchange.secret = secret;
+      if (passphrase) {
+        exchange.password = passphrase;
+      }
+    }
+
+    return exchange;
+  });
+
+  // Load markets for all exchanges in parallel
+  await Promise.all(exchanges.map(exchange => 
+    exchange.loadMarkets().catch(error => {
+      console.error(`Error loading markets for ${exchange.id}:`, error);
+    })
+  ));
+
+  return exchanges;
+}
+
+async function findCommonSymbols(exchanges: ccxt.Exchange[]) {
+  const symbolsByExchange = new Map<string, Set<string>>();
+
+  // Get all symbols for each exchange
+  exchanges.forEach(exchange => {
+    const symbols = new Set(Object.keys(exchange.markets || {}));
+    symbolsByExchange.set(exchange.id, symbols);
+  });
+
+  // Find symbols that exist on at least 2 exchanges
+  const commonSymbols = new Set<string>();
+  const allSymbols = new Set<string>();
+
+  symbolsByExchange.forEach((symbols) => {
+    symbols.forEach(symbol => allSymbols.add(symbol));
+  });
+
+  allSymbols.forEach(symbol => {
+    let count = 0;
+    symbolsByExchange.forEach((exchangeSymbols) => {
+      if (exchangeSymbols.has(symbol)) count++;
+    });
+    if (count >= 2) commonSymbols.add(symbol);
+  });
+
+  return Array.from(commonSymbols);
+}
+
 async function processBatch(
   symbols: string[], 
   exchanges: ccxt.Exchange[], 
@@ -56,7 +123,7 @@ async function processBatch(
           symbol
         })).filter(t => t.price !== null && t.price !== undefined);
 
-        // Compare prices within valid tickers
+        // Compare prices between exchanges
         for (let i = 0; i < validTickers.length; i++) {
           for (let j = i + 1; j < validTickers.length; j++) {
             const buyExchange = validTickers[i];
@@ -65,27 +132,28 @@ async function processBatch(
             const spread = ((sellExchange.price - buyExchange.price) / buyExchange.price) * 100;
             const reversedSpread = ((buyExchange.price - sellExchange.price) / sellExchange.price) * 100;
 
-            if (spread > 0) {
+            // Only consider opportunities with spread above threshold
+            if (spread > MIN_SPREAD_THRESHOLD) {
+              const potential = (sellExchange.price - buyExchange.price) * 100; // Assuming 100 units traded
               opportunities.push({
                 buyExchange: buyExchange.exchange,
                 sellExchange: sellExchange.exchange,
                 symbol,
                 spread: parseFloat(spread.toFixed(4)),
-                potential: parseFloat((sellExchange.price - buyExchange.price).toFixed(2)),
-                timestamp: new Date().toISOString(),
+                potential: parseFloat(potential.toFixed(2)),
                 buyPrice: buyExchange.price,
                 sellPrice: sellExchange.price
               });
             }
 
-            if (reversedSpread > 0) {
+            if (reversedSpread > MIN_SPREAD_THRESHOLD) {
+              const potential = (buyExchange.price - sellExchange.price) * 100;
               opportunities.push({
                 buyExchange: sellExchange.exchange,
                 sellExchange: buyExchange.exchange,
                 symbol,
                 spread: parseFloat(reversedSpread.toFixed(4)),
-                potential: parseFloat((buyExchange.price - sellExchange.price).toFixed(2)),
-                timestamp: new Date().toISOString(),
+                potential: parseFloat(potential.toFixed(2)),
                 buyPrice: sellExchange.price,
                 sellPrice: buyExchange.price
               });
@@ -124,61 +192,40 @@ serve(async (req) => {
       );
     }
 
-    const { symbols = ['BTC/USDT'] } = await req.json();
-    console.log('Starting price comparison for symbols:', symbols);
-
-    // Initialize exchanges with proper configuration
-    const exchanges = [
-      new ccxt.binance({ enableRateLimit: true, timeout: 30000 }),
-      new ccxt.kucoin({ enableRateLimit: true, timeout: 30000 })
-    ];
-
-    // Configure API credentials
-    const exchangeCredentials = [
-      {
-        exchange: exchanges[0],
-        apiKey: Deno.env.get('BINANCE_API_KEY'),
-        secret: Deno.env.get('BINANCE_SECRET')
-      },
-      {
-        exchange: exchanges[1],
-        apiKey: Deno.env.get('KUCOIN_API_KEY'),
-        secret: Deno.env.get('KUCOIN_SECRET'),
-        password: Deno.env.get('KUCOIN_PASSPHRASE')
-      }
-    ];
-
-    // Apply credentials if available
-    exchangeCredentials.forEach(({ exchange, apiKey, secret, password }) => {
-      if (apiKey && secret) {
-        exchange.apiKey = apiKey;
-        exchange.secret = secret;
-        if (password && 'password' in exchange) {
-          exchange.password = password;
-        }
-      }
-    });
+    console.log('Initializing exchanges...');
+    const exchanges = await initializeExchanges();
+    console.log('Finding common symbols across exchanges...');
+    const commonSymbols = await findCommonSymbols(exchanges);
+    console.log(`Found ${commonSymbols.length} common symbols`);
 
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Load markets in parallel
-    await Promise.all(exchanges.map(exchange => 
-      exchange.loadMarkets().catch(error => {
-        console.error(`Error loading markets for ${exchange.id}:`, error);
-      })
-    ));
-
     // Process symbols in batches
-    const opportunities = await processBatch(symbols, exchanges, supabase);
+    console.log('Processing symbols in batches...');
+    const opportunities = await processBatch(commonSymbols, exchanges, supabase);
 
     // Sort opportunities by potential profit
     opportunities.sort((a, b) => b.potential - a.potential);
 
     console.log(`Found ${opportunities.length} opportunities`);
     
+    // Store opportunities in Supabase
+    if (opportunities.length > 0) {
+      const { error } = await supabase
+        .from('arbitrage_opportunities')
+        .insert(opportunities.map(opp => ({
+          ...opp,
+          status: 'pending'
+        })));
+
+      if (error) {
+        console.error('Error storing opportunities:', error);
+      }
+    }
+
     return new Response(
       JSON.stringify(opportunities),
       { 
