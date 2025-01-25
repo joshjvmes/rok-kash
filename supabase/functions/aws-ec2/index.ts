@@ -43,6 +43,27 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     switch (action) {
+      case 'status': {
+        console.log('Fetching EC2 instances status')
+        const describeCommand = new DescribeInstancesCommand({})
+        const response = await ec2Client.send(describeCommand)
+        
+        const instances = response.Reservations?.flatMap(r => r.Instances || []) || []
+        const formattedInstances = instances.map(instance => ({
+          instanceId: instance.InstanceId,
+          state: instance.State?.Name,
+          publicDns: instance.PublicDnsName,
+          tags: instance.Tags || []
+        }))
+
+        return new Response(
+          JSON.stringify({ 
+            instances: formattedInstances
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       case 'scanner-status': {
         console.log('Fetching scanner status')
         try {
@@ -176,6 +197,42 @@ echo "Setup completed successfully"`
           )
         } catch (error) {
           console.error('Error starting scanner:', error)
+          throw error
+        }
+      }
+
+      case 'launch': {
+        console.log('Launching new instance...')
+        try {
+          const runResponse = await ec2Client.send(new RunInstancesCommand({
+            ImageId: 'ami-0e731c8a588258d0d',
+            InstanceType: 't2.small',
+            MinCount: 1,
+            MaxCount: 1,
+            TagSpecifications: [{
+              ResourceType: 'instance',
+              Tags: [{
+                Key: 'Name',
+                Value: 'NewInstance'
+              }]
+            }],
+          }))
+          
+          const instanceId = runResponse.Instances?.[0]?.InstanceId
+          if (!instanceId) {
+            throw new Error('No instance ID in launch response')
+          }
+
+          return new Response(
+            JSON.stringify({
+              message: "Instance launched successfully",
+              instanceId: instanceId,
+              status: "success"
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Error launching instance:', error)
           throw error
         }
       }
