@@ -45,74 +45,80 @@ serve(async (req) => {
       throw new Error('Invalid request body')
     }
 
-    const { action } = body
-    console.log('Received action:', action)
+    const { action, test } = body
+    console.log('Received action:', action, 'test:', test)
 
     switch (action) {
       case 'launch': {
         console.log('Starting EC2 instance launch process...')
         
-        // Create a new security group
-        const createSecurityGroupParams = {
-          Description: 'Security group for arbitrage scanner',
-          GroupName: `arbitrage-scanner-sg-${Date.now()}`, // Unique name
-          VpcId: 'vpc-0a643842d2043a543', // Your VPC ID
-        }
+        try {
+          // Create a new security group
+          const createSecurityGroupParams = {
+            Description: 'Security group for arbitrage scanner',
+            GroupName: `arbitrage-scanner-sg-${Date.now()}`, // Unique name
+            VpcId: 'vpc-0a643842d2043a543', // Your VPC ID
+          }
 
-        console.log('Creating security group...')
-        const createSgCommand = new CreateSecurityGroupCommand(createSecurityGroupParams)
-        const sgResponse = await ec2Client.send(createSgCommand)
-        const securityGroupId = sgResponse.GroupId
+          console.log('Creating security group with params:', createSecurityGroupParams)
+          const createSgCommand = new CreateSecurityGroupCommand(createSecurityGroupParams)
+          const sgResponse = await ec2Client.send(createSgCommand)
+          console.log('Security group created:', sgResponse)
+          const securityGroupId = sgResponse.GroupId
 
-        // Add inbound rules to the security group
-        const authorizeIngressParams = {
-          GroupId: securityGroupId,
-          IpPermissions: [
-            {
-              IpProtocol: 'tcp',
-              FromPort: 22,
-              ToPort: 22,
-              IpRanges: [{ CidrIp: '0.0.0.0/0' }],
-            },
-            {
-              IpProtocol: 'tcp',
-              FromPort: 80,
-              ToPort: 80,
-              IpRanges: [{ CidrIp: '0.0.0.0/0' }],
-            },
-          ],
-        }
+          if (!securityGroupId) {
+            throw new Error('Failed to get security group ID')
+          }
 
-        console.log('Configuring security group rules...')
-        const authCommand = new AuthorizeSecurityGroupIngressCommand(authorizeIngressParams)
-        await ec2Client.send(authCommand)
+          // Add inbound rules to the security group
+          const authorizeIngressParams = {
+            GroupId: securityGroupId,
+            IpPermissions: [
+              {
+                IpProtocol: 'tcp',
+                FromPort: 22,
+                ToPort: 22,
+                IpRanges: [{ CidrIp: '0.0.0.0/0' }],
+              },
+              {
+                IpProtocol: 'tcp',
+                FromPort: 80,
+                ToPort: 80,
+                IpRanges: [{ CidrIp: '0.0.0.0/0' }],
+              },
+            ],
+          }
 
-        // Basic user data script for testing
-        const userDataScript = `#!/bin/bash
+          console.log('Configuring security group rules with params:', authorizeIngressParams)
+          const authCommand = new AuthorizeSecurityGroupIngressCommand(authorizeIngressParams)
+          await ec2Client.send(authCommand)
+          console.log('Security group rules configured successfully')
+
+          // Basic user data script for testing
+          const userDataScript = `#!/bin/bash
 echo "Starting setup..." > /var/log/user-data.log
 yum update -y
 yum install -y nodejs npm
 echo "Setup completed" >> /var/log/user-data.log`
 
-        console.log('Creating EC2 instance with user data script...')
-        const runInstancesParams = {
-          ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2023
-          InstanceType: 't2.micro',
-          MinCount: 1,
-          MaxCount: 1,
-          UserData: btoa(userDataScript),
-          SecurityGroupIds: [securityGroupId],
-          TagSpecifications: [{
-            ResourceType: 'instance',
-            Tags: [{
-              Key: 'Name',
-              Value: 'ArbitrageScanner'
+          console.log('Creating EC2 instance with user data script...')
+          const runInstancesParams = {
+            ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2023
+            InstanceType: test ? 't2.micro' : 't2.small',
+            MinCount: 1,
+            MaxCount: 1,
+            UserData: btoa(userDataScript),
+            SecurityGroupIds: [securityGroupId],
+            TagSpecifications: [{
+              ResourceType: 'instance',
+              Tags: [{
+                Key: 'Name',
+                Value: test ? 'ArbitrageScannerTest' : 'ArbitrageScanner'
+              }]
             }]
-          }]
-        }
+          }
 
-        try {
-          console.log('Sending RunInstancesCommand...')
+          console.log('Launching instance with params:', runInstancesParams)
           const runCommand = new RunInstancesCommand(runInstancesParams)
           const runResponse = await ec2Client.send(runCommand)
           console.log('Launch response:', runResponse)
@@ -126,7 +132,7 @@ echo "Setup completed" >> /var/log/user-data.log`
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           )
         } catch (error) {
-          console.error('Error in RunInstancesCommand:', error)
+          console.error('Error in launch process:', error)
           throw error
         }
       }
