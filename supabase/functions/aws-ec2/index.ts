@@ -4,7 +4,8 @@ import {
   getEC2Client, 
   fetchInstanceStatus, 
   launchEC2Instance,
-  fetchScannerStatus 
+  fetchScannerStatus,
+  stopEC2Instance 
 } from "./ec2Commands.ts";
 import { 
   corsHeaders, 
@@ -74,6 +75,23 @@ serve(async (req) => {
               opportunities: formattedOpportunities.length,
               opportunityDetails: formattedOpportunities
             }
+          });
+        }
+
+        case 'scanner-stop': {
+          console.log('Stopping scanner...');
+          const instances = await fetchInstanceStatus(ec2Client);
+          const runningInstances = instances.filter(i => i.State?.Name === 'running');
+          
+          for (const instance of runningInstances) {
+            if (instance.InstanceId) {
+              await stopEC2Instance(ec2Client, instance.InstanceId);
+            }
+          }
+          
+          return createSuccessResponse({
+            message: "Scanner stopped successfully",
+            status: "success"
           });
         }
 
