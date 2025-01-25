@@ -52,6 +52,9 @@ export function ArbitrageOpportunity({
   const [isExpanded, setIsExpanded] = useState(false);
   const { toast } = useToast();
 
+  // Log the opportunity when the component mounts
+  console.info(`Found arbitrage opportunity: ${buyExchange} -> ${sellExchange} | ${symbol} | Spread: ${spread}% | Potential: $${potential}`);
+
   const { data: calculation, isLoading: isCalculating } = useQuery<ArbitrageCalculation>({
     queryKey: ['arbitrage-calculation', buyExchange, sellExchange, symbol, potential],
     queryFn: async () => {
