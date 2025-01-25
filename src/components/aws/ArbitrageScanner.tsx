@@ -32,7 +32,9 @@ export function ArbitrageScanner() {
       const { data, error } = await supabase.functions.invoke('aws-ec2', {
         body: { 
           action: 'scanner-status',
-          checkAllPairs: true // Enable scanning all trading pairs
+          checkAllPairs: true,
+          batchSize: 5, // Add batch size parameter
+          timeout: 25000 // Add timeout parameter (25 seconds)
         }
       });
 
@@ -40,7 +42,6 @@ export function ArbitrageScanner() {
       
       setStatus(data.status);
       
-      // Log any opportunities found with more detailed information
       if (data.status.opportunityDetails) {
         data.status.opportunityDetails.forEach((opp: any) => {
           console.info(
@@ -74,7 +75,9 @@ export function ArbitrageScanner() {
       const { data, error } = await supabase.functions.invoke('aws-ec2', {
         body: { 
           action: `scanner-${action}`,
-          checkAllPairs: true // Enable scanning all trading pairs when starting
+          checkAllPairs: true,
+          batchSize: 5,
+          timeout: 25000
         }
       });
 
