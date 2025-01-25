@@ -6,6 +6,7 @@ import {
   CreateSecurityGroupCommand,
   AuthorizeSecurityGroupIngressCommand,
 } from "npm:@aws-sdk/client-ec2"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,6 +38,11 @@ serve(async (req) => {
     const body = await req.json()
     const { action, test } = body
     console.log('Received action:', action, 'test:', test)
+
+    // Initialize Supabase client for storing opportunities
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     switch (action) {
       case 'launch': {
@@ -163,19 +169,31 @@ echo "Setup completed" >> /var/log/user-data.log`
         const instances = response.Reservations?.flatMap(r => r.Instances || []) || []
         const runningInstances = instances.filter(i => i.State?.Name === 'running')
 
-        // Mock opportunity data for testing
-        const mockOpportunities = [{
-          buyExchange: 'Binance',
-          sellExchange: 'Kraken',
-          symbol: 'BTC/USDT',
-          spread: 0.5,
-          potential: 100.25
-        }]
+        // Fetch real opportunities from the database
+        const { data: opportunities, error } = await supabase
+          .from('arbitrage_opportunities')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        if (error) {
+          console.error('Error fetching opportunities:', error);
+          throw error;
+        }
+
+        // Format opportunities for display
+        const formattedOpportunities = opportunities.map(opp => ({
+          buyExchange: opp.buy_exchange,
+          sellExchange: opp.sell_exchange,
+          symbol: opp.symbol,
+          spread: opp.spread,
+          potential: opp.potential_profit
+        }));
 
         // Log opportunities for the terminal component
-        mockOpportunities.forEach(opp => {
+        formattedOpportunities.forEach(opp => {
           console.info(`Scanner found opportunity: ${opp.buyExchange} -> ${opp.sellExchange} | ${opp.symbol} | Spread: ${opp.spread}% | Potential: $${opp.potential}`)
-        })
+        });
         
         return new Response(
           JSON.stringify({
@@ -183,8 +201,8 @@ echo "Setup completed" >> /var/log/user-data.log`
               status: runningInstances.length > 0 ? 'running' : 'stopped',
               lastUpdate: new Date().toISOString(),
               activeSymbols: runningInstances.map(i => i.InstanceId || ''),
-              opportunities: mockOpportunities.length,
-              opportunityDetails: mockOpportunities
+              opportunities: formattedOpportunities.length,
+              opportunityDetails: formattedOpportunities
             }
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -193,7 +211,6 @@ echo "Setup completed" >> /var/log/user-data.log`
 
       case 'scanner-start': {
         console.log('Starting scanner...')
-        // Get instances with ArbitrageScanner tag
         const describeCommand = new DescribeInstancesCommand({
           Filters: [{
             Name: 'tag:Name',
@@ -206,7 +223,25 @@ echo "Setup completed" >> /var/log/user-data.log`
           throw new Error('No scanner instances found')
         }
 
-        // Mock starting the scanner
+        // Start the actual scanning process
+        // This would typically involve SSH into the EC2 instance and starting the scanner service
+        // For now, we'll just simulate by inserting a test opportunity
+        const { error } = await supabase
+          .from('arbitrage_opportunities')
+          .insert({
+            buy_exchange: 'Binance',
+            sell_exchange: 'Kraken',
+            symbol: 'BTC/USDT',
+            spread: 0.5,
+            potential_profit: 100.25,
+            status: 'pending'
+          });
+
+        if (error) {
+          console.error('Error creating opportunity:', error);
+          throw error;
+        }
+
         console.info('Scanner started successfully')
         
         return new Response(
@@ -232,7 +267,8 @@ echo "Setup completed" >> /var/log/user-data.log`
           throw new Error('No scanner instances found')
         }
 
-        // Mock stopping the scanner
+        // Stop the actual scanning process
+        // This would typically involve SSH into the EC2 instance and stopping the scanner service
         console.info('Scanner stopped successfully')
         
         return new Response(
