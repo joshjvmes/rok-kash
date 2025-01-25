@@ -15,23 +15,36 @@ interface EC2Instance {
 export function EC2Manager() {
   const { toast } = useToast();
 
-  // Use React Query for data fetching with proper caching
+  // Use React Query for data fetching with proper error handling
   const { data: instances = [], isLoading, error, refetch } = useQuery({
     queryKey: ['ec2-instances'],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('aws-ec2', {
-          body: { action: 'status' }
-        });
-        
-        if (error) throw error;
-        return data?.instances || [];
-      } catch (err) {
-        console.error('Error fetching EC2 instances:', err);
-        throw err;
+      const { data, error } = await supabase.functions.invoke('aws-ec2', {
+        body: { action: 'status' }
+      });
+      
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
       }
+
+      if (!data?.instances) {
+        console.warn('No instances data received:', data);
+        return [];
+      }
+
+      return data.instances;
     },
     refetchInterval: 30000, // Refetch every 30 seconds
+    retry: 2, // Only retry twice before showing error
+    onError: (error) => {
+      console.error('Query error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch EC2 instances. Please try again.",
+        variant: "destructive",
+      });
+    }
   });
 
   const launchInstance = async () => {
@@ -40,14 +53,16 @@ export function EC2Manager() {
         body: { action: 'launch' }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Launch instance error:', error);
+        throw error;
+      }
       
       toast({
         title: "Success",
         description: `Launched new instance: ${data.instanceId}`,
       });
       
-      // Refresh the instances list
       refetch();
     } catch (error) {
       console.error('Error launching instance:', error);
@@ -58,10 +73,6 @@ export function EC2Manager() {
       });
     }
   };
-
-  if (error) {
-    console.error('Error fetching instances:', error);
-  }
 
   return (
     <div className="space-y-4">

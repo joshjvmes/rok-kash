@@ -22,7 +22,9 @@ serve(async (req) => {
 
     switch (action) {
       case 'status': {
+        console.log('Fetching EC2 instances status...');
         const instances = await fetchInstanceStatus(ec2Client);
+        console.log('Instances fetched successfully:', instances);
         return new Response(
           JSON.stringify({ instances }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -30,7 +32,9 @@ serve(async (req) => {
       }
 
       case 'launch': {
+        console.log('Launching new EC2 instance...');
         const instanceId = await launchEC2Instance(ec2Client, test);
+        console.log('Instance launched successfully:', instanceId);
         return new Response(
           JSON.stringify({ 
             message: "Instance launched successfully",
@@ -42,7 +46,9 @@ serve(async (req) => {
       }
 
       case 'scanner-status': {
+        console.log('Fetching scanner status...');
         const status = await fetchScannerStatus(ec2Client);
+        console.log('Scanner status fetched:', status);
         return new Response(
           JSON.stringify({ status }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -50,7 +56,9 @@ serve(async (req) => {
       }
 
       case 'scanner-start': {
+        console.log('Starting scanner...');
         const instanceId = await launchEC2Instance(ec2Client, false, true);
+        console.log('Scanner started successfully:', instanceId);
         return new Response(
           JSON.stringify({ 
             message: "Scanner started successfully",
@@ -62,6 +70,7 @@ serve(async (req) => {
       }
 
       case 'scanner-stop': {
+        console.log('Stopping scanner...');
         const scannerStatus = await fetchScannerStatus(ec2Client);
         
         if (scannerStatus.activeInstances.length > 0) {
@@ -70,7 +79,7 @@ serve(async (req) => {
               stopEC2Instance(ec2Client, instanceId)
             )
           );
-
+          console.log('Scanner stopped successfully');
           return new Response(
             JSON.stringify({ 
               message: "Scanner stopped successfully",
@@ -80,6 +89,7 @@ serve(async (req) => {
           );
         }
 
+        console.log('No running scanner instances found');
         return new Response(
           JSON.stringify({ 
             message: "No running scanner instances found",
@@ -97,9 +107,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        status: "error",
-        stack: error.stack,
-        details: 'Check the function logs for more information'
+        status: "error"
       }),
       { 
         status: 500,
