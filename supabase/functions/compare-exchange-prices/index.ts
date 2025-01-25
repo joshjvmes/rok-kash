@@ -17,11 +17,26 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Initializing exchanges...');
-    const exchanges = await initializeExchanges(SUPPORTED_EXCHANGES);
-    console.log('Finding common symbols across exchanges...');
-    const commonSymbols = await findCommonSymbols(exchanges);
-    console.log(`Found ${commonSymbols.length} common symbols`);
+    const { exchanges, additionalPairs } = await req.json();
+    console.log('Received request with exchanges:', exchanges);
+    console.log('Additional pairs:', additionalPairs);
+
+    const activeExchanges = await initializeExchanges(exchanges);
+    console.log('Initialized exchanges:', activeExchanges.map(e => e.id));
+
+    let symbols = await findCommonSymbols(activeExchanges);
+    console.log(`Found ${symbols.length} common symbols`);
+
+    // Add valid additional pairs
+    if (additionalPairs && Array.isArray(additionalPairs)) {
+      const validAdditionalPairs = additionalPairs.filter(pair => 
+        activeExchanges.every(exchange => 
+          exchange.markets && exchange.markets[pair]
+        )
+      );
+      console.log('Valid additional pairs:', validAdditionalPairs);
+      symbols = [...new Set([...symbols, ...validAdditionalPairs])];
+    }
 
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -41,8 +56,8 @@ serve(async (req) => {
     }
 
     // Process symbols in batches
-    console.log('Processing symbols in batches...');
-    const opportunities = await processBatch(commonSymbols, exchanges, supabase, userId);
+    console.log('Processing symbols:', symbols);
+    const opportunities = await processBatch(symbols, activeExchanges, supabase, userId);
 
     console.log(`Found ${opportunities.length} opportunities`);
     

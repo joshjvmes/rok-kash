@@ -1,64 +1,61 @@
-import { Exchange } from 'npm:ccxt';
+import ccxt from 'npm:ccxt';
 
-export async function initializeExchanges(exchanges: string[]): Promise<Exchange[]> {
-  const initializedExchanges = exchanges.map(id => {
-    const exchange = new ccxt[id]({
-      enableRateLimit: true,
-      timeout: 30000,
-      options: {
-        defaultType: 'spot',
-        adjustForTimeDifference: true,
-      }
-    });
-
-    // Configure API credentials if available
-    const apiKey = Deno.env.get(`${id.toUpperCase()}_API_KEY`);
-    const secret = Deno.env.get(`${id.toUpperCase()}_SECRET`);
-    const passphrase = Deno.env.get(`${id.toUpperCase()}_PASSPHRASE`);
-
-    if (apiKey && secret) {
-      exchange.apiKey = apiKey;
-      exchange.secret = secret;
-      if (passphrase) {
-        exchange.password = passphrase;
-      }
+export async function initializeExchanges(supportedExchanges: string[]) {
+  const exchanges = [];
+  
+  for (const exchangeId of supportedExchanges) {
+    try {
+      const exchange = new ccxt[exchangeId.toLowerCase()]({
+        enableRateLimit: true,
+      });
+      exchanges.push(exchange);
+    } catch (error) {
+      console.error(`Error initializing ${exchangeId}:`, error);
     }
-
-    return exchange;
-  });
-
-  // Load markets for all exchanges in parallel
-  await Promise.all(initializedExchanges.map(exchange => 
-    exchange.loadMarkets().catch(error => {
-      console.error(`Error loading markets for ${exchange.id}:`, error);
-    })
-  ));
-
-  return initializedExchanges;
+  }
+  
+  return exchanges;
 }
 
-export async function findCommonSymbols(exchanges: Exchange[]): Promise<string[]> {
-  const symbolsByExchange = new Map<string, Set<string>>();
+export async function findCommonSymbols(exchanges: ccxt.Exchange[]) {
+  try {
+    const symbolSets = await Promise.all(
+      exchanges.map(async (exchange) => {
+        try {
+          await exchange.loadMarkets();
+          return new Set(Object.keys(exchange.markets));
+        } catch (error) {
+          console.error(`Error loading markets for ${exchange.id}:`, error);
+          return new Set();
+        }
+      })
+    );
 
-  exchanges.forEach(exchange => {
-    const symbols = new Set(Object.keys(exchange.markets || {}));
-    symbolsByExchange.set(exchange.id, symbols);
-  });
+    // Start with the first exchange's symbols
+    let commonSymbols = [...symbolSets[0]];
 
-  const commonSymbols = new Set<string>();
-  const allSymbols = new Set<string>();
+    // Find intersection with other exchanges
+    for (let i = 1; i < symbolSets.length; i++) {
+      commonSymbols = commonSymbols.filter(symbol => symbolSets[i].has(symbol));
+    }
 
-  symbolsByExchange.forEach((symbols) => {
-    symbols.forEach(symbol => allSymbols.add(symbol));
-  });
+    // Add additional pairs if they exist on all exchanges
+    const additionalPairs = [
+      'AVAX/USDT', 'MATIC/USDT', 'DOT/USDT', 'LINK/USDT',
+      'UNI/USDT', 'AAVE/USDT', 'ATOM/USDT', 'FTM/USDT',
+      'NEAR/USDT', 'APE/USDT', 'ADA/USDT', 'XRP/USDT',
+      'DOGE/USDT', 'SHIB/USDT', 'LTC/USDT', 'ETC/USDT'
+    ];
 
-  allSymbols.forEach(symbol => {
-    let count = 0;
-    symbolsByExchange.forEach((exchangeSymbols) => {
-      if (exchangeSymbols.has(symbol)) count++;
-    });
-    if (count >= 2) commonSymbols.add(symbol);
-  });
+    const validAdditionalPairs = additionalPairs.filter(pair => 
+      symbolSets.every(symbols => symbols.has(pair))
+    );
 
-  return Array.from(commonSymbols);
+    console.log('Valid additional pairs:', validAdditionalPairs);
+    
+    return [...new Set([...commonSymbols, ...validAdditionalPairs])];
+  } catch (error) {
+    console.error('Error finding common symbols:', error);
+    return [];
+  }
 }
