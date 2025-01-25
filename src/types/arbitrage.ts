@@ -5,4 +5,6 @@ export interface ArbitrageSettings {
   exchanges: string[];
   refresh_interval: number;
   notifications_enabled: boolean;
+  excluded_symbols?: string[];
+  included_symbols?: string[];
 }
