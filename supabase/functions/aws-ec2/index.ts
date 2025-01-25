@@ -1,6 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from './responseUtils.ts';
-import { getEC2Client, fetchInstanceStatus, launchEC2Instance, stopEC2Instance, fetchScannerStatus } from './ec2Commands.ts';
+import { 
+  getEC2Client, 
+  fetchInstanceStatus, 
+  launchEC2Instance, 
+  stopEC2Instance, 
+  fetchScannerStatus 
+} from './ec2Commands.ts';
 
 serve(async (req) => {
   // Handle CORS preflight requests
