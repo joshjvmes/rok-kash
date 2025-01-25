@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
@@ -19,12 +19,17 @@ export function EC2Manager() {
   const { data: instances = [], isLoading, error, refetch } = useQuery({
     queryKey: ['ec2-instances'],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('aws-ec2', {
-        body: { action: 'status' }
-      });
-      
-      if (error) throw error;
-      return data.instances || [];
+      try {
+        const { data, error } = await supabase.functions.invoke('aws-ec2', {
+          body: { action: 'status' }
+        });
+        
+        if (error) throw error;
+        return data?.instances || [];
+      } catch (err) {
+        console.error('Error fetching EC2 instances:', err);
+        throw err;
+      }
     },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
@@ -70,8 +75,20 @@ export function EC2Manager() {
         </Button>
       </div>
 
+      {isLoading && (
+        <div className="text-center py-8 text-gray-500">
+          Loading instances...
+        </div>
+      )}
+
+      {error && (
+        <div className="text-center py-8 text-red-500">
+          Error loading instances. Please try again.
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {instances.map((instance) => (
+        {instances.map((instance: EC2Instance) => (
           <Card key={instance.instanceId} className="p-4">
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -99,7 +116,7 @@ export function EC2Manager() {
         ))}
       </div>
 
-      {instances.length === 0 && !isLoading && (
+      {!isLoading && !error && instances.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           No instances found. Launch a new instance to get started.
         </div>
