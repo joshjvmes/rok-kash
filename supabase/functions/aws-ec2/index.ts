@@ -3,6 +3,8 @@ import {
   EC2Client,
   DescribeInstancesCommand,
   RunInstancesCommand,
+  CreateSecurityGroupCommand,
+  AuthorizeSecurityGroupIngressCommand,
 } from "npm:@aws-sdk/client-ec2"
 
 const corsHeaders = {
@@ -50,6 +52,41 @@ serve(async (req) => {
       case 'launch': {
         console.log('Starting EC2 instance launch process...')
         
+        // Create a new security group
+        const createSecurityGroupParams = {
+          Description: 'Security group for arbitrage scanner',
+          GroupName: `arbitrage-scanner-sg-${Date.now()}`, // Unique name
+          VpcId: 'vpc-0a643842d2043a543', // Your VPC ID
+        }
+
+        console.log('Creating security group...')
+        const createSgCommand = new CreateSecurityGroupCommand(createSecurityGroupParams)
+        const sgResponse = await ec2Client.send(createSgCommand)
+        const securityGroupId = sgResponse.GroupId
+
+        // Add inbound rules to the security group
+        const authorizeIngressParams = {
+          GroupId: securityGroupId,
+          IpPermissions: [
+            {
+              IpProtocol: 'tcp',
+              FromPort: 22,
+              ToPort: 22,
+              IpRanges: [{ CidrIp: '0.0.0.0/0' }],
+            },
+            {
+              IpProtocol: 'tcp',
+              FromPort: 80,
+              ToPort: 80,
+              IpRanges: [{ CidrIp: '0.0.0.0/0' }],
+            },
+          ],
+        }
+
+        console.log('Configuring security group rules...')
+        const authCommand = new AuthorizeSecurityGroupIngressCommand(authorizeIngressParams)
+        await ec2Client.send(authCommand)
+
         // Basic user data script for testing
         const userDataScript = `#!/bin/bash
 echo "Starting setup..." > /var/log/user-data.log
@@ -64,7 +101,7 @@ echo "Setup completed" >> /var/log/user-data.log`
           MinCount: 1,
           MaxCount: 1,
           UserData: btoa(userDataScript),
-          SecurityGroupIds: ['sg-0d534a988b5751839'],
+          SecurityGroupIds: [securityGroupId],
           TagSpecifications: [{
             ResourceType: 'instance',
             Tags: [{
