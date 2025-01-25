@@ -46,7 +46,7 @@ export function ArbitrageScanner() {
           action: 'scanner-status',
           checkAllPairs: true,
           tradingPairs: tradingPairs || [],
-          batchSize: 5, // Process 5 pairs at a time
+          batchSize: 15, // Increased from 5 to 15 pairs at a time
           timeout: 25000 // 25 second timeout
         }
       });
@@ -89,7 +89,7 @@ export function ArbitrageScanner() {
         body: { 
           action: `scanner-${action}`,
           checkAllPairs: true,
-          batchSize: 5,
+          batchSize: 15, // Also updated here to 15 pairs
           timeout: 25000
         }
       });
