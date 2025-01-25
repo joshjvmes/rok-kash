@@ -14,6 +14,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -36,8 +37,8 @@ serve(async (req) => {
     })
 
     const body = await req.json()
-    const { action, test } = body
-    console.log('Received action:', action, 'test:', test)
+    const { action } = body
+    console.log('Received action:', action)
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -51,8 +52,8 @@ serve(async (req) => {
           // Create a new security group
           const createSecurityGroupParams = {
             Description: 'Security group for arbitrage scanner',
-            GroupName: `arbitrage-scanner-sg-${Date.now()}`, // Unique name
-            VpcId: 'vpc-0a643842d2043a543', // Your VPC ID
+            GroupName: `arbitrage-scanner-sg-${Date.now()}`,
+            VpcId: 'vpc-0a643842d2043a543',
           }
 
           console.log('Creating security group with params:', createSecurityGroupParams)
@@ -89,17 +90,26 @@ serve(async (req) => {
           await ec2Client.send(authCommand)
           console.log('Security group rules configured successfully')
 
-          // Basic user data script for testing
+          // Enhanced user data script with error handling and logging
           const userDataScript = `#!/bin/bash
 echo "Starting setup..." > /var/log/user-data.log
-yum update -y
-yum install -y nodejs npm
-echo "Setup completed" >> /var/log/user-data.log`
+yum update -y || { echo "Failed to update system" >> /var/log/user-data.log; exit 1; }
+yum install -y nodejs npm git || { echo "Failed to install dependencies" >> /var/log/user-data.log; exit 1; }
+
+# Clone and setup arbitrage scanner
+git clone https://github.com/your-repo/arbitrage-scanner.git /opt/arbitrage-scanner || { echo "Failed to clone repository" >> /var/log/user-data.log; exit 1; }
+cd /opt/arbitrage-scanner
+npm install || { echo "Failed to install npm packages" >> /var/log/user-data.log; exit 1; }
+
+# Start the scanner service
+npm start > /var/log/scanner.log 2>&1 &
+
+echo "Setup completed successfully" >> /var/log/user-data.log`
 
           console.log('Creating EC2 instance with user data script...')
           const runInstancesParams = {
             ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2023
-            InstanceType: test ? 't2.micro' : 't2.small',
+            InstanceType: 't2.small',
             MinCount: 1,
             MaxCount: 1,
             UserData: btoa(userDataScript),
@@ -108,9 +118,13 @@ echo "Setup completed" >> /var/log/user-data.log`
               ResourceType: 'instance',
               Tags: [{
                 Key: 'Name',
-                Value: test ? 'ArbitrageScannerTest' : 'ArbitrageScanner'
+                Value: 'ArbitrageScanner'
               }]
-            }]
+            }],
+            // Add monitoring for better visibility
+            Monitoring: {
+              Enabled: true
+            }
           }
 
           console.log('Launching instance with params:', runInstancesParams)
@@ -118,10 +132,27 @@ echo "Setup completed" >> /var/log/user-data.log`
           const runResponse = await ec2Client.send(runCommand)
           console.log('Launch response:', runResponse)
           
+          const instanceId = runResponse.Instances?.[0]?.InstanceId
+          if (!instanceId) {
+            throw new Error('No instance ID in launch response')
+          }
+
+          // Store instance information in Supabase
+          await supabase
+            .from('arbitrage_settings')
+            .upsert([
+              {
+                user_id: req.headers.get('x-user-id'),
+                exchanges: ['Binance', 'Kraken', 'Bybit', 'Kucoin', 'OKX'],
+                instance_id: instanceId,
+                status: 'launching'
+              }
+            ])
+
           return new Response(
             JSON.stringify({
               message: "Successfully launched instance",
-              instanceId: runResponse.Instances?.[0]?.InstanceId,
+              instanceId: instanceId,
               status: "success"
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -134,151 +165,89 @@ echo "Setup completed" >> /var/log/user-data.log`
 
       case 'status': {
         console.log('Fetching EC2 instances status')
-        const describeCommand = new DescribeInstancesCommand({})
-        const describeResponse = await ec2Client.send(describeCommand)
-        
-        const instances = describeResponse.Reservations?.flatMap(reservation => 
-          reservation.Instances?.map(instance => ({
-            instanceId: instance.InstanceId,
-            state: instance.State?.Name,
-            publicDns: instance.PublicDnsName,
-            tags: instance.Tags || []
-          })) || []
-        ) || []
+        try {
+          const describeCommand = new DescribeInstancesCommand({})
+          const describeResponse = await ec2Client.send(describeCommand)
+          
+          const instances = describeResponse.Reservations?.flatMap(reservation => 
+            reservation.Instances?.map(instance => ({
+              instanceId: instance.InstanceId,
+              state: instance.State?.Name,
+              publicDns: instance.PublicDnsName,
+              tags: instance.Tags || []
+            })) || []
+          ) || []
 
-        return new Response(
-          JSON.stringify({
-            instances,
-            status: "success"
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+          console.log('Retrieved instances:', instances)
+
+          return new Response(
+            JSON.stringify({
+              instances,
+              status: "success"
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Error fetching instance status:', error)
+          throw error
+        }
       }
 
       case 'scanner-status': {
         console.log('Fetching scanner status')
-        const describeCommand = new DescribeInstancesCommand({
-          Filters: [{
-            Name: 'tag:Name',
-            Values: ['ArbitrageScanner']
-          }]
-        })
-        const response = await ec2Client.send(describeCommand)
-        
-        const instances = response.Reservations?.flatMap(r => r.Instances || []) || []
-        const runningInstances = instances.filter(i => i.State?.Name === 'running')
+        try {
+          // Get instance status
+          const describeCommand = new DescribeInstancesCommand({
+            Filters: [{
+              Name: 'tag:Name',
+              Values: ['ArbitrageScanner']
+            }]
+          })
+          const response = await ec2Client.send(describeCommand)
+          
+          const instances = response.Reservations?.flatMap(r => r.Instances || []) || []
+          const runningInstances = instances.filter(i => i.State?.Name === 'running')
 
-        // Fetch real opportunities from the database
-        const { data: opportunities, error } = await supabase
-          .from('arbitrage_opportunities')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(20);
+          // Fetch recent opportunities from the database
+          const { data: opportunities, error } = await supabase
+            .from('arbitrage_opportunities')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(20);
 
-        if (error) {
-          console.error('Error fetching opportunities:', error);
-          throw error;
+          if (error) {
+            console.error('Error fetching opportunities:', error)
+            throw error
+          }
+
+          const formattedOpportunities = opportunities.map(opp => ({
+            buyExchange: opp.buy_exchange,
+            sellExchange: opp.sell_exchange,
+            symbol: opp.symbol,
+            spread: opp.spread,
+            potential: opp.potential_profit,
+            buyPrice: opp.buy_price,
+            sellPrice: opp.sell_price
+          }));
+
+          console.log(`Found ${formattedOpportunities.length} opportunities`)
+          
+          return new Response(
+            JSON.stringify({
+              status: {
+                status: runningInstances.length > 0 ? 'running' : 'stopped',
+                lastUpdate: new Date().toISOString(),
+                activeSymbols: runningInstances.map(i => i.InstanceId || ''),
+                opportunities: formattedOpportunities.length,
+                opportunityDetails: formattedOpportunities
+              }
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Error fetching scanner status:', error)
+          throw error
         }
-
-        // Format opportunities for display
-        const formattedOpportunities = opportunities.map(opp => ({
-          buyExchange: opp.buy_exchange,
-          sellExchange: opp.sell_exchange,
-          symbol: opp.symbol,
-          spread: opp.spread,
-          potential: opp.potential_profit,
-          buyPrice: opp.buy_price,
-          sellPrice: opp.sell_price
-        }));
-
-        // Log opportunities for the terminal component
-        formattedOpportunities.forEach(opp => {
-          console.info(`Scanner found opportunity: ${opp.buyExchange} -> ${opp.sellExchange} | ${opp.symbol} | Spread: ${opp.spread}% | Potential: $${opp.potential}`)
-        });
-        
-        return new Response(
-          JSON.stringify({
-            status: {
-              status: runningInstances.length > 0 ? 'running' : 'stopped',
-              lastUpdate: new Date().toISOString(),
-              activeSymbols: runningInstances.map(i => i.InstanceId || ''),
-              opportunities: formattedOpportunities.length,
-              opportunityDetails: formattedOpportunities
-            }
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      case 'scanner-start': {
-        console.log('Starting scanner...')
-        const describeCommand = new DescribeInstancesCommand({
-          Filters: [{
-            Name: 'tag:Name',
-            Values: ['ArbitrageScanner']
-          }]
-        })
-        const response = await ec2Client.send(describeCommand)
-        
-        if (!response.Reservations?.length) {
-          throw new Error('No scanner instances found')
-        }
-
-        // Start the actual scanning process
-        // This would typically involve SSH into the EC2 instance and starting the scanner service
-        // For now, we'll just simulate by inserting a test opportunity
-        const { error } = await supabase
-          .from('arbitrage_opportunities')
-          .insert({
-            buy_exchange: 'Binance',
-            sell_exchange: 'Kraken',
-            symbol: 'BTC/USDT',
-            spread: 0.5,
-            potential_profit: 100.25,
-            status: 'pending'
-          });
-
-        if (error) {
-          console.error('Error creating opportunity:', error);
-          throw error;
-        }
-
-        console.info('Scanner started successfully')
-        
-        return new Response(
-          JSON.stringify({
-            message: "Scanner started successfully",
-            status: "success"
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      case 'scanner-stop': {
-        console.log('Stopping scanner...')
-        const describeCommand = new DescribeInstancesCommand({
-          Filters: [{
-            Name: 'tag:Name',
-            Values: ['ArbitrageScanner']
-          }]
-        })
-        const response = await ec2Client.send(describeCommand)
-        
-        if (!response.Reservations?.length) {
-          throw new Error('No scanner instances found')
-        }
-
-        // Stop the actual scanning process
-        // This would typically involve SSH into the EC2 instance and stopping the scanner service
-        console.info('Scanner stopped successfully')
-        
-        return new Response(
-          JSON.stringify({
-            message: "Scanner stopped successfully",
-            status: "success"
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
       }
 
       default:
@@ -289,7 +258,8 @@ echo "Setup completed" >> /var/log/user-data.log`
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        status: "error" 
+        status: "error",
+        details: error.stack
       }),
       { 
         status: 500,
