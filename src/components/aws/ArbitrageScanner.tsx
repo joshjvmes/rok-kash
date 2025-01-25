@@ -29,12 +29,25 @@ export function ArbitrageScanner() {
   const fetchScannerStatus = async () => {
     try {
       setIsLoading(true);
+      
+      // First, get all active trading pairs
+      const { data: tradingPairs, error: pairsError } = await supabase
+        .from('matching_trading_pairs')
+        .select('*')
+        .eq('is_active', true);
+
+      if (pairsError) throw pairsError;
+
+      console.log(`Found ${tradingPairs?.length || 0} active trading pairs`);
+
+      // Get scanner status with all pairs
       const { data, error } = await supabase.functions.invoke('aws-ec2', {
         body: { 
           action: 'scanner-status',
           checkAllPairs: true,
-          batchSize: 5, // Add batch size parameter
-          timeout: 25000 // Add timeout parameter (25 seconds)
+          tradingPairs: tradingPairs || [],
+          batchSize: 5, // Process 5 pairs at a time
+          timeout: 25000 // 25 second timeout
         }
       });
 
