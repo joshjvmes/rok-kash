@@ -201,11 +201,15 @@ export type Database = {
         Row: {
           created_at: string
           exchanges: string[]
+          excluded_symbols: string[] | null
           id: string
+          included_symbols: string[] | null
+          max_concurrent_requests: number | null
           min_profit_amount: number
           min_spread_percentage: number
           notifications_enabled: boolean
           refresh_interval: number
+          request_delay_ms: number | null
           symbols: string[]
           updated_at: string
           user_id: string
@@ -213,11 +217,15 @@ export type Database = {
         Insert: {
           created_at?: string
           exchanges?: string[]
+          excluded_symbols?: string[] | null
           id?: string
+          included_symbols?: string[] | null
+          max_concurrent_requests?: number | null
           min_profit_amount?: number
           min_spread_percentage?: number
           notifications_enabled?: boolean
           refresh_interval?: number
+          request_delay_ms?: number | null
           symbols?: string[]
           updated_at?: string
           user_id: string
@@ -225,11 +233,15 @@ export type Database = {
         Update: {
           created_at?: string
           exchanges?: string[]
+          excluded_symbols?: string[] | null
           id?: string
+          included_symbols?: string[] | null
+          max_concurrent_requests?: number | null
           min_profit_amount?: number
           min_spread_percentage?: number
           notifications_enabled?: boolean
           refresh_interval?: number
+          request_delay_ms?: number | null
           symbols?: string[]
           updated_at?: string
           user_id?: string
@@ -310,6 +322,9 @@ export type Database = {
           max_withdrawal_amount: number | null
           min_trade_amount: number | null
           min_withdrawal_amount: number | null
+          rate_limit_requests: number | null
+          rate_limit_window_ms: number | null
+          requires_rate_limiting: boolean | null
           supported_networks: string[] | null
           taker_fee_percentage: number | null
           trading_fee_percentage: number
@@ -328,6 +343,9 @@ export type Database = {
           max_withdrawal_amount?: number | null
           min_trade_amount?: number | null
           min_withdrawal_amount?: number | null
+          rate_limit_requests?: number | null
+          rate_limit_window_ms?: number | null
+          requires_rate_limiting?: boolean | null
           supported_networks?: string[] | null
           taker_fee_percentage?: number | null
           trading_fee_percentage?: number
@@ -346,6 +364,9 @@ export type Database = {
           max_withdrawal_amount?: number | null
           min_trade_amount?: number | null
           min_withdrawal_amount?: number | null
+          rate_limit_requests?: number | null
+          rate_limit_window_ms?: number | null
+          requires_rate_limiting?: boolean | null
           supported_networks?: string[] | null
           taker_fee_percentage?: number | null
           trading_fee_percentage?: number
