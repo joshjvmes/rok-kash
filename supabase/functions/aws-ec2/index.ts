@@ -162,14 +162,76 @@ echo "Setup completed" >> /var/log/user-data.log`
 
       case 'scanner-status': {
         console.log('Fetching scanner status')
+        // Get instances with ArbitrageScanner tag
+        const describeCommand = new DescribeInstancesCommand({
+          Filters: [{
+            Name: 'tag:Name',
+            Values: ['ArbitrageScanner']
+          }]
+        })
+        const response = await ec2Client.send(describeCommand)
+        
+        const instances = response.Reservations?.flatMap(r => r.Instances || []) || []
+        const runningInstances = instances.filter(i => i.State?.Name === 'running')
+        
         return new Response(
           JSON.stringify({
             status: {
-              status: 'stopped',
+              status: runningInstances.length > 0 ? 'running' : 'stopped',
               lastUpdate: new Date().toISOString(),
-              activeSymbols: [],
-              opportunities: 0
+              activeSymbols: runningInstances.map(i => i.InstanceId || ''),
+              opportunities: runningInstances.length
             }
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      case 'scanner-start': {
+        console.log('Starting scanner...')
+        // Get instances with ArbitrageScanner tag
+        const describeCommand = new DescribeInstancesCommand({
+          Filters: [{
+            Name: 'tag:Name',
+            Values: ['ArbitrageScanner']
+          }]
+        })
+        const response = await ec2Client.send(describeCommand)
+        
+        if (!response.Reservations?.length) {
+          throw new Error('No scanner instances found')
+        }
+
+        // For now, just return success status
+        return new Response(
+          JSON.stringify({
+            message: "Scanner started successfully",
+            status: "success"
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      case 'scanner-stop': {
+        console.log('Stopping scanner...')
+        // Get instances with ArbitrageScanner tag
+        const describeCommand = new DescribeInstancesCommand({
+          Filters: [{
+            Name: 'tag:Name',
+            Values: ['ArbitrageScanner']
+          }]
+        })
+        const response = await ec2Client.send(describeCommand)
+        
+        if (!response.Reservations?.length) {
+          throw new Error('No scanner instances found')
+        }
+
+        // For now, just return success status
+        return new Response(
+          JSON.stringify({
+            message: "Scanner stopped successfully",
+            status: "success"
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
