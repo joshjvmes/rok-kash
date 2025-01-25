@@ -10,6 +10,13 @@ interface ScannerStatus {
   lastUpdate: string;
   activeSymbols: string[];
   opportunities: number;
+  opportunityDetails?: Array<{
+    buyExchange: string;
+    sellExchange: string;
+    symbol: string;
+    spread: number;
+    potential: number;
+  }>;
 }
 
 export function ArbitrageScanner() {
@@ -29,6 +36,14 @@ export function ArbitrageScanner() {
       if (error) throw error;
       
       setStatus(data.status);
+      
+      // Log any opportunities found
+      if (data.status.opportunityDetails) {
+        data.status.opportunityDetails.forEach((opp: any) => {
+          console.info(`Found arbitrage opportunity: ${opp.buyExchange} -> ${opp.sellExchange} | ${opp.symbol} | Spread: ${opp.spread}% | Potential: $${opp.potential}`);
+        });
+      }
+      
       console.log('Scanner status:', data.status);
     } catch (error) {
       console.error('Error fetching scanner status:', error);

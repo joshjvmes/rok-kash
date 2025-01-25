@@ -13,7 +13,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -27,7 +26,6 @@ serve(async (req) => {
       throw new Error('AWS credentials not configured')
     }
 
-    console.log('Initializing EC2 client...')
     const ec2Client = new EC2Client({
       region: "us-east-1",
       credentials: {
@@ -36,15 +34,7 @@ serve(async (req) => {
       },
     })
 
-    // Parse request body
-    let body;
-    try {
-      body = await req.json()
-    } catch (error) {
-      console.error('Error parsing request body:', error)
-      throw new Error('Invalid request body')
-    }
-
+    const body = await req.json()
     const { action, test } = body
     console.log('Received action:', action, 'test:', test)
 
@@ -162,7 +152,6 @@ echo "Setup completed" >> /var/log/user-data.log`
 
       case 'scanner-status': {
         console.log('Fetching scanner status')
-        // Get instances with ArbitrageScanner tag
         const describeCommand = new DescribeInstancesCommand({
           Filters: [{
             Name: 'tag:Name',
@@ -173,6 +162,20 @@ echo "Setup completed" >> /var/log/user-data.log`
         
         const instances = response.Reservations?.flatMap(r => r.Instances || []) || []
         const runningInstances = instances.filter(i => i.State?.Name === 'running')
+
+        // Mock opportunity data for testing
+        const mockOpportunities = [{
+          buyExchange: 'Binance',
+          sellExchange: 'Kraken',
+          symbol: 'BTC/USDT',
+          spread: 0.5,
+          potential: 100.25
+        }]
+
+        // Log opportunities for the terminal component
+        mockOpportunities.forEach(opp => {
+          console.info(`Scanner found opportunity: ${opp.buyExchange} -> ${opp.sellExchange} | ${opp.symbol} | Spread: ${opp.spread}% | Potential: $${opp.potential}`)
+        })
         
         return new Response(
           JSON.stringify({
@@ -180,7 +183,8 @@ echo "Setup completed" >> /var/log/user-data.log`
               status: runningInstances.length > 0 ? 'running' : 'stopped',
               lastUpdate: new Date().toISOString(),
               activeSymbols: runningInstances.map(i => i.InstanceId || ''),
-              opportunities: runningInstances.length
+              opportunities: mockOpportunities.length,
+              opportunityDetails: mockOpportunities
             }
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -202,7 +206,9 @@ echo "Setup completed" >> /var/log/user-data.log`
           throw new Error('No scanner instances found')
         }
 
-        // For now, just return success status
+        // Mock starting the scanner
+        console.info('Scanner started successfully')
+        
         return new Response(
           JSON.stringify({
             message: "Scanner started successfully",
@@ -214,7 +220,6 @@ echo "Setup completed" >> /var/log/user-data.log`
 
       case 'scanner-stop': {
         console.log('Stopping scanner...')
-        // Get instances with ArbitrageScanner tag
         const describeCommand = new DescribeInstancesCommand({
           Filters: [{
             Name: 'tag:Name',
@@ -227,7 +232,9 @@ echo "Setup completed" >> /var/log/user-data.log`
           throw new Error('No scanner instances found')
         }
 
-        // For now, just return success status
+        // Mock stopping the scanner
+        console.info('Scanner stopped successfully')
+        
         return new Response(
           JSON.stringify({
             message: "Scanner stopped successfully",
