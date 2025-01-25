@@ -2,9 +2,10 @@ import {
   EC2Client, 
   DescribeInstancesCommand,
   RunInstancesCommand,
+  TerminateInstancesCommand,
   CreateSecurityGroupCommand,
   AuthorizeSecurityGroupIngressCommand
-} from "https://esm.sh/@aws-sdk/client-ec2@3.370.0";
+} from "@aws-sdk/client-ec2";
 
 export const getEC2Client = () => {
   const awsAccessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID');
@@ -66,6 +67,15 @@ export const launchEC2Instance = async (ec2Client: EC2Client, isTest = false, is
   }
 
   return instanceId;
+};
+
+export const stopEC2Instance = async (ec2Client: EC2Client, instanceId: string) => {
+  console.log(`Stopping EC2 instance ${instanceId}`);
+  const command = new TerminateInstancesCommand({
+    InstanceIds: [instanceId]
+  });
+  
+  await ec2Client.send(command);
 };
 
 export const fetchScannerStatus = async (ec2Client: EC2Client) => {

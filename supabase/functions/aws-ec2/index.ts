@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { EC2Client } from 'https://esm.sh/@aws-sdk/client-ec2@3.370.0';
 import { corsHeaders } from './responseUtils.ts';
-import { getEC2Client, fetchInstanceStatus, launchEC2Instance, fetchScannerStatus } from './ec2Commands.ts';
+import { getEC2Client, fetchInstanceStatus, launchEC2Instance, stopEC2Instance, fetchScannerStatus } from './ec2Commands.ts';
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -45,11 +44,11 @@ serve(async (req) => {
       }
 
       case 'scanner-start': {
-        const result = await launchEC2Instance(ec2Client, false, true);
+        const instanceId = await launchEC2Instance(ec2Client, false, true);
         return new Response(
           JSON.stringify({ 
             message: "Scanner started successfully",
-            instanceId: result,
+            instanceId,
             status: "success"
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -57,21 +56,14 @@ serve(async (req) => {
       }
 
       case 'scanner-stop': {
-        const { Reservations } = await ec2Client.describeInstances({
-          Filters: [{
-            Name: 'tag:Purpose',
-            Values: ['ArbitrageScanner']
-          }]
-        });
-
-        const runningInstances = Reservations?.flatMap(r => r.Instances || [])
-          .filter(i => i.State?.Name === 'running')
-          .map(i => i.InstanceId);
-
-        if (runningInstances?.length) {
-          await ec2Client.terminateInstances({
-            InstanceIds: runningInstances
-          });
+        const scannerStatus = await fetchScannerStatus(ec2Client);
+        
+        if (scannerStatus.activeInstances.length > 0) {
+          await Promise.all(
+            scannerStatus.activeInstances.map(instanceId => 
+              stopEC2Instance(ec2Client, instanceId)
+            )
+          );
 
           return new Response(
             JSON.stringify({ 
