@@ -16,6 +16,8 @@ interface ScannerStatus {
     symbol: string;
     spread: number;
     potential: number;
+    buyPrice?: number | null;
+    sellPrice?: number | null;
   }>;
 }
 
@@ -29,7 +31,8 @@ export function ArbitrageScanner() {
       setIsLoading(true);
       const { data, error } = await supabase.functions.invoke('aws-ec2', {
         body: { 
-          action: 'scanner-status'
+          action: 'scanner-status',
+          checkAllPairs: true // Enable scanning all trading pairs
         }
       });
 
@@ -37,10 +40,18 @@ export function ArbitrageScanner() {
       
       setStatus(data.status);
       
-      // Log any opportunities found
+      // Log any opportunities found with more detailed information
       if (data.status.opportunityDetails) {
         data.status.opportunityDetails.forEach((opp: any) => {
-          console.info(`Found arbitrage opportunity: ${opp.buyExchange} -> ${opp.sellExchange} | ${opp.symbol} | Spread: ${opp.spread}% | Potential: $${opp.potential}`);
+          console.info(
+            `Found arbitrage opportunity:\n` +
+            `Exchange Route: ${opp.buyExchange} -> ${opp.sellExchange}\n` +
+            `Symbol: ${opp.symbol}\n` +
+            `Spread: ${opp.spread.toFixed(2)}%\n` +
+            `Potential Profit: $${opp.potential.toFixed(2)}\n` +
+            `Buy Price: ${opp.buyPrice ? `$${opp.buyPrice.toFixed(2)}` : 'N/A'}\n` +
+            `Sell Price: ${opp.sellPrice ? `$${opp.sellPrice.toFixed(2)}` : 'N/A'}`
+          );
         });
       }
       
@@ -62,7 +73,8 @@ export function ArbitrageScanner() {
       setIsLoading(true);
       const { data, error } = await supabase.functions.invoke('aws-ec2', {
         body: { 
-          action: `scanner-${action}`
+          action: `scanner-${action}`,
+          checkAllPairs: true // Enable scanning all trading pairs when starting
         }
       });
 
