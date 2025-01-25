@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
@@ -12,30 +13,30 @@ interface EC2Instance {
 }
 
 export function EC2Manager() {
-  const [instances, setInstances] = useState<EC2Instance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const fetchInstances = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.functions.invoke('aws-ec2', {
-        body: { action: 'status' }
-      });
+  const { data: instances = [] } = useQuery({
+    queryKey: ['ec2-instances'],
+    queryFn: async (): Promise<EC2Instance[]> => {
+      try {
+        const { data, error } = await supabase.functions.invoke('aws-ec2', {
+          body: { action: 'status' }
+        });
 
-      if (error) throw error;
-      setInstances(data.instances);
-    } catch (error) {
-      console.error('Error fetching instances:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch EC2 instances",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+        if (error) throw error;
+        return data.instances;
+      } catch (error) {
+        console.error('Error fetching instances:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch EC2 instances",
+          variant: "destructive",
+        });
+        return [];
+      }
     }
-  };
+  });
 
   const launchInstance = async () => {
     try {
@@ -50,9 +51,6 @@ export function EC2Manager() {
         title: "Success",
         description: `Launched new instance: ${data.instanceId}`,
       });
-      
-      // Refresh the instances list
-      fetchInstances();
     } catch (error) {
       console.error('Error launching instance:', error);
       toast({
@@ -64,10 +62,6 @@ export function EC2Manager() {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchInstances();
-  }, []);
 
   return (
     <div className="space-y-4">
