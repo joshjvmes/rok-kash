@@ -14,13 +14,31 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
       try {
         console.log('Fetching arbitrage opportunities across all exchanges...');
         
-        // Call the edge function without specific symbols to check all pairs
+        // Call the edge function with expanded symbol list
         const { data: opportunities, error } = await supabase.functions.invoke(
           'compare-exchange-prices',
           {
             body: { 
               exchanges: settings.exchanges,
-              checkAllPairs: true
+              checkAllPairs: true,
+              additionalPairs: [
+                'AVAX/USDT',
+                'MATIC/USDT',
+                'DOT/USDT',
+                'LINK/USDT',
+                'UNI/USDT',
+                'AAVE/USDT',
+                'ATOM/USDT',
+                'FTM/USDT',
+                'NEAR/USDT',
+                'APE/USDT',
+                'ADA/USDT',
+                'XRP/USDT',
+                'DOGE/USDT',
+                'SHIB/USDT',
+                'LTC/USDT',
+                'ETC/USDT'
+              ]
             }
           }
         );
