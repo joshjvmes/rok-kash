@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from '@tanstack/react-query';
 
 interface EC2Instance {
   instanceId: string;
@@ -13,57 +12,47 @@ interface EC2Instance {
 }
 
 export function EC2Manager() {
+  const [instances, setInstances] = useState<EC2Instance[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Use React Query for data fetching with proper error handling
-  const { data: instances = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['ec2-instances'],
-    queryFn: async () => {
+  const fetchInstances = async () => {
+    try {
+      setIsLoading(true);
       const { data, error } = await supabase.functions.invoke('aws-ec2', {
         body: { action: 'status' }
       });
-      
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
 
-      if (!data?.instances) {
-        console.warn('No instances data received:', data);
-        return [];
-      }
-
-      return data.instances;
-    },
-    refetchInterval: 30000, // Refetch every 30 seconds
-    retry: 2, // Only retry twice before showing error
-    onError: (error) => {
-      console.error('Query error:', error);
+      if (error) throw error;
+      setInstances(data.instances);
+    } catch (error) {
+      console.error('Error fetching instances:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch EC2 instances. Please try again.",
+        description: "Failed to fetch EC2 instances",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-  });
+  };
 
   const launchInstance = async () => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.functions.invoke('aws-ec2', {
         body: { action: 'launch' }
       });
 
-      if (error) {
-        console.error('Launch instance error:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       toast({
         title: "Success",
         description: `Launched new instance: ${data.instanceId}`,
       });
       
-      refetch();
+      // Refresh the instances list
+      fetchInstances();
     } catch (error) {
       console.error('Error launching instance:', error);
       toast({
@@ -71,8 +60,14 @@ export function EC2Manager() {
         description: "Failed to launch EC2 instance",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchInstances();
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -86,20 +81,8 @@ export function EC2Manager() {
         </Button>
       </div>
 
-      {isLoading && (
-        <div className="text-center py-8 text-gray-500">
-          Loading instances...
-        </div>
-      )}
-
-      {error && (
-        <div className="text-center py-8 text-red-500">
-          Error loading instances. Please try again.
-        </div>
-      )}
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {instances.map((instance: EC2Instance) => (
+        {instances.map((instance) => (
           <Card key={instance.instanceId} className="p-4">
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -127,7 +110,7 @@ export function EC2Manager() {
         ))}
       </div>
 
-      {!isLoading && !error && instances.length === 0 && (
+      {instances.length === 0 && !isLoading && (
         <div className="text-center py-8 text-gray-500">
           No instances found. Launch a new instance to get started.
         </div>

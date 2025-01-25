@@ -40,7 +40,7 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
     const allMarkets = await Promise.all(marketsPromises);
     const flatMarkets = allMarkets.flat();
 
-    // Apply symbol filters from settings and ensure symbols exist on multiple exchanges
+    // Apply symbol filters from settings
     const validSymbols = filterValidSymbols(flatMarkets, settings);
     console.log(`Found ${validSymbols.size} valid symbols after filtering`);
 
@@ -55,14 +55,12 @@ export async function scanArbitrageOpportunities(): Promise<ArbitrageOpportunity
         const prices = await fetchPricesForSymbol(symbol, exchanges);
         const symbolPrices = prices.filter(p => p.price !== null);
         
-        if (symbolPrices.length >= 2) {
-          const symbolOpportunities = findArbitrageOpportunities(
-            symbolPrices,
-            settings.min_spread_percentage
-          );
-          
-          opportunities.push(...symbolOpportunities);
-        }
+        const symbolOpportunities = findArbitrageOpportunities(
+          symbolPrices,
+          settings.min_spread_percentage
+        );
+        
+        opportunities.push(...symbolOpportunities);
       }
 
       // Add delay between batches
