@@ -5,7 +5,7 @@ import {
   TerminateInstancesCommand,
   CreateSecurityGroupCommand,
   AuthorizeSecurityGroupIngressCommand
-} from "@aws-sdk/client-ec2";
+} from "https://esm.sh/@aws-sdk/client-ec2@3.370.0";
 
 export const getEC2Client = () => {
   const awsAccessKeyId = Deno.env.get('AWS_ACCESS_KEY_ID');
