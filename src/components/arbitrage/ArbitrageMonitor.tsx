@@ -12,12 +12,16 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
   useEffect(() => {
     const checkArbitrageOpportunities = async () => {
       try {
-        console.log('Fetching arbitrage opportunities...');
+        console.log('Fetching arbitrage opportunities across all exchanges...');
         
+        // Call the edge function without specific symbols to check all pairs
         const { data: opportunities, error } = await supabase.functions.invoke(
           'compare-exchange-prices',
           {
-            body: { symbols: settings.symbols }
+            body: { 
+              exchanges: settings.exchanges,
+              checkAllPairs: true
+            }
           }
         );
 
@@ -32,9 +36,25 @@ export function ArbitrageMonitor({ settings, onOpportunitiesFound }: ArbitrageMo
           const meetsProfitRequirement = opp.potential >= settings.min_profit_amount;
           const exchangesEnabled = settings.exchanges.includes(opp.buyExchange) && 
                                  settings.exchanges.includes(opp.sellExchange);
+          
+          // Skip excluded symbols if any are specified
+          if (settings.excluded_symbols?.length > 0) {
+            const isExcluded = settings.excluded_symbols.some(
+              symbol => opp.symbol.includes(symbol)
+            );
+            if (isExcluded) return false;
+          }
+
+          // Check included symbols if specified
+          if (settings.included_symbols?.length > 0) {
+            const isIncluded = settings.included_symbols.some(
+              symbol => opp.symbol.includes(symbol)
+            );
+            if (!isIncluded) return false;
+          }
 
           if (meetsSpreadRequirement && meetsProfitRequirement && exchangesEnabled) {
-            console.log('Opportunity meets minimum requirements - adding to list');
+            console.log(`Found valid opportunity: ${opp.buyExchange} -> ${opp.sellExchange} | ${opp.symbol} | Spread: ${opp.spread}% | Potential: $${opp.potential}`);
             return true;
           }
           return false;
