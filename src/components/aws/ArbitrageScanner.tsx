@@ -46,8 +46,8 @@ export function ArbitrageScanner() {
           action: 'scanner-status',
           checkAllPairs: true,
           tradingPairs: tradingPairs || [],
-          batchSize: 15,
-          timeout: 25000
+          batchSize: 15, // Increased from 5 to 15 pairs at a time
+          timeout: 25000 // 25 second timeout
         }
       });
 
@@ -89,23 +89,19 @@ export function ArbitrageScanner() {
         body: { 
           action: `scanner-${action}`,
           checkAllPairs: true,
-          batchSize: 15,
+          batchSize: 15, // Also updated here to 15 pairs
           timeout: 25000
         }
       });
 
-      if (error) {
-        console.error(`Error ${action}ing scanner:`, error);
-        throw error;
-      }
+      if (error) throw error;
       
       toast({
         title: "Success",
         description: `Scanner ${action}ed successfully`,
       });
       
-      // Fetch the updated status immediately after the action
-      await fetchScannerStatus();
+      fetchScannerStatus();
     } catch (error) {
       console.error(`Error ${action}ing scanner:`, error);
       toast({
