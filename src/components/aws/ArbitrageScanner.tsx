@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Play, Pause, RefreshCw } from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
 
 interface ScannerStatus {
   status: 'running' | 'stopped' | 'error';
@@ -20,50 +21,27 @@ interface ScannerStatus {
 }
 
 export function ArbitrageScanner() {
-  const [status, setStatus] = useState<ScannerStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isControlling, setIsControlling] = useState(false);
   const { toast } = useToast();
 
-  const fetchScannerStatus = async () => {
-    try {
-      setIsLoading(true);
+  const { data: status, isLoading, error, refetch } = useQuery({
+    queryKey: ['scanner-status'],
+    queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('aws-ec2', {
-        body: { 
-          action: 'scanner-status'
-        }
+        body: { action: 'scanner-status' }
       });
 
       if (error) throw error;
-      
-      setStatus(data.status);
-      
-      // Log any opportunities found
-      if (data.status.opportunityDetails) {
-        data.status.opportunityDetails.forEach((opp: any) => {
-          console.info(`Found arbitrage opportunity: ${opp.buyExchange} -> ${opp.sellExchange} | ${opp.symbol} | Spread: ${opp.spread}% | Potential: $${opp.potential}`);
-        });
-      }
-      
-      console.log('Scanner status:', data.status);
-    } catch (error) {
-      console.error('Error fetching scanner status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch scanner status",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      return data.status as ScannerStatus;
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
 
   const controlScanner = async (action: 'start' | 'stop') => {
     try {
-      setIsLoading(true);
+      setIsControlling(true);
       const { data, error } = await supabase.functions.invoke('aws-ec2', {
-        body: { 
-          action: `scanner-${action}`
-        }
+        body: { action: `scanner-${action}` }
       });
 
       if (error) throw error;
@@ -73,7 +51,7 @@ export function ArbitrageScanner() {
         description: `Scanner ${action}ed successfully`,
       });
       
-      fetchScannerStatus();
+      refetch();
     } catch (error) {
       console.error(`Error ${action}ing scanner:`, error);
       toast({
@@ -82,15 +60,13 @@ export function ArbitrageScanner() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsControlling(false);
     }
   };
 
-  useEffect(() => {
-    fetchScannerStatus();
-    const interval = setInterval(fetchScannerStatus, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
+  if (error) {
+    console.error('Error fetching scanner status:', error);
+  }
 
   return (
     <Card className="p-6">
@@ -102,9 +78,9 @@ export function ArbitrageScanner() {
               variant="outline"
               size="sm"
               onClick={() => controlScanner('start')}
-              disabled={isLoading || status?.status === 'running'}
+              disabled={isControlling || isLoading || status?.status === 'running'}
             >
-              {isLoading ? (
+              {isControlling ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Play className="h-4 w-4" />
@@ -115,9 +91,9 @@ export function ArbitrageScanner() {
               variant="outline"
               size="sm"
               onClick={() => controlScanner('stop')}
-              disabled={isLoading || status?.status === 'stopped'}
+              disabled={isControlling || isLoading || status?.status === 'stopped'}
             >
-              {isLoading ? (
+              {isControlling ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Pause className="h-4 w-4" />
@@ -127,8 +103,8 @@ export function ArbitrageScanner() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={fetchScannerStatus}
-              disabled={isLoading}
+              onClick={() => refetch()}
+              disabled={isLoading || isControlling}
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>

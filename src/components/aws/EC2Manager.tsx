@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from '@tanstack/react-query';
 
 interface EC2Instance {
   instanceId: string;
@@ -12,34 +13,24 @@ interface EC2Instance {
 }
 
 export function EC2Manager() {
-  const [instances, setInstances] = useState<EC2Instance[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const fetchInstances = async () => {
-    try {
-      setIsLoading(true);
+  // Use React Query for data fetching with proper caching
+  const { data: instances = [], isLoading, error, refetch } = useQuery({
+    queryKey: ['ec2-instances'],
+    queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('aws-ec2', {
         body: { action: 'status' }
       });
-
+      
       if (error) throw error;
-      setInstances(data.instances);
-    } catch (error) {
-      console.error('Error fetching instances:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch EC2 instances",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      return data.instances || [];
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
 
   const launchInstance = async () => {
     try {
-      setIsLoading(true);
       const { data, error } = await supabase.functions.invoke('aws-ec2', {
         body: { action: 'launch' }
       });
@@ -52,7 +43,7 @@ export function EC2Manager() {
       });
       
       // Refresh the instances list
-      fetchInstances();
+      refetch();
     } catch (error) {
       console.error('Error launching instance:', error);
       toast({
@@ -60,14 +51,12 @@ export function EC2Manager() {
         description: "Failed to launch EC2 instance",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchInstances();
-  }, []);
+  if (error) {
+    console.error('Error fetching instances:', error);
+  }
 
   return (
     <div className="space-y-4">
