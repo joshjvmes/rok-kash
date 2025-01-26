@@ -4,7 +4,9 @@ import {
   getEC2Client, 
   fetchInstanceStatus, 
   launchEC2Instance,
-  fetchScannerStatus 
+  fetchScannerStatus,
+  startEC2Instance,
+  stopEC2Instance
 } from "./ec2Commands.ts";
 import { 
   corsHeaders, 
@@ -42,7 +44,7 @@ serve(async (req) => {
         }
 
         case 'scanner-status': {
-          console.log('Fetching scanner status with batching...');
+          console.log('Fetching scanner status...');
           const instances = await fetchScannerStatus(ec2Client);
           const runningInstances = instances.filter(i => i.State?.Name === 'running');
 
@@ -100,25 +102,42 @@ serve(async (req) => {
         }
 
         case 'scanner-start': {
-          // Start the scanner and store initial opportunities
-          const { data: opportunities, error } = await supabase
-            .from('arbitrage_opportunities')
-            .insert(body.opportunities || [])
-            .select();
+          // Get running instances
+          const instances = await fetchScannerStatus(ec2Client);
+          const runningInstance = instances.find(i => i.State?.Name === 'stopped');
 
-          if (error) {
-            console.error('Error storing opportunities:', error);
-            throw error;
+          if (runningInstance?.InstanceId) {
+            await startEC2Instance(ec2Client, runningInstance.InstanceId);
+          }
+
+          // Store initial opportunities if provided
+          if (body.opportunities?.length > 0) {
+            const { error } = await supabase
+              .from('arbitrage_opportunities')
+              .insert(body.opportunities)
+              .select();
+
+            if (error) {
+              console.error('Error storing opportunities:', error);
+              throw error;
+            }
           }
 
           return createSuccessResponse({
             message: "Scanner started successfully",
-            opportunities,
             status: "success"
           });
         }
 
         case 'scanner-stop': {
+          // Get running instances
+          const instances = await fetchScannerStatus(ec2Client);
+          const runningInstance = instances.find(i => i.State?.Name === 'running');
+
+          if (runningInstance?.InstanceId) {
+            await stopEC2Instance(ec2Client, runningInstance.InstanceId);
+          }
+
           // Clean up opportunities when stopping
           const { error } = await supabase
             .from('arbitrage_opportunities')
@@ -143,9 +162,7 @@ serve(async (req) => {
       clearTimeout(timeoutId);
     }
   } catch (error) {
-    if (error.name === 'AbortError') {
-      return createErrorResponse(new Error('Operation timed out'));
-    }
+    console.error('Error in edge function:', error);
     return createErrorResponse(error);
   }
 });
