@@ -1,4 +1,10 @@
-import { EC2Client, DescribeInstancesCommand, RunInstancesCommand, StartInstancesCommand, StopInstancesCommand } from "@aws-sdk/client-ec2";
+import { 
+  EC2Client, 
+  DescribeInstancesCommand, 
+  RunInstancesCommand, 
+  StartInstancesCommand, 
+  StopInstancesCommand 
+} from "https://esm.sh/@aws-sdk/client-ec2@3.525.0";
 
 export const getEC2Client = () => {
   return new EC2Client({
