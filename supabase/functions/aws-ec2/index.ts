@@ -17,13 +17,21 @@ import {
 const TIMEOUT = 25000; // 25 seconds timeout
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const ec2Client = getEC2Client();
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error('Error parsing request body:', e);
+      return createErrorResponse(new Error('Invalid request body'));
+    }
+
     const { action, test, batchSize = 5, timeout = TIMEOUT } = body;
     console.log('Received action:', action, 'with batchSize:', batchSize, 'timeout:', timeout);
 
@@ -55,7 +63,10 @@ serve(async (req) => {
             .order('created_at', { ascending: false })
             .limit(20);
 
-          if (dbError) throw dbError;
+          if (dbError) {
+            console.error('Database error:', dbError);
+            throw dbError;
+          }
 
           // Delete opportunities older than 5 minutes
           const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -102,25 +113,14 @@ serve(async (req) => {
         }
 
         case 'scanner-start': {
-          // Get running instances
           const instances = await fetchScannerStatus(ec2Client);
-          const runningInstance = instances.find(i => i.State?.Name === 'stopped');
+          const stoppedInstance = instances.find(i => i.State?.Name === 'stopped');
 
-          if (runningInstance?.InstanceId) {
-            await startEC2Instance(ec2Client, runningInstance.InstanceId);
-          }
-
-          // Store initial opportunities if provided
-          if (body.opportunities?.length > 0) {
-            const { error } = await supabase
-              .from('arbitrage_opportunities')
-              .insert(body.opportunities)
-              .select();
-
-            if (error) {
-              console.error('Error storing opportunities:', error);
-              throw error;
-            }
+          if (stoppedInstance?.InstanceId) {
+            await startEC2Instance(ec2Client, stoppedInstance.InstanceId);
+            console.log('Started instance:', stoppedInstance.InstanceId);
+          } else {
+            console.log('No stopped instances found to start');
           }
 
           return createSuccessResponse({
@@ -130,12 +130,14 @@ serve(async (req) => {
         }
 
         case 'scanner-stop': {
-          // Get running instances
           const instances = await fetchScannerStatus(ec2Client);
           const runningInstance = instances.find(i => i.State?.Name === 'running');
 
           if (runningInstance?.InstanceId) {
             await stopEC2Instance(ec2Client, runningInstance.InstanceId);
+            console.log('Stopped instance:', runningInstance.InstanceId);
+          } else {
+            console.log('No running instances found to stop');
           }
 
           // Clean up opportunities when stopping

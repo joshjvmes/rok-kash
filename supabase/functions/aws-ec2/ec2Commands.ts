@@ -7,13 +7,25 @@ import {
 } from "https://esm.sh/@aws-sdk/client-ec2@3.525.0";
 
 export const getEC2Client = () => {
-  return new EC2Client({
-    region: "us-east-1",
-    credentials: {
-      accessKeyId: Deno.env.get("AWS_ACCESS_KEY_ID")!,
-      secretAccessKey: Deno.env.get("AWS_SECRET_ACCESS_KEY")!,
-    },
-  });
+  try {
+    const accessKeyId = Deno.env.get("AWS_ACCESS_KEY_ID");
+    const secretAccessKey = Deno.env.get("AWS_SECRET_ACCESS_KEY");
+    
+    if (!accessKeyId || !secretAccessKey) {
+      throw new Error("AWS credentials not found in environment variables");
+    }
+
+    return new EC2Client({
+      region: "us-east-1",
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating EC2 client:", error);
+    throw error;
+  }
 };
 
 export const fetchInstanceStatus = async (ec2Client: EC2Client) => {

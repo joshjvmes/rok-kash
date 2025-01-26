@@ -6,7 +6,13 @@ export const corsHeaders = {
 export const createSuccessResponse = (data: any) => {
   return new Response(
     JSON.stringify(data),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    { 
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json' 
+      },
+      status: 200
+    }
   );
 };
 
@@ -21,7 +27,10 @@ export const createErrorResponse = (error: Error) => {
     }),
     { 
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json' 
+      },
     }
   );
 };
