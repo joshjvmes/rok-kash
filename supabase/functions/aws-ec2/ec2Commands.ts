@@ -1,4 +1,4 @@
-import { sign } from "https://deno.land/x/aws4fetch@v1.0.13/mod.ts";
+import { sign } from "https://deno.land/x/aws4fetch@1.0.0/mod.ts";
 
 const AWS_REGION = "us-east-1";
 const AWS_SERVICE = "ec2";
