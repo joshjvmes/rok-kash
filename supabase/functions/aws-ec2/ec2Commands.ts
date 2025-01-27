@@ -2,7 +2,7 @@ import {
   EC2Client,
   DescribeInstancesCommand,
   RunInstancesCommand,
-} from "https://esm.sh/@aws-sdk/client-ec2@3.425.0";
+} from "https://esm.sh/@aws-sdk/client-ec2@3.188.0";
 
 export const getEC2Client = () => {
   try {
