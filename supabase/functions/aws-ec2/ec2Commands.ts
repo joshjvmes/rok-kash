@@ -15,6 +15,7 @@ export const getEC2Client = () => {
       throw new Error("AWS credentials not found in environment variables");
     }
 
+    console.log('Initializing EC2 client with credentials');
     return new EC2Client({
       region: "us-east-1",
       credentials: {
@@ -29,17 +30,22 @@ export const getEC2Client = () => {
 };
 
 export const fetchInstanceStatus = async (ec2Client: EC2Client) => {
-  console.log('Fetching EC2 instances status');
-  const describeCommand = new DescribeInstancesCommand({});
-  const response = await ec2Client.send(describeCommand);
-  
-  const instances = response.Reservations?.flatMap(r => r.Instances || []) || [];
-  return instances.map(instance => ({
-    instanceId: instance.InstanceId,
-    state: instance.State?.Name,
-    publicDns: instance.PublicDnsName,
-    tags: instance.Tags || []
-  }));
+  try {
+    console.log('Fetching EC2 instances status');
+    const describeCommand = new DescribeInstancesCommand({});
+    const response = await ec2Client.send(describeCommand);
+    
+    const instances = response.Reservations?.flatMap(r => r.Instances || []) || [];
+    return instances.map(instance => ({
+      instanceId: instance.InstanceId,
+      state: instance.State?.Name,
+      publicDns: instance.PublicDnsName,
+      tags: instance.Tags || []
+    }));
+  } catch (error) {
+    console.error('Error fetching instance status:', error);
+    throw error;
+  }
 };
 
 const getUserDataScript = () => {
@@ -102,64 +108,61 @@ echo "export SCANNER_MODE=advanced" >> /etc/environment`;
 };
 
 export const launchEC2Instance = async (ec2Client: EC2Client, isTest = false) => {
-  console.log('Launching new EC2 instance with enhanced capabilities...');
-  
-  const runResponse = await ec2Client.send(new RunInstancesCommand({
-    ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2 AMI
-    InstanceType: 't2.medium', // Upgraded for better performance
-    MinCount: 1,
-    MaxCount: 1,
-    UserData: getUserDataScript(),
-    BlockDeviceMappings: [
-      {
-        DeviceName: '/dev/xvda',
-        Ebs: {
-          VolumeSize: 30, // Increased storage for utilities
-          VolumeType: 'gp3',
-          DeleteOnTermination: true
+  try {
+    console.log('Launching new EC2 instance with enhanced capabilities...');
+    
+    const runResponse = await ec2Client.send(new RunInstancesCommand({
+      ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2 AMI
+      InstanceType: 't2.medium', // Upgraded for better performance
+      MinCount: 1,
+      MaxCount: 1,
+      UserData: getUserDataScript(),
+      BlockDeviceMappings: [
+        {
+          DeviceName: '/dev/xvda',
+          Ebs: {
+            VolumeSize: 30, // Increased storage for utilities
+            VolumeType: 'gp3',
+            DeleteOnTermination: true
+          }
         }
-      }
-    ],
-    TagSpecifications: [{
-      ResourceType: 'instance',
-      Tags: [{
-        Key: 'Name',
-        Value: isTest ? 'TestInstance' : 'ArbitrageScanner'
-      }]
-    }],
-    SecurityGroupIds: ['sg-0714db51a0201d3d0'], // Updated security group ID
-  }));
-  
-  const instanceId = runResponse.Instances?.[0]?.InstanceId;
-  if (!instanceId) {
-    throw new Error('No instance ID in launch response');
+      ],
+      TagSpecifications: [{
+        ResourceType: 'instance',
+        Tags: [{
+          Key: 'Name',
+          Value: isTest ? 'TestInstance' : 'ArbitrageScanner'
+        }]
+      }],
+      SecurityGroupIds: ['sg-0714db51a0201d3d0'], // Updated security group ID
+    }));
+    
+    const instanceId = runResponse.Instances?.[0]?.InstanceId;
+    if (!instanceId) {
+      throw new Error('No instance ID in launch response');
+    }
+    
+    console.log('Successfully launched instance:', instanceId);
+    return instanceId;
+  } catch (error) {
+    console.error('Error launching EC2 instance:', error);
+    throw error;
   }
-  
-  return instanceId;
-};
-
-export const startEC2Instance = async (ec2Client: EC2Client, instanceId: string) => {
-  console.log(`Starting EC2 instance: ${instanceId}`);
-  await ec2Client.send(new StartInstancesCommand({
-    InstanceIds: [instanceId]
-  }));
-};
-
-export const stopEC2Instance = async (ec2Client: EC2Client, instanceId: string) => {
-  console.log(`Stopping EC2 instance: ${instanceId}`);
-  await ec2Client.send(new StopInstancesCommand({
-    InstanceIds: [instanceId]
-  }));
 };
 
 export const fetchScannerStatus = async (ec2Client: EC2Client) => {
-  const describeCommand = new DescribeInstancesCommand({
-    Filters: [{
-      Name: 'tag:Name',
-      Values: ['ArbitrageScanner']
-    }]
-  });
-  
-  const response = await ec2Client.send(describeCommand);
-  return response.Reservations?.flatMap(r => r.Instances || []) || [];
+  try {
+    const describeCommand = new DescribeInstancesCommand({
+      Filters: [{
+        Name: 'tag:Name',
+        Values: ['ArbitrageScanner']
+      }]
+    });
+    
+    const response = await ec2Client.send(describeCommand);
+    return response.Reservations?.flatMap(r => r.Instances || []) || [];
+  } catch (error) {
+    console.error('Error fetching scanner status:', error);
+    throw error;
+  }
 };

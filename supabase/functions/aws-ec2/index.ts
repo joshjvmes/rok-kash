@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { 
   getEC2Client, 
   fetchInstanceStatus, 
@@ -15,12 +14,15 @@ import {
 const TIMEOUT = 25000; // 25 seconds timeout
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('Initializing EC2 client...');
     const ec2Client = getEC2Client();
+    
     const body = await req.json();
     const { action, test, batchSize = 5, timeout = TIMEOUT } = body;
     console.log('Received action:', action, 'with batchSize:', batchSize, 'timeout:', timeout);
