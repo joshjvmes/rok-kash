@@ -108,7 +108,7 @@ export const launchEC2Instance = async (ec2Client: EC2Client, isTest = false) =>
         Value: isTest ? 'TestInstance' : 'ArbitrageScanner'
       }]
     }],
-    SecurityGroupIds: ['sg-xxxxxxxx'], // Replace with your security group ID
+    SecurityGroupIds: ['sg-0714db51a0201d3d0'], // Updated security group ID
   }));
   
   const instanceId = runResponse.Instances?.[0]?.InstanceId;
