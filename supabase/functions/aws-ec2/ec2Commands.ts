@@ -2,7 +2,7 @@ import {
   EC2Client,
   DescribeInstancesCommand,
   RunInstancesCommand,
-} from "https://esm.sh/@aws-sdk/client-ec2@3.525.0";
+} from "https://esm.sh/@aws-sdk/client-ec2@3.425.0";
 
 export const getEC2Client = () => {
   try {
@@ -13,18 +13,16 @@ export const getEC2Client = () => {
       throw new Error("AWS credentials not found in environment variables");
     }
 
-    console.log('Creating EC2 client with explicit credentials');
+    console.log('Creating EC2 client with basic credentials');
     
-    // Create client with explicit credentials to avoid filesystem access
-    const client = new EC2Client({
+    // Use basic credentials configuration without filesystem dependencies
+    return new EC2Client({
       region: "us-east-1",
       credentials: {
         accessKeyId,
         secretAccessKey
       }
     });
-
-    return client;
   } catch (error) {
     console.error("Error creating EC2 client:", error);
     throw error;
