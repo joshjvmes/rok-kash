@@ -1,180 +1,107 @@
-import { 
-  EC2Client,
-  DescribeInstancesCommand,
-  RunInstancesCommand,
-} from "https://esm.sh/@aws-sdk/client-ec2@3.188.0";
+import { AWSSignerV4 } from "https://deno.land/x/aws_sign_v4@1.0.0/mod.ts";
+
+const AWS_REGION = "us-east-1";
+const AWS_SERVICE = "ec2";
+const AWS_HOST = "ec2.amazonaws.com";
 
 export const getEC2Client = () => {
-  try {
-    const accessKeyId = Deno.env.get("AWS_ACCESS_KEY_ID");
-    const secretAccessKey = Deno.env.get("AWS_SECRET_ACCESS_KEY");
-    
-    if (!accessKeyId || !secretAccessKey) {
-      throw new Error("AWS credentials not found in environment variables");
-    }
-
-    console.log('Creating EC2 client with basic credentials');
-    
-    // Use basic credentials configuration without filesystem dependencies
-    return new EC2Client({
-      region: "us-east-1",
-      credentials: {
-        accessKeyId,
-        secretAccessKey
-      }
-    });
-  } catch (error) {
-    console.error("Error creating EC2 client:", error);
-    throw error;
+  const accessKeyId = Deno.env.get("AWS_ACCESS_KEY_ID");
+  const secretAccessKey = Deno.env.get("AWS_SECRET_ACCESS_KEY");
+  
+  if (!accessKeyId || !secretAccessKey) {
+    throw new Error("AWS credentials not found in environment variables");
   }
+
+  return new AWSSignerV4(accessKeyId, secretAccessKey, AWS_REGION, AWS_SERVICE);
 };
 
-export const fetchInstanceStatus = async (ec2Client: EC2Client) => {
+export const fetchInstanceStatus = async (signer: AWSSignerV4) => {
   try {
     console.log('Fetching EC2 instances status');
-    const describeCommand = new DescribeInstancesCommand({
-      Filters: [
-        {
-          Name: 'tag:Name',
-          Values: ['ArbitrageScanner', 'TestInstance']
-        }
-      ]
+    
+    const params = new URLSearchParams({
+      'Action': 'DescribeInstances',
+      'Version': '2016-11-15',
+      'Filter.1.Name': 'tag:Name',
+      'Filter.1.Value.1': 'ArbitrageScanner',
+      'Filter.1.Value.2': 'TestInstance'
     });
+
+    const url = `https://${AWS_HOST}/?${params.toString()}`;
+    const request = new Request(url, {
+      method: 'GET',
+    });
+
+    const signedRequest = await signer.sign(request);
+    const response = await fetch(signedRequest);
     
-    const response = await ec2Client.send(describeCommand);
-    console.log('Describe instances response:', JSON.stringify(response, null, 2));
+    if (!response.ok) {
+      throw new Error(`AWS API error: ${response.status} ${response.statusText}`);
+    }
+
+    const xmlText = await response.text();
+    console.log('Raw AWS response:', xmlText);
+
+    // Basic XML parsing to extract instance information
+    const instances = [];
+    const matches = xmlText.match(/<instanceId>([^<]+)<\/instanceId>/g) || [];
     
-    const instances = response.Reservations?.flatMap(r => r.Instances || []) || [];
-    return instances.map(instance => ({
-      instanceId: instance.InstanceId,
-      state: instance.State?.Name,
-      publicDns: instance.PublicDnsName,
-      tags: instance.Tags || []
-    }));
+    for (const match of matches) {
+      const instanceId = match.replace(/<\/?instanceId>/g, '');
+      instances.push({
+        instanceId,
+        state: xmlText.includes(`<state><name>running</name></state>`) ? 'running' : 'stopped',
+        publicDns: (xmlText.match(/<publicDnsName>([^<]+)<\/publicDnsName>/) || [])[1] || '',
+        tags: []
+      });
+    }
+
+    return instances;
   } catch (error) {
     console.error('Error fetching instance status:', error);
     throw error;
   }
 };
 
-const getUserDataScript = () => {
-  const script = `#!/bin/bash
-# Update system packages
-yum update -y
-yum install -y gcc make python3-pip git
-
-# Install Node.js
-curl -sL https://rpm.nodesource.com/setup_18.x | bash -
-yum install -y nodejs
-
-# Install Python packages
-pip3 install pandas numpy requests websockets ccxt
-
-# Install PM2 globally
-npm install -g pm2@latest
-
-# Create working directory
-mkdir -p /opt/arbitrage-scanner
-cd /opt/arbitrage-scanner
-
-# Create basic utility scripts
-cat > scanner.js << 'EOL'
-const ccxt = require('ccxt');
-
-async function main() {
-    console.log('Arbitrage scanner initialized');
-    // Basic scanner setup - can be enhanced later
-    const exchanges = ['binance', 'kraken', 'kucoin'];
-    const symbols = ['BTC/USDT', 'ETH/USDT'];
-    
-    while (true) {
-        try {
-            console.log('Scanning markets...');
-            await new Promise(resolve => setTimeout(resolve, 5000));
-        } catch (error) {
-            console.error('Scanner error:', error);
-        }
-    }
-}
-
-main().catch(console.error);
-EOL
-
-# Install dependencies
-npm init -y
-npm install ccxt ws express
-
-# Set up PM2 to run on startup
-pm2 startup
-pm2 start scanner.js --name arbitrage-scanner
-pm2 save
-
-# Set environment variables
-echo "export NODE_ENV=production" >> /etc/environment
-echo "export SCANNER_MODE=advanced" >> /etc/environment`;
-
-  return btoa(script);
-};
-
-export const launchEC2Instance = async (ec2Client: EC2Client, isTest = false) => {
+export const launchEC2Instance = async (signer: AWSSignerV4, isTest = false) => {
   try {
     console.log('Launching new EC2 instance...');
     
-    const runResponse = await ec2Client.send(new RunInstancesCommand({
-      ImageId: 'ami-0e731c8a588258d0d',
-      InstanceType: 't2.medium',
-      MinCount: 1,
-      MaxCount: 1,
-      UserData: getUserDataScript(),
-      BlockDeviceMappings: [
-        {
-          DeviceName: '/dev/xvda',
-          Ebs: {
-            VolumeSize: 30,
-            VolumeType: 'gp3',
-            DeleteOnTermination: true
-          }
-        }
-      ],
-      TagSpecifications: [{
-        ResourceType: 'instance',
-        Tags: [{
-          Key: 'Name',
-          Value: isTest ? 'TestInstance' : 'ArbitrageScanner'
-        }]
-      }],
-      SecurityGroupIds: ['sg-0714db51a0201d3d0'],
-    }));
+    const params = new URLSearchParams({
+      'Action': 'RunInstances',
+      'Version': '2016-11-15',
+      'ImageId': 'ami-0e731c8a588258d0d',
+      'InstanceType': 't2.medium',
+      'MinCount': '1',
+      'MaxCount': '1',
+      'TagSpecification.1.ResourceType': 'instance',
+      'TagSpecification.1.Tag.1.Key': 'Name',
+      'TagSpecification.1.Tag.1.Value': isTest ? 'TestInstance' : 'ArbitrageScanner'
+    });
+
+    const url = `https://${AWS_HOST}/?${params.toString()}`;
+    const request = new Request(url, {
+      method: 'GET',
+    });
+
+    const signedRequest = await signer.sign(request);
+    const response = await fetch(signedRequest);
     
-    console.log('Launch instance response:', JSON.stringify(runResponse, null, 2));
+    if (!response.ok) {
+      throw new Error(`AWS API error: ${response.status} ${response.statusText}`);
+    }
+
+    const xmlText = await response.text();
+    console.log('Launch instance response:', xmlText);
     
-    const instanceId = runResponse.Instances?.[0]?.InstanceId;
-    if (!instanceId) {
+    const instanceIdMatch = xmlText.match(/<instanceId>([^<]+)<\/instanceId>/);
+    if (!instanceIdMatch) {
       throw new Error('No instance ID in launch response');
     }
     
-    console.log('Successfully launched instance:', instanceId);
-    return instanceId;
+    return instanceIdMatch[1];
   } catch (error) {
     console.error('Error launching EC2 instance:', error);
-    throw error;
-  }
-};
-
-export const fetchScannerStatus = async (ec2Client: EC2Client) => {
-  try {
-    const describeCommand = new DescribeInstancesCommand({
-      Filters: [{
-        Name: 'tag:Name',
-        Values: ['ArbitrageScanner']
-      }]
-    });
-    
-    const response = await ec2Client.send(describeCommand);
-    console.log('Scanner status response:', JSON.stringify(response, null, 2));
-    return response.Reservations?.flatMap(r => r.Instances || []) || [];
-  } catch (error) {
-    console.error('Error fetching scanner status:', error);
     throw error;
   }
 };
