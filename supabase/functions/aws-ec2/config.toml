@@ -1,4 +1,1 @@
 project_id = "pojfmdxsoqfxfzkujwah"
-[global.config]
-memory = 256
-timeout = 30

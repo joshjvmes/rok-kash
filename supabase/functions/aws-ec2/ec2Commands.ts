@@ -2,7 +2,7 @@ import {
   EC2Client,
   DescribeInstancesCommand,
   RunInstancesCommand,
-} from "https://esm.sh/@aws-sdk/client-ec2@3.188.0";
+} from "https://esm.sh/@aws-sdk/client-ec2@3.100.0";
 
 export const getEC2Client = () => {
   try {
@@ -15,7 +15,6 @@ export const getEC2Client = () => {
 
     console.log('Creating EC2 client with basic credentials');
     
-    // Use basic credentials configuration without filesystem dependencies
     return new EC2Client({
       region: "us-east-1",
       credentials: {
