@@ -6,22 +6,28 @@ export const corsHeaders = {
 export const createSuccessResponse = (data: any) => {
   return new Response(
     JSON.stringify(data),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    { 
+      headers: { 
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+      },
+      status: 200,
+    },
   );
 };
 
 export const createErrorResponse = (error: Error) => {
-  console.error('Error in AWS EC2 function:', error);
   return new Response(
-    JSON.stringify({ 
+    JSON.stringify({
       error: error.message,
-      status: "error",
-      stack: error.stack,
-      details: 'Check the function logs for more information'
+      details: error.stack,
     }),
     { 
+      headers: { 
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+      },
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    }
+    },
   );
 };

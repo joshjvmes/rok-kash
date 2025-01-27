@@ -104,7 +104,7 @@ pm2 save
 echo "export NODE_ENV=production" >> /etc/environment
 echo "export SCANNER_MODE=advanced" >> /etc/environment`;
 
-  return Buffer.from(script).toString('base64');
+  return btoa(script);
 };
 
 export const launchEC2Instance = async (ec2Client: EC2Client, isTest = false) => {
