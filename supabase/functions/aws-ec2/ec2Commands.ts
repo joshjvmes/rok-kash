@@ -14,18 +14,17 @@ export const getEC2Client = () => {
     }
 
     console.log('Creating EC2 client with explicit credentials');
-    return new EC2Client({
+    
+    // Create client with explicit credentials to avoid filesystem access
+    const client = new EC2Client({
       region: "us-east-1",
       credentials: {
         accessKeyId,
-        secretAccessKey,
-      },
-      // Disable credential loading from shared files
-      credentialDefaultProvider: () => async () => ({
-        accessKeyId,
-        secretAccessKey,
-      }),
+        secretAccessKey
+      }
     });
+
+    return client;
   } catch (error) {
     console.error("Error creating EC2 client:", error);
     throw error;
@@ -35,8 +34,17 @@ export const getEC2Client = () => {
 export const fetchInstanceStatus = async (ec2Client: EC2Client) => {
   try {
     console.log('Fetching EC2 instances status');
-    const describeCommand = new DescribeInstancesCommand({});
+    const describeCommand = new DescribeInstancesCommand({
+      Filters: [
+        {
+          Name: 'tag:Name',
+          Values: ['ArbitrageScanner', 'TestInstance']
+        }
+      ]
+    });
+    
     const response = await ec2Client.send(describeCommand);
+    console.log('Describe instances response:', JSON.stringify(response, null, 2));
     
     const instances = response.Reservations?.flatMap(r => r.Instances || []) || [];
     return instances.map(instance => ({
@@ -140,6 +148,8 @@ export const launchEC2Instance = async (ec2Client: EC2Client, isTest = false) =>
       SecurityGroupIds: ['sg-0714db51a0201d3d0'],
     }));
     
+    console.log('Launch instance response:', JSON.stringify(runResponse, null, 2));
+    
     const instanceId = runResponse.Instances?.[0]?.InstanceId;
     if (!instanceId) {
       throw new Error('No instance ID in launch response');
@@ -163,6 +173,7 @@ export const fetchScannerStatus = async (ec2Client: EC2Client) => {
     });
     
     const response = await ec2Client.send(describeCommand);
+    console.log('Scanner status response:', JSON.stringify(response, null, 2));
     return response.Reservations?.flatMap(r => r.Instances || []) || [];
   } catch (error) {
     console.error('Error fetching scanner status:', error);
