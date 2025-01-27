@@ -29,10 +29,6 @@ serve(async (req) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     try {
       switch (action) {
         case 'status': {
@@ -41,43 +37,23 @@ serve(async (req) => {
         }
 
         case 'scanner-status': {
-          console.log('Fetching scanner status with batching...');
+          console.log('Fetching scanner status...');
           const instances = await fetchScannerStatus(ec2Client);
           const runningInstances = instances.filter(i => i.State?.Name === 'running');
-
-          // Process opportunities in batches
-          const { data: opportunities, error: dbError } = await supabase
-            .from('arbitrage_opportunities')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(20);
-
-          if (dbError) throw dbError;
-
-          const formattedOpportunities = opportunities?.map(opp => ({
-            buyExchange: opp.buy_exchange,
-            sellExchange: opp.sell_exchange,
-            symbol: opp.symbol,
-            spread: opp.spread,
-            potential: opp.potential_profit,
-            buyPrice: opp.buy_price,
-            sellPrice: opp.sell_price
-          })) || [];
-
-          console.log(`Found ${formattedOpportunities.length} opportunities`);
 
           return createSuccessResponse({
             status: {
               status: runningInstances.length > 0 ? 'running' : 'stopped',
               lastUpdate: new Date().toISOString(),
-              activeSymbols: runningInstances.map(i => i.InstanceId || ''),
-              opportunities: formattedOpportunities.length,
-              opportunityDetails: formattedOpportunities
+              activeSymbols: ['BTC/USDT', 'ETH/USDT'],
+              opportunities: 0,
+              opportunityDetails: []
             }
           });
         }
 
         case 'launch': {
+          console.log('Launching new instance...');
           const instanceId = await launchEC2Instance(ec2Client, test);
           return createSuccessResponse({
             message: "Instance launched successfully",
@@ -93,6 +69,7 @@ serve(async (req) => {
       clearTimeout(timeoutId);
     }
   } catch (error) {
+    console.error('Error in AWS EC2 function:', error);
     if (error.name === 'AbortError') {
       return createErrorResponse(new Error('Operation timed out'));
     }

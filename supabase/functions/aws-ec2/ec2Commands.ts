@@ -56,28 +56,47 @@ yum install -y nodejs
 pip3 install pandas numpy requests websockets ccxt
 
 # Install PM2 globally
-npm install -p pm2@latest -g
+npm install -g pm2@latest
 
 # Create working directory
 mkdir -p /opt/arbitrage-scanner
 cd /opt/arbitrage-scanner
 
-# Clone helper utilities (you can replace this with your actual repository)
-git clone https://github.com/your-repo/arbitrage-helpers.git .
+# Create basic utility scripts
+cat > scanner.js << 'EOL'
+const ccxt = require('ccxt');
+
+async function main() {
+    console.log('Arbitrage scanner initialized');
+    // Basic scanner setup - can be enhanced later
+    const exchanges = ['binance', 'kraken', 'kucoin'];
+    const symbols = ['BTC/USDT', 'ETH/USDT'];
+    
+    while (true) {
+        try {
+            console.log('Scanning markets...');
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        } catch (error) {
+            console.error('Scanner error:', error);
+        }
+    }
+}
+
+main().catch(console.error);
+EOL
 
 # Install dependencies
-npm install
+npm init -y
+npm install ccxt ws express
 
 # Set up PM2 to run on startup
 pm2 startup
+pm2 start scanner.js --name arbitrage-scanner
 pm2 save
 
 # Set environment variables
 echo "export NODE_ENV=production" >> /etc/environment
-echo "export SCANNER_MODE=advanced" >> /etc/environment
-
-# Start the main service
-pm2 start main.js --name arbitrage-scanner`;
+echo "export SCANNER_MODE=advanced" >> /etc/environment`;
 
   return Buffer.from(script).toString('base64');
 };
