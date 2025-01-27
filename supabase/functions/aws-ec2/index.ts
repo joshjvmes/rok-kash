@@ -14,7 +14,6 @@ import {
 const TIMEOUT = 25000; // 25 seconds timeout
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,7 +26,6 @@ serve(async (req) => {
     const { action, test, batchSize = 5, timeout = TIMEOUT } = body;
     console.log('Received action:', action, 'with batchSize:', batchSize, 'timeout:', timeout);
 
-    // Create AbortController for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 

@@ -1,9 +1,7 @@
 import { 
-  EC2Client, 
+  EC2Client,
   DescribeInstancesCommand,
   RunInstancesCommand,
-  StartInstancesCommand,
-  StopInstancesCommand
 } from "https://esm.sh/@aws-sdk/client-ec2@3.525.0";
 
 export const getEC2Client = () => {
@@ -15,13 +13,18 @@ export const getEC2Client = () => {
       throw new Error("AWS credentials not found in environment variables");
     }
 
-    console.log('Initializing EC2 client with credentials');
+    console.log('Creating EC2 client with explicit credentials');
     return new EC2Client({
       region: "us-east-1",
       credentials: {
         accessKeyId,
         secretAccessKey,
       },
+      // Disable credential loading from shared files
+      credentialDefaultProvider: () => async () => ({
+        accessKeyId,
+        secretAccessKey,
+      }),
     });
   } catch (error) {
     console.error("Error creating EC2 client:", error);
@@ -109,11 +112,11 @@ echo "export SCANNER_MODE=advanced" >> /etc/environment`;
 
 export const launchEC2Instance = async (ec2Client: EC2Client, isTest = false) => {
   try {
-    console.log('Launching new EC2 instance with enhanced capabilities...');
+    console.log('Launching new EC2 instance...');
     
     const runResponse = await ec2Client.send(new RunInstancesCommand({
-      ImageId: 'ami-0e731c8a588258d0d', // Amazon Linux 2 AMI
-      InstanceType: 't2.medium', // Upgraded for better performance
+      ImageId: 'ami-0e731c8a588258d0d',
+      InstanceType: 't2.medium',
       MinCount: 1,
       MaxCount: 1,
       UserData: getUserDataScript(),
@@ -121,7 +124,7 @@ export const launchEC2Instance = async (ec2Client: EC2Client, isTest = false) =>
         {
           DeviceName: '/dev/xvda',
           Ebs: {
-            VolumeSize: 30, // Increased storage for utilities
+            VolumeSize: 30,
             VolumeType: 'gp3',
             DeleteOnTermination: true
           }
@@ -134,7 +137,7 @@ export const launchEC2Instance = async (ec2Client: EC2Client, isTest = false) =>
           Value: isTest ? 'TestInstance' : 'ArbitrageScanner'
         }]
       }],
-      SecurityGroupIds: ['sg-0714db51a0201d3d0'], // Updated security group ID
+      SecurityGroupIds: ['sg-0714db51a0201d3d0'],
     }));
     
     const instanceId = runResponse.Instances?.[0]?.InstanceId;
